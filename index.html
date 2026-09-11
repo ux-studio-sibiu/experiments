@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Experiments — UX Studio Sibiu</title>
+<meta name="description" content="A directory of standalone front-end experiments: SVG patterns, WebGL hover, type pairing, canvas grain.">
+<style>
+  /* Light palette on :root so it is the default, dark redefined below. Every
+     colour is defined here first — none of them only exist inside a media
+     query, so nothing is left undefined in either scheme. */
+  :root {
+    --bg: #f7f7f5;
+    --ink: #101010;
+    --muted: #6b6b68;
+    --line: #d9d9d4;
+    --card: #ffffff;
+    --gutter: clamp(1.25rem, 4vw, 3.5rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0c0d;
+      --ink: #f2f2f0;
+      --muted: #8f8f8c;
+      --line: #232325;
+      --card: #141416;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    padding: var(--gutter);
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    max-width: 62rem;
+    margin: 0 auto;
+  }
+
+  /* --- Masthead ----------------------------------------------------------- */
+
+  .masthead {
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow {
+    margin: 0 0 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .masthead h1 {
+    margin: 0;
+    font-size: clamp(2rem, 7vw, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+  }
+
+  .lede {
+    margin: 1rem 0 0;
+    max-width: 44ch;
+    color: var(--muted);
+  }
+
+  /* --- The list ----------------------------------------------------------- */
+
+  .index {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 48rem) {
+    .index {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* The whole card is the link — no nested interactive elements, so there is
+     nothing to tab past and nothing to mis-click. */
+  .entry {
+    display: block;
+    height: 100%;
+    padding: 1.75rem 0 2rem;
+    border-bottom: 1px solid var(--line);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  @media (min-width: 48rem) {
+    .entry {
+      padding: 1.75rem 2rem 2rem 0;
+    }
+  }
+
+  .entry:hover .title,
+  .entry:focus-visible .title {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  .entry:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 4px;
+  }
+
+  .title {
+    display: block;
+    margin: 0 0 0.4rem;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  .blurb {
+    margin: 0 0 0.9rem;
+    max-width: 40ch;
+    font-size: 0.9375rem;
+    color: var(--muted);
+  }
+
+  .path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tag {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .colophon {
+    margin: 2.5rem 0 0;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+
+  .colophon a {
+    color: inherit;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="masthead">
+    <p class="eyebrow">UX Studio Sibiu</p>
+    <h1>Experiments</h1>
+    <p class="lede">Standalone front-end sketches. Each one is a single folder of plain HTML, CSS and JavaScript — no build step, no framework, open and run.</p>
+  </header>
+
+  <!-- One entry per folder with an index.html. Adding an experiment means
+       adding a folder and one <li> here. -->
+  <ul class="index">
+
+    <li>
+      <a class="entry" href="background-experiments/">
+        <span class="title">Background Experiments</span>
+        <p class="blurb">A browser for 86 tileable SVG patterns, with live controls for scale, opacity, colour tint and blend mode.</p>
+        <span class="path">/background-experiments</span>
+        <ul class="tags">
+          <li class="tag">SVG</li>
+          <li class="tag">CSS</li>
+        </ul>
+      </a>
+    </li>
+
+    <li>
+      <a class="entry" href="effect/">
+        <span class="title">Fluid hover</span>
+        <p class="blurb">A WebGL shader that smears an image toward the cursor — faster motion, stronger displacement, with chromatic aberration on the edges.</p>
+        <span class="path">/effect</span>
+        <ul class="tags">
+          <li class="tag">WebGL</li>
+          <li class="tag">three.js</li>
+          <li class="tag">GLSL</li>
+        </ul>
+      </a>
+    </li>
+
+    <li>
+      <a class="entry" href="font-experiments/">
+        <span class="title">Randomize Studio</span>
+        <p class="blurb">A type-pairing playground: editable heading, subheading and body over a background image, with ~40 Google Fonts swapped live and a dice roll for new combinations.</p>
+        <span class="path">/font-experiments</span>
+        <ul class="tags">
+          <li class="tag">Typography</li>
+          <li class="tag">Google Fonts</li>
+        </ul>
+      </a>
+    </li>
+
+    <li>
+      <a class="entry" href="paint-concept/">
+        <span class="title">Paint</span>
+        <p class="blurb">MS Paint rebuilt in one file, bevels and all — a study in Windows 95 chrome with nothing but CSS borders.</p>
+        <span class="path">/paint-concept</span>
+        <ul class="tags">
+          <li class="tag">Canvas</li>
+          <li class="tag">UI</li>
+        </ul>
+      </a>
+    </li>
+
+    <li>
+      <a class="entry" href="static-background/">
+        <span class="title">Static background</span>
+        <p class="blurb">The animated film-grain overlay that fades in behind navigation menus. Canvas 2D, no dependencies, about 5 KB — noise is drawn into a downscaled buffer and stretched to fill.</p>
+        <span class="path">/static-background</span>
+        <ul class="tags">
+          <li class="tag">Canvas</li>
+          <li class="tag">Motion</li>
+        </ul>
+      </a>
+    </li>
+
+  </ul>
+
+  <p class="colophon">Source on <a href="https://github.com/ux-studio-sibiu/experiments">GitHub</a>.</p>
+
+</div>
+
+</body>
+</html>
