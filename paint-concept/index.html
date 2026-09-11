@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Paint — concept</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root { font-family: 'Geist Mono', Consolas, monospace; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: #008080;
+    }
+
+    /* Win95 bevels: outset = light TL + dark BR; inset = reverse. */
+    .bevel-out {
+      border: 2px solid #dfdfdf;
+      border-bottom-color: #404040;
+      border-right-color: #404040;
+    }
+    .bevel-in {
+      border: 2px solid #808080;
+      border-bottom-color: #dfdfdf;
+      border-right-color: #dfdfdf;
+    }
+
+    .window {
+      background: #c0c0c0;
+      display: flex;
+      flex-direction: column;
+      width: min(880px, 95vw);
+      height: min(620px, 92vh);
+    }
+
+    .titlebar {
+      background: #000080;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .titlebar svg { display: block; }
+
+    .body { display: flex; flex: 1; min-height: 0; }
+
+    .toolbox {
+      background: #c0c0c0;
+      padding: 1px;
+      margin: 2px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: start;
+      flex-shrink: 0;
+    }
+    .tool {
+      width: 25px; height: 23px;
+      display: grid; place-items: center;
+      background: #c0c0c0;
+      border: 1px solid #c0c0c0;
+      cursor: pointer;
+      padding: 2px;
+    }
+    .tool.active {
+      border: 1px solid #404040;
+      border-bottom-color: #dfdfdf;
+      border-right-color: #dfdfdf;
+    }
+    .tool svg { display: block; image-rendering: pixelated; }
+
+    .canvas-wrap {
+      flex: 1;
+      margin: 2px 2px 2px 0;
+      background: #fff;
+      min-height: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .palette-row {
+      padding: 3px 4px 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      border-top: 1px solid #808080;
+    }
+    .swatch-pair { position: relative; width: 24px; height: 22px; flex-shrink: 0; }
+    .swatch-pair .bg, .swatch-pair .fg {
+      position: absolute;
+      width: 14px; height: 14px;
+      border: 1px solid #808080;
+      border-top-color: #404040;
+      border-left-color: #404040;
+      border-bottom-color: #dfdfdf;
+      border-right-color: #dfdfdf;
+    }
+    .swatch-pair .bg { right: 0; bottom: 0; background: #fff; }
+    .swatch-pair .fg { left: 0; top: 0; }
+
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(14, 11px);
+      grid-template-rows: repeat(2, 11px);
+    }
+    .color {
+      width: 11px; height: 11px;
+      padding: 0;
+      cursor: pointer;
+      border: 1px solid #808080;
+      border-top-color: #404040;
+      border-left-color: #404040;
+      border-bottom-color: #dfdfdf;
+      border-right-color: #dfdfdf;
+    }
+    .color.active { outline: 2px solid #000; z-index: 1; }
+
+    .actions { margin-left: auto; display: flex; gap: 4px; padding-right: 2px; }
+    .btn {
+      font: 11px 'Geist Mono', Consolas, monospace;
+      background: #c0c0c0;
+      padding: 2px 10px;
+      cursor: pointer;
+    }
+    .btn:active { border: 2px solid #808080; border-bottom-color: #dfdfdf; border-right-color: #dfdfdf; }
+
+    .statusbar {
+      border-top: 1px solid #808080;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #000;
+      display: flex; gap: 12px;
+      flex-shrink: 0;
+    }
+    .statusbar .cell { min-width: 90px; }
+  </style>
+</head>
+<body>
+  <div class="window bevel-out" role="application" aria-label="Paint">
+    <div class="titlebar">
+      <svg width="8" height="11" viewBox="0 0 8 11"><polygon points="5,0 0,6 3.5,6 2.5,11 8,4.5 4.5,4.5 6,0" fill="#ff0" stroke="#ff8c00" stroke-width="0.3"/></svg>
+      <span>untitled &mdash; Paint</span>
+    </div>
+
+    <div class="body">
+      <div class="toolbox bevel-in" id="toolbox"></div>
+
+      <div class="canvas-wrap bevel-in" id="canvasWrap">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="palette-row">
+      <div class="swatch-pair">
+        <div class="bg"></div>
+        <div class="fg" id="fgSwatch" style="background:#000"></div>
+      </div>
+      <div class="palette" id="palette"></div>
+      <div class="actions">
+        <button class="btn bevel-out" id="clearBtn" type="button">Clear</button>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="cell" id="statusTool">Tool: pencil</span>
+      <span class="cell" id="statusCoords">&nbsp;</span>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ------- Chunky pixel icons (inline SVG, rect-per-pixel) -------
+  const px = (cells, defaultFill = '#000') => {
+    let rects = '';
+    for (const [x, y, fill] of cells) {
+      rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fill || defaultFill}"/>`;
+    }
+    return `<svg viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">${rects}</svg>`;
+  };
+
+  // Diagonal pencil pointing top-right
+  const ICON_PENCIL = px([
+    [12,2],[11,3],[12,3],[10,4],[11,4],[9,5],[10,5],[8,6],[9,6],
+    [7,7],[8,7],[6,8],[7,8],[5,9],[6,9],[4,10],[5,10],
+    [3,11],[4,11],[3,12],[2,13],[3,13]
+  ]);
+  // Brush bristles
+  const ICON_BRUSH = px([
+    [9,2,'#000'],[10,2,'#000'],
+    [8,3,'#000'],[9,3,'#ffcc00'],[10,3,'#ffcc00'],[11,3,'#000'],
+    [8,4,'#000'],[9,4,'#ffcc00'],[10,4,'#ffcc00'],[11,4,'#000'],
+    [8,5,'#000'],[9,5,'#808080'],[10,5,'#808080'],[11,5,'#000'],
+    [7,6],[8,6],[9,6],[10,6],[11,6],[12,6],
+    [8,7],[11,7],
+    [9,8],[10,8],
+    [9,9],[10,9]
+  ]);
+  // Eraser block
+  const ICON_ERASER = (() => {
+    const cells = [];
+    for (let x = 4; x < 12; x++) {
+      for (let y = 6; y < 11; y++) {
+        let f = '#fff';
+        if (y === 10) f = '#404040';
+        else if (x === 11) f = '#808080';
+        else if (y === 6 || x === 4) f = '#fff';
+        else f = '#ffcccc';
+        cells.push([x, y, f]);
+      }
+    }
+    // outline
+    for (let x = 4; x <= 11; x++) { cells.push([x, 5, '#000']); cells.push([x, 11, '#000']); }
+    for (let y = 5; y <= 11; y++) { cells.push([3, y, '#000']); cells.push([12, y, '#000']); }
+    return px(cells);
+  })();
+  // Diagonal line
+  const ICON_LINE = px([
+    [13,2],[12,3],[13,3],[11,4],[12,4],[10,5],[11,5],[9,6],[10,6],
+    [8,7],[9,7],[7,8],[8,8],[6,9],[7,9],[5,10],[6,10],
+    [4,11],[5,11],[3,12],[4,12],[2,13],[3,13]
+  ]);
+  // Rectangle outline
+  const ICON_RECT = (() => {
+    const cells = [];
+    for (let i = 3; i <= 12; i++) { cells.push([i, 4]); cells.push([i, 11]); }
+    for (let i = 4; i <= 10; i++) { cells.push([3, i]); cells.push([12, i]); }
+    return px(cells);
+  })();
+  // Ellipse outline (handcrafted)
+  const ICON_ELLIPSE = px([
+    [5,3],[6,3],[7,3],[8,3],[9,3],[10,3],
+    [4,4],[11,4],
+    [3,5],[12,5],
+    [2,6],[13,6],
+    [2,7],[13,7],
+    [2,8],[13,8],
+    [3,9],[12,9],
+    [4,10],[11,10],
+    [5,11],[6,11],[7,11],[8,11],[9,11],[10,11]
+  ]);
+
+  const TOOLS = [
+    { id: 'pencil',  label: 'Pencil',    icon: ICON_PENCIL  },
+    { id: 'brush',   label: 'Brush',     icon: ICON_BRUSH   },
+    { id: 'eraser',  label: 'Eraser',    icon: ICON_ERASER  },
+    { id: 'line',    label: 'Line',      icon: ICON_LINE    },
+    { id: 'rect',    label: 'Rectangle', icon: ICON_RECT    },
+    { id: 'ellipse', label: 'Ellipse',   icon: ICON_ELLIPSE },
+  ];
+
+  // Stroke width per tool — same table the real site uses.
+  const SIZES = { pencil: 1, brush: 4, eraser: 10, line: 2, rect: 2, ellipse: 2 };
+
+  // 14x2 swatch grid (MS Paint palette).
+  const PALETTE = [
+    '#000000','#808080','#800000','#808000','#008000','#008080','#000080','#800080','#808040','#004040','#0000ff','#004080','#400080','#800040',
+    '#ffffff','#c0c0c0','#ff0000','#ffff00','#00ff00','#00ffff','#ff00ff','#ffff80','#00ff80','#80ffff','#0080ff','#8000ff','#ff0080','#804000',
+  ];
+
+  // ------- State -------
+  let tool = 'pencil';
+  let color = '#000000';
+  let drawing = false;
+  let start = { x: 0, y: 0 };
+  let prev  = { x: 0, y: 0 };
+  let snapshot = null; // ImageData used to rubber-band shapes
+
+  // ------- DOM wiring -------
+  const canvas    = document.getElementById('canvas');
+  const wrap      = document.getElementById('canvasWrap');
+  const toolbox   = document.getElementById('toolbox');
+  const palette   = document.getElementById('palette');
+  const fgSwatch  = document.getElementById('fgSwatch');
+  const statusTool = document.getElementById('statusTool');
+  const statusCoords = document.getElementById('statusCoords');
+  const ctx = canvas.getContext('2d');
+
+  for (const t of TOOLS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tool' + (t.id === tool ? ' active' : '');
+    b.title = t.label;
+    b.dataset.id = t.id;
+    b.innerHTML = t.icon;
+    b.addEventListener('click', () => {
+      tool = t.id;
+      statusTool.textContent = 'Tool: ' + t.id;
+      for (const el of toolbox.children) el.classList.toggle('active', el.dataset.id === tool);
+    });
+    toolbox.appendChild(b);
+  }
+
+  for (const c of PALETTE) {
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'color' + (c === color ? ' active' : '');
+    sw.style.background = c;
+    sw.dataset.color = c;
+    sw.addEventListener('click', () => {
+      color = c;
+      fgSwatch.style.background = c;
+      for (const el of palette.children) el.classList.toggle('active', el.dataset.color === c);
+    });
+    palette.appendChild(sw);
+  }
+
+  // ------- Sizing: match container, preserve content across resizes -------
+  let sized = false;
+  const resize = () => {
+    const r = wrap.getBoundingClientRect();
+    const w = Math.max(1, Math.floor(r.width));
+    const h = Math.max(1, Math.floor(r.height));
+    const prevImg = sized ? ctx.getImageData(0, 0, canvas.width, canvas.height) : null;
+    canvas.width = w;
+    canvas.height = h;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+    if (prevImg) ctx.putImageData(prevImg, 0, 0);
+    const wasBlank = !sized;
+    sized = true;
+    if (wasBlank) playIntro();
+  };
+  new ResizeObserver(resize).observe(wrap);
+
+  // ------- Drawing -------
+  const ptOf = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  canvas.addEventListener('pointerdown', (e) => {
+    cancelIntro();
+    drawing = true;
+    const p = ptOf(e);
+    start = p; prev = p;
+    canvas.setPointerCapture(e.pointerId);
+
+    if (tool === 'line' || tool === 'rect' || tool === 'ellipse') {
+      // Snapshot so we can restore-then-redraw each move (rubber-banding).
+      snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
+    // Freehand tools: stamp an initial dot so a single click leaves a mark.
+    ctx.fillStyle = tool === 'eraser' ? '#fff' : color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, SIZES[tool] / 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    const p = ptOf(e);
+    statusCoords.textContent = `${Math.round(p.x)}, ${Math.round(p.y)}`;
+    if (!drawing) return;
+
+    if (tool === 'pencil' || tool === 'brush' || tool === 'eraser') {
+      ctx.strokeStyle = tool === 'eraser' ? '#fff' : color;
+      ctx.lineWidth = SIZES[tool];
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      prev = p;
+      return;
+    }
+
+    // Shape preview: undo the previous preview, then draw fresh.
+    if (snapshot) ctx.putImageData(snapshot, 0, 0);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = SIZES[tool];
+    ctx.lineCap = 'round';
+
+    if (tool === 'line') {
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    } else if (tool === 'rect') {
+      ctx.strokeRect(start.x, start.y, p.x - start.x, p.y - start.y);
+    } else if (tool === 'ellipse') {
+      const cx = (start.x + p.x) / 2;
+      const cy = (start.y + p.y) / 2;
+      const rx = Math.abs(p.x - start.x) / 2;
+      const ry = Math.abs(p.y - start.y) / 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+
+  const endStroke = () => { drawing = false; snapshot = null; };
+  canvas.addEventListener('pointerup', endStroke);
+  canvas.addEventListener('pointerleave', endStroke);
+  canvas.addEventListener('pointercancel', endStroke);
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    cancelIntro();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  });
+
+  // ------- Auto-draw intro: jittery hand-drawn scribble that bails on first click -------
+  let introState = null;
+
+  function cancelIntro() {
+    if (!introState) return;
+    clearTimeout(introState.t1);
+    clearTimeout(introState.t2);
+    introState.cancelled = true;
+    introState = null;
+  }
+
+  function playIntro() {
+    cancelIntro();
+    // Normalized polylines in [0..1]² — roughly spells "paint".
+    const strokes = [
+      { color: '#000',    pts: [[.08,.30],[.08,.55]] },
+      { color: '#000',    pts: [[.08,.30],[.12,.28],[.16,.31],[.16,.40],[.12,.42],[.08,.41]] },
+      { color: '#000',    pts: [[.20,.30],[.20,.45]] },
+      { color: '#000',    pts: [[.20,.30],[.24,.28],[.28,.30],[.28,.42],[.24,.44],[.20,.43]] },
+      { color: '#c0007a', pts: [[.34,.36],[.38,.36],[.38,.30],[.36,.28],[.34,.30],[.34,.42],[.36,.44],[.38,.42]] },
+      { color: '#c0007a', pts: [[.43,.22],[.43,.44]] },
+      { color: '#c0007a', pts: [[.41,.30],[.46,.30]] },
+      { color: '#0040c0', pts: [[.51,.30],[.51,.44]] },
+      { color: '#0040c0', pts: [[.51,.30],[.53,.28],[.55,.30],[.55,.44]] },
+      { color: '#0040c0', pts: [[.59,.30],[.63,.30]] },
+      { color: '#0040c0', pts: [[.61,.30],[.61,.44]] },
+    ];
+    const w = canvas.width, h = canvas.height;
+    const flat = strokes.map(s => ({ color: s.color, pts: s.pts.map(([x,y]) => [x*w, y*h]) }));
+
+    const state = { i: 0, j: 0, t1: 0, t2: 0, cancelled: false };
+    introState = state;
+
+    const jitter = () => (Math.random() - 0.5) * 1.5;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const step = () => {
+      if (state.cancelled || state.i >= flat.length) { introState = null; return; }
+      const s = flat[state.i];
+      ctx.strokeStyle = s.color;
+      if (state.j === 0) {
+        ctx.beginPath();
+        ctx.moveTo(s.pts[0][0] + jitter(), s.pts[0][1] + jitter());
+        state.j = 1;
+      }
+      if (state.j < s.pts.length) {
+        ctx.lineTo(s.pts[state.j][0] + jitter(), s.pts[state.j][1] + jitter());
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(s.pts[state.j][0] + jitter(), s.pts[state.j][1] + jitter());
+        state.j++;
+      } else {
+        state.i++; state.j = 0;
+      }
+      state.t2 = setTimeout(() => requestAnimationFrame(step), 20 + Math.random() * 30);
+    };
+    state.t1 = setTimeout(() => requestAnimationFrame(step), 400);
+  }
+})();
+</script>
+</body>
+</html>

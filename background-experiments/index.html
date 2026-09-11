@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Background Experiments - SVG Patterns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button id="panelShow" title="Show panel">‹ panel</button>
+  <section class="stage">
+  </section>
+
+  <aside class="panel" id="panel">
+    <div class="phead">
+      <b>Background Experiments</b>
+      <span class="spacer"></span>
+      <button id="randomize" class="primary" title="Randomize (R)">⤨ Randomize</button>
+      <button id="panelToggle" class="iconbtn" title="Hide panel — full screen">»</button>
+    </div>
+
+    <div class="grp">
+      <h3>Target Element</h3>
+      <div class="row"><label>selector</label><input id="targetSelector" type="text" placeholder="#elem.class"><span></span></div>
+      <div class="row" style="grid-template-columns:64px 1fr"><label>bg color</label><input id="targetBgColor" type="color" style="justify-self:start"><span></span></div>
+      <div class="row"><label>bg α</label><input id="targetBgAlpha" type="range" min="0" max="1" step="0.05"><output id="targetBgAlphaV"></output></div>
+      <p class="hint" style="margin:8px 0 0; font-size:11px">CSS selector for element to receive patterns via ::before/::after</p>
+    </div>
+
+    <div class="grp">
+      <h3>Background Image</h3>
+      <div class="btnrow">
+        <button id="bgRandomPhoto">⤨ Random photo</button>
+        <button id="bgUpload">⇪ Upload</button>
+      </div>
+      <div class="row" style="grid-template-columns:64px 1fr"><label>fit</label><select id="bgImageFit">
+        <option value="cover">cover</option>
+        <option value="contain">contain</option>
+        <option value="auto">tile</option>
+      </select></div>
+      <input id="bgImageUpload" type="file" accept="image/*" hidden>
+    </div>
+
+    <div class="grp" id="grp-pattern">
+      <h3>Pattern
+        <button class="iconbtn dice" data-rand="pattern" title="Randomize pattern">⤨</button>
+        <button class="lockbtn lock" data-lock="pattern" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <div class="row" style="grid-template-columns:64px 1fr"><label>select</label><select id="patternSelect"></select></div>
+      <div class="row"><label>scale</label><input id="patternScale" type="range" min="0.1" max="10" step="0.2"><output id="patternScaleV"></output></div>
+      <div class="row"><label>opacity</label><input id="patternOpacity" type="range" min="0" max="1" step="0.05"><output id="patternOpacityV"></output></div>
+      <div class="row" style="grid-template-columns:64px 1fr"><label>color</label><input id="patternColor" type="color" style="justify-self:start"><span></span></div>
+      <div class="row" style="grid-template-columns:64px 1fr"><label>blend</label><select id="patternBlend">
+        <option value="normal">normal</option>
+        <option value="multiply">multiply</option>
+        <option value="screen">screen</option>
+        <option value="overlay">overlay</option>
+        <option value="color-dodge">color-dodge</option>
+        <option value="color-burn">color-burn</option>
+        <option value="lighten">lighten</option>
+        <option value="darken">darken</option>
+      </select></div>
+      <div class="row"><label>rotation</label><input id="patternRotate" type="range" min="0" max="360" step="15"><output id="patternRotateV"></output></div>
+    </div>
+
+    <div class="grp" id="grp-pattern2">
+      <h3>Pattern 2
+        <button class="iconbtn dice" data-rand="pattern2" title="Randomize pattern 2">⤨</button>
+        <button class="lockbtn lock" data-lock="pattern2" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <div class="row" style="grid-template-columns:60px 1fr auto"><label>show</label><span></span><input id="pattern2Enabled" type="checkbox"></div>
+      <div id="pattern2-config" style="display:none">
+        <div class="row" style="grid-template-columns:64px 1fr"><label>select</label><select id="pattern2Select"></select></div>
+        <div class="row"><label>scale</label><input id="pattern2Scale" type="range" min="0.1" max="10" step="0.2"><output id="pattern2ScaleV"></output></div>
+        <div class="row"><label>opacity</label><input id="pattern2Opacity" type="range" min="0" max="1" step="0.05"><output id="pattern2OpacityV"></output></div>
+        <div class="row" style="grid-template-columns:64px 1fr"><label>color</label><input id="pattern2Color" type="color" style="justify-self:start"><span></span></div>
+        <div class="row" style="grid-template-columns:64px 1fr"><label>blend</label><select id="pattern2Blend">
+          <option value="normal">normal</option>
+          <option value="multiply">multiply</option>
+          <option value="screen">screen</option>
+          <option value="overlay">overlay</option>
+          <option value="color-dodge">color-dodge</option>
+          <option value="color-burn">color-burn</option>
+          <option value="lighten">lighten</option>
+          <option value="darken">darken</option>
+        </select></div>
+        <div class="row"><label>rotation</label><input id="pattern2Rotate" type="range" min="0" max="360" step="15"><output id="pattern2RotateV"></output></div>
+      </div>
+    </div>
+
+
+    <div class="grp">
+      <div class="btnrow">
+        <button id="copyCSS">⧉ Copy pattern CSS</button>
+      </div>
+      <p class="hint" style="margin:10px 0 0">Roll 🎲 to randomize. Lock 🔓 a section to keep it steady. Press <b>R</b> to randomize (not while editing text).</p>
+    </div>
+  </aside>
+
+<script src="patterns.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

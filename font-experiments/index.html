@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Randomize Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button id="panelShow" title="Show panel">‹ panel</button>
+  <section class="stage">
+    <div id="bgLayer"></div>
+    <div id="scrim"></div>
+    <div id="fxLayer"></div>
+    <nav id="topmenu"></nav>
+    <div class="stageInner">
+      <div class="content" id="content">
+        <h1 id="heading" contenteditable spellcheck="false">Randomize Studio</h1>
+        <span id="subheading" contenteditable spellcheck="false">A playground for exploring typography</span>
+        <div id="body" contenteditable spellcheck="false">The green room where type tries on outfits before the big show. Pick a face for the title, a quieter one for the body, and let the dice handle the awkward first dates. Built for portfolio covers, case-study headers, album sleeves, and the hero section you'll secretly redesign at midnight. Every font streams live from Google Fonts, so you can flirt with Playfair, commit to Inter, and install nothing. When a pairing finally clicks — and it will — copy the CSS and walk away as though you planned the whole performance.</div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel">
+    <div class="phead">
+      <b>Randomize Studio</b>
+      <span class="spacer"></span>
+      <button id="randomize" class="primary" title="Randomize (R)">⤨ Randomize</button>
+      <button id="panelToggle" class="iconbtn" title="Hide panel — full screen">»</button>
+    </div>
+
+    <div class="grp" id="grp-bg">
+      <h3>Background
+        <button class="iconbtn dice" data-rand="bg" title="Randomize background">⤨</button>
+        <button class="lockbtn lock" data-lock="bg" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <div class="btnrow">
+        <button id="bgPhoto">⤨ Random photo</button>
+        <button id="bgGradient">⤨ Random gradient</button>
+      </div>
+      <label class="uploadbtn">⇪ Upload image<input id="bgUpload" type="file" accept="image/*" hidden></label>
+      <div class="row" style="grid-template-columns: 64px 1fr; margin-top:8px">
+        <label>fit</label>
+        <select id="bgFit"><option value="cover">cover</option><option value="contain">contain</option><option value="auto">tile</option></select>
+      </div>
+      <div class="row" style="grid-template-columns: 64px 1fr auto">
+        <label>scrim</label><input id="scrimAmt" type="range" min="0" max="0.85" step="0.01"><output id="scrimAmtV"></output>
+      </div>
+      <div class="row" style="grid-template-columns: 64px 1fr">
+        <label>scrim tone</label>
+        <select id="scrimColor"><option value="dark">dark</option><option value="light">light</option></select>
+      </div>
+      <div class="row" style="grid-template-columns: 64px 1fr auto"><label>static fx</label><span></span><input id="fx-enabled" type="checkbox"></div>
+      <div id="fx-config" style="display:none">
+        <div class="row"><label>fx amount</label><input id="fx-opacity" type="range" min="0" max="0.5" step="0.01"><output id="fx-opacityV"></output></div>
+        <div class="row"><label>fx fps</label><input id="fx-fps" type="range" min="6" max="60" step="1"><output id="fx-fpsV"></output></div>
+        <div class="row"><label>fx cell</label><input id="fx-cell" type="range" min="1" max="6" step="0.5"><output id="fx-cellV"></output></div>
+      </div>
+    </div>
+
+    <!-- role groups injected here -->
+    <div id="roles"></div>
+
+    <div class="grp">
+      <h3>Layout & legibility</h3>
+      <div class="row"><label>text</label><input id="textColor" type="color" style="justify-self:start"><span></span></div>
+      <div class="row"><label>width</label><input id="cWidth" type="range" min="380" max="1500" step="10"><output id="cWidthV"></output></div>
+      <div class="row" style="grid-template-columns:64px 1fr"><label>place</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <div class="radios" id="vAlign">
+            <label title="Top"><input type="radio" name="vAlign" value="flex-start">↑</label>
+            <label title="Middle"><input type="radio" name="vAlign" value="center">–</label>
+            <label title="Bottom"><input type="radio" name="vAlign" value="flex-end">↓</label>
+          </div>
+          <div class="radios" id="hAlign">
+            <label title="Left"><input type="radio" name="hAlign" value="flex-start">L</label>
+            <label title="Center"><input type="radio" name="hAlign" value="center">C</label>
+            <label title="Right"><input type="radio" name="hAlign" value="flex-end">R</label>
+          </div>
+        </div></div>
+      <div class="row"><label>card</label><input id="cardColor" type="color" style="justify-self:start"><span></span></div>
+      <div class="row"><label>card α</label><input id="cardA" type="range" min="0" max="1" step="0.02"><output id="cardAV"></output></div>
+      <div class="row"><label>card pad</label><input id="cardPad" type="range" min="0" max="120" step="2"><output id="cardPadV"></output></div>
+      <div class="row"><label>nudge x</label><input id="offX" type="range" min="-600" max="600" step="2"><output id="offXV"></output></div>
+      <div class="row"><label>nudge y</label><input id="offY" type="range" min="-400" max="400" step="2"><output id="offYV"></output></div>
+      <div class="row" style="grid-template-columns:64px 1fr auto"><label>shadow</label><span></span><input id="shadow" type="checkbox"></div>
+    </div>
+
+    <div class="grp">
+      <h3>Top menu
+        <button class="iconbtn dice" data-rand="topmenu" title="Randomize this section">⤨</button>
+        <button class="lockbtn lock" data-lock="topmenu" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <div class="row" style="grid-template-columns:60px 1fr auto"><label>show</label><span></span><input id="tm-enabled" type="checkbox"></div>
+      <div class="row"><label>links</label><input id="tm-links" type="range" min="2" max="8" step="1"><output id="tm-linksV"></output></div>
+      <div class="row" style="grid-template-columns:60px 1fr"><label>font</label><select id="tm-font"></select></div>
+      <div class="row" style="grid-template-columns:60px 1fr"><label>weight</label><div class="chips" id="tm-weight"></div></div>
+      <div class="row"><label>size</label><input id="tm-size" type="range" min="10" max="32" step="1"><output id="tm-sizeV"></output></div>
+      <div class="row"><label>tracking</label><input id="tm-ls" type="range" min="-0.02" max="0.4" step="0.005"><output id="tm-lsV"></output></div>
+      <div class="row" style="grid-template-columns:60px 1fr"><label>case</label>
+        <div class="radios" id="tm-transform">
+          <label title="None"><input type="radio" name="tm-tf" value="none">Aa</label>
+          <label title="UPPERCASE"><input type="radio" name="tm-tf" value="uppercase">AA</label>
+          <label title="lowercase"><input type="radio" name="tm-tf" value="lowercase">aa</label>
+        </div></div>
+      <div class="row" style="grid-template-columns:60px 1fr"><label>align</label>
+        <div class="radios" id="tm-align">
+          <label><input type="radio" name="tm-al" value="spread">spread</label>
+          <label><input type="radio" name="tm-al" value="left">left</label>
+          <label><input type="radio" name="tm-al" value="center">center</label>
+          <label><input type="radio" name="tm-al" value="right">right</label>
+        </div></div>
+      <div class="row"><label>gap</label><input id="tm-gap" type="range" min="6" max="72" step="1"><output id="tm-gapV"></output></div>
+      <div class="row"><label>padding</label><input id="tm-pad" type="range" min="6" max="72" step="1"><output id="tm-padV"></output></div>
+      <div class="row" style="grid-template-columns:60px 1fr auto"><label>brand</label><span></span><input id="tm-brand" type="checkbox"></div>
+      <div class="row"><label>color</label><input id="tm-color" type="color" style="justify-self:start"><span></span></div>
+      <div class="row"><label>bar</label><input id="tm-bg" type="color" style="justify-self:start"><span></span></div>
+      <div class="row"><label>bar α</label><input id="tm-bgA" type="range" min="0" max="1" step="0.02"><output id="tm-bgAV"></output></div>
+    </div>
+
+    <div class="grp">
+      <div class="btnrow">
+        <button id="randFonts">⤨ Rondomize fonts only</button>
+        <!-- <button id="copyCss">⧉ Copy CSS</button> -->
+      </div>
+      <p class="hint" style="margin:10px 0 0">Fonts load live from Google Fonts CDN. Lock 🔒 a section to keep it while randomizing the rest. Press <b>R</b> to randomize (not while editing text).</p>
+    </div>
+  </aside>
+
+<script src="static-background.js"></script>
+<script src="fonts.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

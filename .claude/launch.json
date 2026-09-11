@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static-background",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", "static-background", "-p", "8127", "-c-1"],
+      "port": 8127
+    },
+    {
+      "name": "font-experiments",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", "font-experiments", "-p", "8128", "-c-1"],
+      "port": 8128
+    }
+  ]
+}

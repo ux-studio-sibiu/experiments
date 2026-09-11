@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title><effect-name> — concept</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0a0a0b; color: #f4f4f2;
+    font-family: ui-sans-serif, system-ui, sans-serif; overflow: hidden; }
+  #app { position: fixed; inset: 0; }
+
+  /* Live slider panel — one control per tunable param. Tune ranges so the
+     full expressive range of the effect is reachable. */
+  .controls {
+    position: fixed; right: 16px; top: 16px; z-index: 10; font-size: 12px; color: #cfcfd2;
+    background: rgba(20,20,22,.6); padding: 12px 14px; border-radius: 10px;
+    backdrop-filter: blur(8px); display: grid; gap: 8px; min-width: 230px;
+  }
+  .controls strong { color: #fff; }
+  .controls label { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  .controls input[type=range] { width: 130px; }
+  .controls .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  .controls select { background:#1b1b1e; color:#eee; border:1px solid #333; border-radius:6px; padding:3px 6px; }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <aside class="controls">
+    <div class="row"><strong><effect-name></strong></div>
+    <!-- one slider/select per param, with id="c_<param>" -->
+    <label>param a <input id="c_paramA" type="range" min="0" max="1" step="0.01" value="0.5"></label>
+    <!-- <label class="row">mode
+      <select id="c_mode"><option value="x">x</option><option value="y">y</option></select>
+    </label> -->
+
+    <!-- If the effect consumes content (image/video/text/…), let users feed it
+         their own local asset, plus an offline-generated option. Remove if N/A. -->
+    <!-- <label class="row">asset <input id="c_asset" type="file" accept="image/*" style="font-size:11px; max-width:120px;"></label>
+    <div class="row">
+      <button id="c_generated" type="button">generated</button>
+      <button id="c_clear" type="button">clear</button>
+    </div> -->
+  </aside>
+
+<script>
+// ===========================================================================
+//  Inlined copy of <effect-name>.js so this demo runs from disk (file://).
+//  The canonical, importable version is <effect-name>.js — keep them in sync.
+//  (Paste the module body here, MINUS the `export`/`window` lines at the end.)
+// ===========================================================================
+
+/* >>> BEGIN inlined <effect-name>.js <<< */
+// const DEFAULTS = { ... };
+// function create<EffectName>(opts = {}) { ... return api; }
+/* >>> END inlined <effect-name>.js <<< */
+
+// --- demo wiring -----------------------------------------------------------
+const fx = create<EffectName>({ container: document.getElementById('app') });
+
+const $ = (id) => document.getElementById(id);
+$('c_paramA').addEventListener('input', (e) => fx.set('paramA', +e.target.value));
+// $('c_mode').addEventListener('change', (e) => fx.set('mode', e.target.value));
+
+// --- local-asset picker (only if the effect consumes content) --------------
+// CORRECT revoke pattern: revoke the PREVIOUS object URL, never the new one.
+// let objectUrl = null;
+// const revokeCurrent = () => { if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; } };
+// $('c_asset').addEventListener('change', (e) => {
+//   const f = e.target.files && e.target.files[0];
+//   if (!f) return;
+//   revokeCurrent();
+//   objectUrl = URL.createObjectURL(f);
+//   fx.setAsset(objectUrl);            // loader keeps a ref; safe to revoke later
+// });
+// $('c_generated').addEventListener('click', () => {           // offline, asset-free
+//   revokeCurrent();
+//   const c = document.createElement('canvas'); c.width = 1600; c.height = 1000;
+//   const g = c.getContext('2d');
+//   const grad = g.createLinearGradient(0,0,c.width,c.height);
+//   grad.addColorStop(0,'#1d4ed8'); grad.addColorStop(1,'#f97316');
+//   g.fillStyle = grad; g.fillRect(0,0,c.width,c.height);
+//   fx.setAsset(c);                    // accept an element directly, not just a URL
+// });
+// $('c_clear').addEventListener('click', () => { revokeCurrent(); fx.setAsset(null); $('c_asset').value=''; });
+</script>
+</body>
+</html>

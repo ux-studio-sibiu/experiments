@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "serve-background-experiments",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-n"],
+      "port": 8000,
+      "autoPort": true
+    }
+  ]
+}

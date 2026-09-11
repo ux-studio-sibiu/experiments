@@ -1,0 +1,292 @@
+/* Background Experiments - SVG Patterns */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100vh; font-family: 'VT323', monospace; background: #0b0b0d; color: #fff; overflow: hidden; }
+
+body { display: flex; }
+
+/* === STAGE === */
+.stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0b0b0d;
+}
+
+
+/* === PANEL === */
+.panel {
+  width: 320px;
+  height: 100vh;
+  background: #1a1a1e;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 10000;
+}
+
+.phead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.phead b { flex: 0; white-space: nowrap; }
+.spacer { flex: 1; }
+
+.panel > div:not(.phead) { flex: 0 0 auto; }
+
+.grp {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 12px 16px;
+}
+
+.grp h3 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grp h3 button { margin-left: auto; }
+
+.row {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.row:last-child { margin-bottom: 0; }
+
+.row label { opacity: 0.7; white-space: nowrap; }
+
+.row input[type="range"] {
+  width: 100%;
+  accent-color: #fff;
+}
+
+.row output {
+  min-width: 32px;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.row input[type="color"] {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.row select {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.row select:hover { background: rgba(255,255,255,0.1); }
+
+.row select option {
+  background: #1a1a1e;
+  color: #fff;
+}
+
+.row select option:checked {
+  background: #333;
+  color: #fff;
+}
+
+.btnrow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.btnrow button {
+  flex: 1;
+  min-width: 120px;
+}
+
+button {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+button:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+}
+
+button.primary {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.4);
+  font-weight: 600;
+}
+
+button.primary:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+button.iconbtn {
+  padding: 4px 8px;
+  min-width: auto;
+  font-size: 13px;
+}
+
+button.dice { opacity: 0.6; }
+button.dice:hover { opacity: 1; }
+
+button.lock { opacity: 0.5; }
+button.lock[aria-pressed="true"] { opacity: 1; color: #4af626; }
+
+.uploadbtn {
+  display: block;
+  text-align: center;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 8px;
+  transition: all 0.15s ease;
+}
+
+.uploadbtn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.radios {
+  display: flex;
+  gap: 4px;
+}
+
+.radios label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  opacity: 1;
+}
+
+.radios input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.radios input[type="radio"]:checked + label,
+.radios label:has(input[type="radio"]:checked) {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.chips label {
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  opacity: 1;
+}
+
+.chips input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.chips input:checked + label,
+.chips label:has(input:checked) {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.hint {
+  font-size: 11px;
+  opacity: 0.6;
+  line-height: 1.6;
+}
+
+#panelShow {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  display: none;
+}
+
+/* Panel toggle */
+.panel.hidden {
+  transform: translateX(100%);
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100vh;
+}
+
+#panelShow.visible { display: block; }
+
+@media (max-width: 1200px) {
+  .panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    box-shadow: -4px 0 16px rgba(0,0,0,0.5);
+  }
+
+  .panel:not(.hidden) {
+    transform: translateX(0);
+  }
+
+  #panelShow { display: block; }
+  #panelShow.hidden { display: none; }
+
+  .stage { width: 100%; }
+}
+
+/* Responsive text */
