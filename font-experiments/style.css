@@ -1,5 +1,7 @@
 :root {
   --panel: 340px; --ink:#cdd0cf; --muted:#8b8e8c; --accent:#27e23a; --lcd:#27e23a;
+  /* compatibility alias used by project elements */
+  --color-ink: var(--ink);
   --line:#1c1c22; --fill:#34343e; --fill2:#3e3e49; --inset:#121216; --title:#27405f;
 }
 * { box-sizing: border-box; }
@@ -123,3 +125,9 @@ button.primary { font-family:'VT323', ui-monospace, monospace; font-size: 17px; 
 .lockbtn[aria-pressed="true"] { color: var(--lcd); background: var(--inset); }
 
 @media (max-width: 760px) { .panel { width: min(86vw, 360px); } }
+
+/* Ensure elements like `nsc-project-*` use the ink color for their background */
+[class^="nsc-project-"], [class*=" nsc-project-"] {
+  background-color: var(--color-ink) !important;
+  color: inherit;
+}
