@@ -6,7 +6,7 @@
 <title>Randomize Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,12 +15,12 @@
     <div id="bgLayer"></div>
     <div id="scrim"></div>
     <div id="fxLayer"></div>
-    <nav id="topmenu"></nav>
+    <nav id="topmenu" class="editable" data-edit="top menu"></nav>
     <div class="stageInner">
       <div class="content" id="content">
-        <h1 id="heading" contenteditable spellcheck="false">Randomize Studio</h1>
-        <span id="subheading" contenteditable spellcheck="false">A playground for exploring typography</span>
-        <div id="body" contenteditable spellcheck="false">The green room where type tries on outfits before the big show. Pick a face for the title, a quieter one for the body, and let the dice handle the awkward first dates. Built for portfolio covers, case-study headers, album sleeves, and the hero section you'll secretly redesign at midnight. Every font streams live from Google Fonts, so you can flirt with Playfair, commit to Inter, and install nothing. When a pairing finally clicks — and it will — copy the CSS and walk away as though you planned the whole performance.</div>
+        <h1 id="heading" class="editable" data-edit="heading" contenteditable="false" spellcheck="false">Randomize Studio</h1>
+        <span id="subheading" class="editable" data-edit="subheading" contenteditable="false" spellcheck="false">A playground for exploring typography</span>
+        <div id="body" class="editable" data-edit="body / columns" contenteditable="false" spellcheck="false">The green room where type tries on outfits before the big show. Pick a face for the title, a quieter one for the body, and let the dice handle the awkward first dates. Built for portfolio covers, case-study headers, album sleeves, and the hero section you'll secretly redesign at midnight. Every font streams live from Google Fonts, so you can flirt with Playfair, commit to Inter, and install nothing. When a pairing finally clicks — and it will — copy the CSS and walk away as though you planned the whole performance.</div>
       </div>
     </div>
   </section>
@@ -32,6 +32,10 @@
       <button id="randomize" class="primary" title="Randomize (R)">⤨ Randomize</button>
       <button id="panelToggle" class="iconbtn" title="Hide panel — full screen">»</button>
     </div>
+
+    <!-- Only the body scrolls: the titlebar above is the drag handle and has to
+         stay put, and the window's hatch shadow has to escape the scroll box. -->
+    <div class="pbody" id="panelBody">
 
     <div class="grp" id="grp-bg">
       <h3>Background
@@ -122,11 +126,13 @@
 
     <div class="grp">
       <div class="btnrow">
-        <button id="randFonts">⤨ Rondomize fonts only</button>
+        <button id="randFonts">⤨ Randomize fonts only</button>
         <!-- <button id="copyCss">⧉ Copy CSS</button> -->
       </div>
-      <p class="hint" style="margin:10px 0 0">Fonts load live from Google Fonts CDN. Lock 🔒 a section to keep it while randomizing the rest. Press <b>R</b> to randomize (not while editing text).</p>
+      <p class="hint" style="margin:10px 0 0">Click a block on the cover to select it, drag to place it, double-click to edit its text. Lock a section to hold it — type, size and placement — while the rest re-rolls. Press <b>R</b> to randomize, <b>Esc</b> to drop the selection.</p>
     </div>
+
+    </div><!-- /.pbody -->
   </aside>
 
 <script src="static-background.js"></script>

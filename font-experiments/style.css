@@ -1,14 +1,38 @@
+/* ============================================================================
+   Randomize Studio — editing chrome
+   Black ink on white paper, one grey, no accent colour: the same palette and
+   typographic devices as the web-portfolio. Small type throughout, the way a
+   professional editing app sets its inspector — legibility comes from contrast,
+   tracking and row rhythm rather than from size.
+   ========================================================================== */
+
 :root {
-  --panel: 340px; --ink:#cdd0cf; --muted:#8b8e8c; --accent:#27e23a; --lcd:#27e23a;
+  --panel: 356px;
+  --panel-max: 90vh;
+  --panel-gap: 20px;
+
+  /* paper / ink / one grey — nothing else */
+  --bg: #ffffff;
+  --ink: #000000;
+  --muted: #6b6b6b;
+  --faint: #d4d4d4;
+  --wash: #f4f4f2;
+
   /* compatibility alias used by project elements */
   --color-ink: var(--ink);
-  --line:#1c1c22; --fill:#34343e; --fill2:#3e3e49; --inset:#121216; --title:#27405f;
+
+  --ui-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ui-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* one row measure, so every label lines up down the whole panel */
+  --lbl: 76px;
+  --ctl: 22px;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
   background: #0a0a0b; color: var(--ink); overflow: hidden;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--ui-sans);
 }
 
 /* ---- stage: always full screen; the panel floats over it ---- */
@@ -21,10 +45,74 @@ body {
 }
 .content { width: 100%; }
 .content [contenteditable] { outline: none; margin: 0; }
-.content [contenteditable]:focus { box-shadow: 0 0 0 1px rgba(255,255,255,.25); border-radius: 2px; }
 #heading { margin: 0 0 .35em; }
 #subheading { margin: 0 0 1.1em; display: block; }
 #body { display: block; }
+
+/* ---- editable regions: what the pointer can pick up ----
+   Each of these is a block on a canvas: click to select it (which brings its
+   controls up in the panel), drag to place it, double-click to type in it.
+   Until you have hovered one there is nothing to say so, so on hover it draws
+   its own bounding box and names itself.
+
+   Both marks are a white line under a black one rather than a single stroke in
+   either colour: the backdrop here is an arbitrary photograph or gradient, so
+   whichever of the two the picture swallows, the other one still reads. */
+.editable { position: relative; cursor: pointer; touch-action: none; }
+
+/* Nothing here is text until you ask for it to be. Without this a drag across
+   a block sweeps a text selection instead of moving it, and the caret lands
+   wherever the pointer went down. */
+.editable:not(.is-editing) { -webkit-user-select: none; user-select: none; }
+
+/* Selected: the mark stays up, and the pointer says the block can be moved. */
+.editable.is-selected { cursor: move; }
+.editable.is-selected::before, .editable.is-selected::after { opacity: 1; }
+/* Dragging one block passes the pointer over the others; without this they
+   each light up in turn behind whatever is being placed. */
+.editable.is-moving::before, .editable.is-moving::after { transition: none; }
+body.is-moving .editable:not(.is-moving)::before,
+body.is-moving .editable:not(.is-moving)::after { opacity: 0; }
+body.is-moving .editable { cursor: move; }
+.editable::before,
+.editable::after {
+  opacity: 0; pointer-events: none;
+  transition: opacity .12s ease;
+}
+.editable::before {
+  content: "";
+  position: absolute; inset: -10px -12px;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #000;
+}
+/* data-move is written only while a block is being dragged, and carries its
+   offset — the tag doubles as the read-out, so nothing else has to appear. */
+.editable::after {
+  content: attr(data-edit) attr(data-move);
+  position: absolute; left: -12px; top: -10px; transform: translateY(-100%);
+  padding: 2px 6px 3px;
+  background: #000; color: #fff; box-shadow: 0 0 0 1px #fff;
+  font-family: var(--ui-mono); font-size: 9px; font-weight: 700; line-height: 1;
+  letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+}
+.editable:hover::before, .editable:hover::after,
+.editable:focus::before, .editable:focus::after { opacity: 1; }
+
+/* The menu is a full-width band hard against the top of the stage, so it gets
+   no inset (there is nothing to hold the box off) and hangs its tag below
+   itself rather than above, where the stage would clip it. */
+#topmenu.editable::before {
+  inset: 0;
+  /* Drawn inwards. An outward stroke on a box flush with y=0 lands above the
+     top of the window, so the band would lose its top edge. */
+  box-shadow: inset 0 0 0 1px #fff, inset 0 0 0 2px #000;
+}
+#topmenu.editable::after { top: auto; bottom: 0; left: 0; transform: translateY(100%); }
+
+/* While you are actually typing the box stays up, in the inverse of the hover
+   mark, so editing does not look the same as selecting. */
+.editable.is-editing { cursor: text; }
+.editable.is-editing::before { opacity: 1; box-shadow: 0 0 0 1px #000, 0 0 0 2px #fff; }
+.editable.is-editing::after { opacity: 1; background: #fff; color: #000; box-shadow: 0 0 0 1px #000; }
 
 .badge { position: absolute; left: 14px; bottom: 12px; z-index: 5; font-size: 11px; letter-spacing:.12em;
   text-transform: uppercase; color: rgba(255,255,255,.6); mix-blend-mode: difference; pointer-events:none; }
@@ -34,97 +122,265 @@ body {
 #topmenu a { text-decoration: none; white-space: nowrap; }
 #topmenu .tm-links { display: flex; align-items: center; }
 
-/* ---- control panel: minimal flat Winamp palette (no shadows) ---- */
-/* floats over the stage; collapsing it slides it away without resizing the stage */
-.panel { position: fixed; top: 0; right: 0; width: var(--panel); height: 100vh; z-index: 20;
-  overflow: hidden auto; background:#2a2a32; border-left:1px solid var(--line); transition: transform .2s ease;
-  font-family: Tahoma, Geneva, Verdana, "Segoe UI", sans-serif; font-size: 11px; color: var(--ink); }
-body.panel-hidden .panel { transform: translateX(100%); }
-.panel::-webkit-scrollbar { width: 12px; }
-.panel::-webkit-scrollbar-track { background:#202026; }
-.panel::-webkit-scrollbar-thumb { background:#41414c; }
+/* ============================ control panel ============================
+   A floating window over the stage, dragged by its titlebar and never taller
+   than --panel-max, so it always clears the top and bottom edges of whatever
+   it is sitting on. A 2px black edge holds the white chrome off the preview —
+   including a white photograph.
+   ===================================================================== */
+.panel {
+  position: fixed; top: var(--panel-gap); right: var(--panel-gap); z-index: 20;
+  display: flex; flex-direction: column;
+  width: var(--panel); max-height: var(--panel-max);
+  background: var(--bg); color: var(--ink);
+  border: 2px solid var(--ink);
+  transition: opacity .18s ease, transform .18s ease;
+  font-family: var(--ui-mono); font-size: 11px; line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
 
-/* floating button to reopen the panel */
-#panelShow { position: fixed; top: 12px; right: 12px; z-index: 50; display: none;
-  background: var(--title); color: var(--lcd); border: 1px solid var(--line); cursor: pointer;
-  font-family:'VT323', ui-monospace, monospace; font-size: 16px; letter-spacing:.06em; padding: 4px 10px; }
-#panelShow:hover { filter: brightness(1.12); }
-body.panel-hidden #panelShow { display: block; }
+/* The lift, drawn the way an elevation drawing throws a shadow: an offset
+   block of hatch rather than a blur, so the window stays flat and printed.
+   Only the L of it that clears the window is drawn, as two strips OUTSIDE the
+   border box — the usual trick of one offset box behind the face does not work
+   here, because a panel with a z-index of its own is a stacking context, and a
+   negative-z child of one paints above that element's background, not below it.
+   The strips overlap in the bottom-right corner; it is the same hatch twice, so
+   nothing shows for it. */
+.panel::before, .panel::after {
+  content: "";
+  position: absolute; pointer-events: none;
+  background-image: url("patterns/diagonal.svg");
+  background-size: 5px 5px; background-repeat: repeat;
+}
+.panel::before { top: 10px; bottom: -10px; right: -10px; width: 10px; }   /* down the right edge */
+.panel::after { left: 10px; right: -10px; bottom: -10px; height: 10px; }  /* along the bottom */
+body.panel-hidden .panel::before, body.panel-hidden .panel::after { display: none; }
 
-/* flat titlebar */
-.phead { position: sticky; top: 0; z-index: 2; display:flex; gap:8px; align-items:center; padding: 8px 10px;
-  background: var(--title); border-bottom:1px solid var(--line); }
-.phead b { font-family:'VT323', ui-monospace, monospace; font-size: 18px; line-height:1; letter-spacing:.08em; color: var(--lcd); white-space: nowrap; }
+/* Hidden by fading in place, not by sliding off the right edge: once the window
+   can be dragged anywhere, "off to the right" is no longer where it lives. */
+/* `visibility` on a delay as well as opacity, so a hidden window is out of the
+   tab order rather than merely invisible. */
+body.panel-hidden .panel {
+  opacity: 0; transform: scale(.985); pointer-events: none; visibility: hidden;
+  transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+}
+
+.panel ::selection { background: var(--ink); color: var(--bg); }
+.panel :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ---- the scrolling half: the titlebar above it stays put ---- */
+.pbody {
+  flex: 1 1 auto; min-height: 0; overflow: hidden auto;
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+  overscroll-behavior: contain;
+}
+.pbody::-webkit-scrollbar { width: 6px; }
+.pbody::-webkit-scrollbar-track { background: transparent; }
+.pbody::-webkit-scrollbar-thumb { background: var(--faint); }
+.pbody::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
+/* ---- titlebar: the one solid black band, echoing the portfolio rail,
+        and the handle the whole window is dragged by ---- */
+.phead {
+  flex: 0 0 auto;
+  display: flex; gap: 8px; align-items: center; padding: 0 10px; height: 38px;
+  background: var(--ink); color: var(--bg);
+  cursor: grab; user-select: none; touch-action: none;
+}
+.panel.is-dragging { transition: none; }
+.panel.is-dragging .phead { cursor: grabbing; }
+/* The buttons riding in the handle are not part of it. */
+.phead button { cursor: pointer; }
+.phead b {
+  font-family: var(--ui-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; white-space: nowrap;
+}
 .phead .spacer { flex: 1; }
 
-/* flat sections — divided by a hairline, no boxes */
-.grp { border-bottom:1px solid var(--line); padding: 11px 13px; }
-.grp h3 { margin: 0 0 9px; display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
-  font-family:'VT323', ui-monospace, monospace; font-size: 15px; letter-spacing:.14em; text-transform: uppercase; color: var(--lcd); }
-.grp h3 .chev { width:0; height:0; border-left:6px solid var(--lcd); border-top:4px solid transparent; border-bottom:4px solid transparent; transform: rotate(90deg); transition: transform .12s ease; flex:none; }
+/* the two controls that live in the black band invert the usual button */
+.phead button { background: transparent; color: var(--bg); border-color: var(--bg); }
+.phead button:hover { background: var(--bg); color: var(--ink); }
+.phead button:active { background: var(--faint); border-color: var(--faint); color: var(--ink); }
+.phead button.primary { background: var(--bg); color: var(--ink); }
+.phead button.primary:hover { background: transparent; color: var(--bg); }
+.phead :focus-visible { outline-color: var(--bg); }
+
+/* ---- floating button to reopen the panel ---- */
+#panelShow {
+  position: fixed; top: 14px; right: 14px; z-index: 50; display: none;
+  height: 26px; padding: 0 12px;
+  background: var(--ink); color: var(--bg); border: 1px solid var(--ink); cursor: pointer;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+#panelShow:hover { background: var(--bg); color: var(--ink); }
+body.panel-hidden #panelShow { display: block; }
+
+/* ---- sections: hairline-ruled, no boxes, no fills ---- */
+.grp { border-bottom: 1px solid var(--ink); padding: 10px 14px 14px; }
+.grp h3 {
+  margin: 0 0 10px; display: flex; align-items: center; gap: 8px; min-height: 20px;
+  cursor: pointer; user-select: none;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink);
+}
+.grp h3:hover { color: var(--muted); }
+.grp h3 .chev {
+  width: 0; height: 0; flex: none;
+  border-left: 5px solid currentColor; border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+  transform: rotate(90deg); transition: transform .12s ease;
+}
 .grp h3 .dice { margin-left: auto; }   /* push the section controls to the right */
 .grp.collapsed h3 { margin-bottom: 0; }
 .grp.collapsed h3 .chev { transform: rotate(0deg); }
 .grp.collapsed .grp-body { display: none; }
+/* The window has its own bottom edge; the last section does not need a second. */
+.pbody > .grp:last-child { border-bottom: none; }
 
-.row { display: grid; grid-template-columns: 60px 1fr auto; gap: 8px; align-items: center; margin: 6px 0; color: var(--muted); }
-.row > label { color: var(--muted); }
-.row output { font-family:'VT323', ui-monospace, monospace; font-size: 15px; color: var(--lcd); min-width: 42px; text-align: right; }
-
-/* flat fields */
-select, input[type=text], input[type=number] {
-  width: 100%; background: var(--inset); color: var(--ink); font: inherit; font-size: 11px; padding: 4px 7px;
-  border:1px solid var(--line); border-radius: 0;
+/* ---- rows: fixed label measure, everything else takes the rest ----
+   Flex rather than grid so the per-row column widths written inline in the
+   markup no longer apply: one measure down the whole panel is what makes a
+   dense inspector scannable. */
+.row { display: flex; align-items: center; gap: 10px; min-height: var(--ctl); margin: 5px 0; }
+.row > label { flex: 0 0 var(--lbl); color: var(--muted); letter-spacing: .01em; }
+.row > input[type=range], .row > select, .row > .chips, .row > div, .row > span {
+  flex: 1 1 auto; min-width: 0;
 }
-input[type=color] { width: 34px; height: 22px; padding:0; background: var(--inset); border:1px solid var(--line); }
-input[type=checkbox] { accent-color: var(--lcd); }
+/* A segmented control is as wide as its segments — stretching it would put air
+   between the choices, which is the one thing that stops it reading as one
+   control. */
+.row > .radios { flex: 0 1 auto; }
+.row > input[type=color], .row > input[type=checkbox] { flex: 0 0 auto; }
+/* An inline label further into a row (the italic toggle) is a caption on the
+   control beside it, not a row label — it takes no measure of its own. */
+.row > span > label { color: var(--muted); cursor: pointer; }
+.row > span > label:hover { color: var(--ink); }
+.row > output {
+  flex: 0 0 auto; min-width: 44px; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink);
+}
 
-/* flat sliders with grab cursor */
-input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:14px; background:transparent; cursor:pointer; }
-input[type=range]::-webkit-slider-runnable-track { height:3px; background:#4a4a55; border:none; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:14px; margin-top:-6px;
-  background: var(--lcd); border:none; border-radius:1px; cursor: grab; }
+/* ---- fields ---- */
+select, input[type=text], input[type=number] {
+  width: 100%; height: var(--ctl); padding: 0 22px 0 7px;
+  background: var(--bg); color: var(--ink);
+  font: inherit; font-family: var(--ui-mono); font-size: 11px;
+  border: 1px solid var(--ink); border-radius: 0;
+}
+select {
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0h10L5 6z' fill='%23000'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 7px center; background-size: 8px 5px;
+}
+select:hover { background-color: var(--wash); }
+input[type=text], input[type=number] { padding-right: 7px; }
+
+input[type=color] {
+  width: 30px; height: var(--ctl); padding: 0;
+  background: var(--bg); border: 1px solid var(--ink); border-radius: 0; cursor: pointer;
+}
+input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
+input[type=color]::-webkit-color-swatch { border: none; }
+
+input[type=checkbox] { width: 14px; height: 14px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+
+/* ---- sliders: a drawn line with a solid block riding it ---- */
+input[type=range] { -webkit-appearance: none; appearance: none; height: 18px; background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--ink); border: none; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 8px; height: 14px; margin-top: -6.5px;
+  background: var(--ink); border: none; border-radius: 0; cursor: grab;
+}
+input[type=range]:hover::-webkit-slider-thumb { width: 10px; height: 16px; margin-top: -7.5px; }
 input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; }
-input[type=range]::-moz-range-track { height:3px; background:#4a4a55; border:none; }
-input[type=range]::-moz-range-thumb { width:10px; height:14px; border:none; border-radius:1px; background: var(--lcd); cursor: grab; }
+input[type=range]::-moz-range-track { height: 1px; background: var(--ink); border: none; }
+input[type=range]::-moz-range-thumb { width: 8px; height: 14px; background: var(--ink); border: none; border-radius: 0; cursor: grab; }
+input[type=range]:hover::-moz-range-thumb { width: 10px; height: 16px; }
 input[type=range]:active::-moz-range-thumb { cursor: grabbing; }
 
-/* flat buttons */
-button, .uploadbtn { background: var(--fill); color: var(--ink); font: inherit; font-size: 11px; padding: 6px 9px; cursor:pointer;
-  border:1px solid var(--line); border-radius: 0; }
-.uploadbtn { display:flex; align-items:center; justify-content:center; width:100%; margin-top:8px; }
-button:hover, .uploadbtn:hover { background: var(--fill2); }
-button:active, .uploadbtn:active { background:#262630; }
-button.primary { font-family:'VT323', ui-monospace, monospace; font-size: 17px; letter-spacing:.06em; color: var(--lcd); }
-.btnrow { display:flex; gap:6px; flex-wrap: wrap; }
-.btnrow button { flex:1; }
+/* ---- buttons: outlined at rest, inverted under the pointer ---- */
+button, .uploadbtn {
+  height: var(--ctl); padding: 0 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--ink); border-radius: 0; cursor: pointer;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+  transition: background-color .12s ease, color .12s ease;
+}
+button:hover, .uploadbtn:hover { background: var(--ink); color: var(--bg); }
+button:active, .uploadbtn:active { background: var(--muted); border-color: var(--muted); color: var(--bg); }
+.uploadbtn { width: 100%; margin-top: 8px; }
+button.primary { background: var(--ink); color: var(--bg); }
+button.primary:hover { background: var(--bg); color: var(--ink); }
+.btnrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.btnrow button { flex: 1; }
 
-/* small icon buttons (per-section randomize, panel toggle) */
-.iconbtn { font-family:'VT323', ui-monospace, monospace; font-size: 15px; line-height:1; padding: 1px 7px;
-  background: var(--fill); color: var(--ink); border:1px solid var(--line); cursor: pointer; }
-.iconbtn:hover { background: var(--fill2); }
+/* small square controls — per-section randomize, panel toggle, lock */
+.iconbtn, .lockbtn {
+  height: 18px; min-width: 20px; padding: 0 4px;
+  font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none;
+}
+/* The padlock the script writes is a colour emoji, and this panel has no colour
+   in it. Draw the lock instead — a shackle and a body in currentColor, so it
+   inverts with the button when the section is locked and stays crisp at 18px,
+   which a scaled-down emoji does not. The glyph itself is kept in the DOM (the
+   script still swaps it) but set to nothing, so no markup has to change. */
+.lockbtn { position: relative; width: 20px; padding: 0; font-size: 0; }
+.lockbtn::before {                 /* shackle */
+  content: ""; position: absolute; left: 50%; top: 3px; margin-left: -3px;
+  width: 6px; height: 5px;
+  border: 1px solid currentColor; border-bottom: none; border-radius: 3px 3px 0 0;
+  transform-origin: right bottom; transition: transform .12s ease;
+}
+.lockbtn::after {                  /* body */
+  content: ""; position: absolute; left: 50%; bottom: 3px; margin-left: -5px;
+  width: 10px; height: 7px; background: currentColor;
+}
+/* Open: the shackle swings clear of the body. */
+.lockbtn[aria-pressed="false"]::before { transform: translateX(2px) rotate(20deg); }
+.lockbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 
-/* case radios — flat segmented toggles */
-.radios { display:flex; }
-.radios input { display:none; }
-.radios label { font-family:'VT323', ui-monospace, monospace; font-size: 15px; line-height:1; padding: 3px 11px; cursor:pointer;
-  color: var(--muted); background: var(--fill); border:1px solid var(--line); border-left:none; }
-.radios label:first-child { border-left:1px solid var(--line); }
-.radios label:has(input:checked) { color: var(--lcd); background: var(--inset); }
+/* ---- segmented toggles: shared hairlines, solid black for the choice ---- */
+.radios { display: flex; }
+.radios input { display: none; }
+.radios label {
+  flex: 0 0 auto; height: var(--ctl); padding: 0 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--ui-mono); font-size: 10px; letter-spacing: .06em; cursor: pointer;
+  color: var(--muted); background: var(--bg);
+  border: 1px solid var(--ink); border-left: none;
+  transition: background-color .12s ease, color .12s ease;
+}
+.radios label:first-of-type { border-left: 1px solid var(--ink); }
+.radios label:hover { background: var(--wash); color: var(--ink); }
+.radios label:has(input:checked) { color: var(--bg); background: var(--ink); }
 
-/* weight chips — wrap because a font can expose up to 9 weights */
-.chips { display:flex; flex-wrap: wrap; gap: 4px; }
-.chips input { display:none; }
-.chips label { font-family:'VT323', ui-monospace, monospace; font-size: 14px; line-height:1; padding: 2px 7px; cursor:pointer;
-  color: var(--muted); background: var(--fill); border:1px solid var(--line); }
-.chips label:has(input:checked) { color: var(--lcd); background: var(--inset); }
+/* weight chips — wrap, because a font can expose up to nine weights */
+.chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.chips input { display: none; }
+.chips label {
+  height: 18px; padding: 0 6px;
+  display: inline-flex; align-items: center;
+  font-family: var(--ui-mono); font-size: 10px; letter-spacing: .04em; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--faint);
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+.chips label:hover { border-color: var(--ink); color: var(--ink); }
+.chips label:has(input:checked) { color: var(--bg); background: var(--ink); border-color: var(--ink); }
 
-.hint { font-size: 11px; color: var(--muted); line-height:1.5; }
-.hint b { color: var(--lcd); }
-.lockbtn { font-size: 13px; line-height:1; padding: 1px 6px; font-family:'VT323', ui-monospace, monospace; }
-.lockbtn[aria-pressed="true"] { color: var(--lcd); background: var(--inset); }
+/* ---- running text: the one place the sans face is used ---- */
+.hint {
+  font-family: var(--ui-sans); font-size: 11px; line-height: 1.6; color: var(--muted);
+}
+.hint b { color: var(--ink); font-weight: 600; }
 
-@media (max-width: 760px) { .panel { width: min(86vw, 360px); } }
+@media (max-width: 760px) { .panel { width: min(88vw, 360px); } }
+@media (prefers-reduced-motion: reduce) {
+  .panel, button, .uploadbtn, .radios label, .chips label, .grp h3 .chev { transition: none; }
+}
 
 /* Ensure elements like `nsc-project-*` use the ink color for their background */
 [class^="nsc-project-"], [class*=" nsc-project-"] {

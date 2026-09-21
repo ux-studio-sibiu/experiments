@@ -9,10 +9,10 @@ const state = {
   shadow: true,
   layout: { vAlign: 'center', hAlign: 'flex-start', width: 940, offX: 0, offY: 0, cardColor: '#000000', cardA: 0, cardPad: 0 },
   textColor: '#ffffff',
-  heading:    { font:'Playfair Display', weight:700, size:96, lh:1.04, ls:-0.01, italic:false, transform:'none', align:'left', amount:5 },
-  subheading: { font:'Inter',           weight:500, size:22, lh:1.35, ls:0.18,  italic:false, transform:'uppercase', align:'left', amount:11 },
-  body:       { font:'Inter',           weight:400, size:18, lh:1.7,  ls:0,     italic:false, transform:'none', align:'left', columns:2, amount:180 },
-  topmenu:    { enabled:true, links:4, font:'Inter', weight:500, size:14, ls:0.08, transform:'uppercase', align:'spread', gap:28, pad:28, color:'#ffffff', brand:true, bg:'#0b0b0d', bgA:0 },
+  heading:    { font:'Playfair Display', weight:700, size:96, lh:1.04, ls:-0.01, italic:false, transform:'none', align:'left', amount:5, move:{x:0,y:0} },
+  subheading: { font:'Inter',           weight:500, size:22, lh:1.35, ls:0.18,  italic:false, transform:'uppercase', align:'left', amount:11, move:{x:0,y:0} },
+  body:       { font:'Inter',           weight:400, size:18, lh:1.7,  ls:0,     italic:false, transform:'none', align:'left', columns:2, amount:180, move:{x:0,y:0} },
+  topmenu:    { enabled:true, links:4, font:'Inter', weight:500, size:14, ls:0.08, transform:'uppercase', align:'spread', gap:28, pad:28, color:'#ffffff', brand:true, bg:'#0b0b0d', bgA:0, move:{x:0,y:0} },
 };
 const locks = { heading:false, subheading:false, body:false, bg:false, topmenu:false };
 const ROLES = [['heading','Heading'],['subheading','Subheading'],['body','Body / columns']];
@@ -131,6 +131,7 @@ function applyRole(r) {
   el.style.textTransform = c.transform;
   el.style.textAlign = c.align;
   el.style.color = state.textColor;
+  el.style.translate = `${c.move.x}px ${c.move.y}px`;   // where the block has been dragged to
   if (r === 'body') { el.style.columnCount = c.columns; el.style.columnGap = '2.4em'; }
 }
 function render() {
@@ -162,6 +163,7 @@ function renderTopMenu(shadow) {
   const m = state.topmenu, el = $('topmenu');
   if (!m.enabled) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
+  el.style.translate = `${m.move.x}px ${m.move.y}px`;   // where the bar has been dragged to
   el.style.background = m.bgA > 0 ? hexRgba(m.bg, m.bgA) : 'transparent';
   el.style.padding = m.pad + 'px';
   el.style.gap = m.gap + 'px';
@@ -326,10 +328,123 @@ function openSection(key) {
     if (match) g.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
 }
-els.heading.addEventListener('click', () => openSection('heading'));
-els.subheading.addEventListener('click', () => openSection('subheading'));
-els.body.addEventListener('click', () => openSection('body'));
-$('topmenu').addEventListener('click', () => openSection('topmenu'));
+/* ============================ select / move / edit ============================
+   The stage behaves like a canvas. One click selects a block and brings its
+   controls up in the panel; dragging a selected block places it anywhere,
+   including past the edge of the content column or half off the screen, which
+   is a legitimate cover layout and so is deliberately not clamped. Typing is a
+   separate mode you enter with a double-click — with contenteditable off the
+   rest of the time, a drag can never turn into a text selection, and the R key
+   still randomizes while a block is merely selected.
+   ========================================================================== */
+const MOVABLE = { heading: els.heading, subheading: els.subheading, body: els.body, topmenu: $('topmenu') };
+let selected = null, editing = null;
+
+const applyMove = (key) => {
+  const m = state[key].move;
+  MOVABLE[key].style.translate = `${m.x}px ${m.y}px`;
+};
+
+function select(key) {
+  if (selected === key) return;
+  stopEditing();
+  selected = key;
+  Object.entries(MOVABLE).forEach(([k, el]) => el.classList.toggle('is-selected', k === key));
+  openSection(key);
+}
+function deselect() {
+  stopEditing();
+  selected = null;
+  Object.values(MOVABLE).forEach(el => el.classList.remove('is-selected'));
+}
+
+// Drop the caret where the pointer went down rather than at the start of the
+// block. Chromium and Firefox spell this differently and neither has both.
+function placeCaret(el, x, y) {
+  let range = null;
+  if (document.caretRangeFromPoint) range = document.caretRangeFromPoint(x, y);
+  else if (document.caretPositionFromPoint) {
+    const p = document.caretPositionFromPoint(x, y);
+    if (p) { range = document.createRange(); range.setStart(p.offsetNode, p.offset); }
+  }
+  // Blocks can be dragged over one another, so the point may well resolve into
+  // a different one. The caret belongs in the block being edited or nowhere;
+  // fall back to the end of it.
+  if (!range || !el.contains(range.startContainer)) {
+    range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+  }
+  range.collapse(true);
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+}
+function startEditing(key, x, y) {
+  if (key === 'topmenu') return;            // the menu is generated, not typed
+  const el = MOVABLE[key];
+  editing = key;
+  el.contentEditable = 'true';
+  el.classList.add('is-editing');
+  el.focus();
+  placeCaret(el, x, y);
+}
+function stopEditing() {
+  if (!editing) return;
+  const el = MOVABLE[editing];
+  el.contentEditable = 'false';
+  el.classList.remove('is-editing');
+  el.blur();
+  editing = null;
+}
+
+let drag = null;   // { key, sx, sy, ox, oy, moving } while a block is under the pointer
+
+Object.entries(MOVABLE).forEach(([key, el]) => {
+  el.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || editing === key) return;   // inside a block being typed in, the caret wins
+    select(key);
+    drag = { key, sx: e.clientX, sy: e.clientY, ox: state[key].move.x, oy: state[key].move.y, moving: false };
+  });
+  el.addEventListener('dblclick', e => startEditing(key, e.clientX, e.clientY));
+  el.addEventListener('dragstart', e => e.preventDefault());   // no native drag of the menu's links
+  el.addEventListener('click', e => e.preventDefault());       // ...and they go nowhere
+});
+
+// On the document rather than on the block, and without pointer capture. A
+// block is a line of text, so a drag of any speed leaves it within the first
+// event and a listener bound to it would never hear the rest; capture would fix
+// that, but taking it on pointerdown suppresses the compatibility mouse events,
+// and with them the double-click that opens text editing.
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+  // A click is not a drag: nothing moves until the pointer has travelled far
+  // enough that it cannot have been meant as one.
+  if (!drag.moving && Math.hypot(dx, dy) < 3) return;
+  const el = MOVABLE[drag.key];
+  if (!drag.moving) { drag.moving = true; el.classList.add('is-moving'); document.body.classList.add('is-moving'); }
+  const m = state[drag.key].move = { x: Math.round(drag.ox + dx), y: Math.round(drag.oy + dy) };
+  el.dataset.move = `   ${m.x >= 0 ? '+' : ''}${m.x}, ${m.y >= 0 ? '+' : ''}${m.y}`;
+  applyMove(drag.key);
+});
+const endDrag = () => {
+  if (!drag) return;
+  const el = MOVABLE[drag.key];
+  el.classList.remove('is-moving');
+  el.removeAttribute('data-move');
+  document.body.classList.remove('is-moving');
+  drag = null;
+};
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+
+// Clicking the backdrop drops the selection, the way it does on any canvas.
+document.querySelector('.stage').addEventListener('pointerdown', e => {
+  if (!e.target.closest('.editable')) deselect();
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (editing) stopEditing(); else deselect();
+});
 
 /* ============================ backgrounds ============================ */
 function gradURL(draw) {
@@ -502,6 +617,11 @@ function randomizeRoles(fontsOnly, skipBg) {
   if (!locks.subheading) rSub(fontsOnly);
   if (!locks.topmenu)    rTopMenu(fontsOnly);
   if (!fontsOnly) {
+    // Back to the grid. This is the start-over button, so it also undoes where
+    // blocks have been dragged to — and it is the way back for one dragged
+    // clean off the screen, which is otherwise unreachable. Lock a section to
+    // keep its placement.
+    ['heading','subheading','body','topmenu'].forEach(k => { if (!locks[k]) state[k].move = { x: 0, y: 0 }; });
     // title & subtitle use the fixed cover copy + length here (their fonts/sizes still vary)
     if (!locks.heading)    { state.heading.amount = COVER.heading.words; state.heading.transform = 'none'; els.heading.textContent = COVER.heading.text; }
     if (!locks.subheading) { state.subheading.amount = COVER.sub.words;  state.subheading.transform = 'none'; els.subheading.textContent = COVER.sub.text; }
@@ -527,6 +647,59 @@ $('randFonts').addEventListener('click', () => randomizeRoles(true));
 document.querySelectorAll('[data-rand]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); randomizeSection(b.dataset.rand); }));
 $('panelToggle').addEventListener('click', () => document.body.classList.add('panel-hidden'));
 $('panelShow').addEventListener('click', () => document.body.classList.remove('panel-hidden'));
+
+/* ---- the panel is a floating window: drag it by its titlebar ----
+   Pointer events rather than mouse ones, so a pen or a touch drags it too, and
+   pointer capture so the window keeps following even when the cursor outruns
+   the handle. Position is written as left/top the moment a drag starts — the
+   panel is anchored to the right edge until then, and the two cannot both be
+   set. */
+(() => {
+  const panel = $('panel'), head = panel.querySelector('.phead');
+  let dx = 0, dy = 0, dragging = false;
+
+  // Always leaves the whole window on screen, which is also what keeps the
+  // titlebar reachable: drag it off the top and there is no way to get it back.
+  const place = (x, y) => {
+    const gap = 8, w = panel.offsetWidth, h = panel.offsetHeight;
+    panel.style.left = Math.round(Math.max(gap, Math.min(x, innerWidth - w - gap))) + 'px';
+    panel.style.top = Math.round(Math.max(gap, Math.min(y, innerHeight - h - gap))) + 'px';
+    panel.style.right = 'auto';
+  };
+
+  head.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || e.target.closest('button')) return;
+    const r = panel.getBoundingClientRect();
+    dx = e.clientX - r.left; dy = e.clientY - r.top;
+    place(r.left, r.top);                       // pin to left/top before the first move
+    dragging = true;
+    panel.classList.add('is-dragging');
+    head.setPointerCapture(e.pointerId);
+    e.preventDefault();                         // no text selection while dragging
+  });
+  head.addEventListener('pointermove', e => { if (dragging) place(e.clientX - dx, e.clientY - dy); });
+  const endDrag = e => {
+    if (!dragging) return;
+    dragging = false;
+    panel.classList.remove('is-dragging');
+    if (head.hasPointerCapture(e.pointerId)) head.releasePointerCapture(e.pointerId);
+  };
+  head.addEventListener('pointerup', endDrag);
+  head.addEventListener('pointercancel', endDrag);
+
+  // Double-click the handle to send it back to its corner.
+  head.addEventListener('dblclick', e => {
+    if (e.target.closest('button')) return;
+    panel.style.left = panel.style.top = panel.style.right = '';
+  });
+
+  // A window dropped against the right edge of a wide viewport must not end up
+  // outside a narrow one. Only for a panel that has been moved: an untouched
+  // one is still anchored by CSS and looks after itself.
+  addEventListener('resize', () => {
+    if (panel.style.left) place(parseFloat(panel.style.left), parseFloat(panel.style.top));
+  });
+})();
 document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'r' && !e.metaKey && !e.ctrlKey && !document.activeElement.isContentEditable
       && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) {
