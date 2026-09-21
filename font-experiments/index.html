@@ -10,27 +10,83 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <button id="panelShow" title="Show panel">‹ panel</button>
+  <button id="panelShow" title="Maximize the edit panel">+ Maximize edit panel</button>
   <section class="stage">
-    <div id="bgLayer"></div>
-    <div id="scrim"></div>
-    <div id="fxLayer"></div>
+    <!-- The artboard. Every number in the cover — type sizes, nudges, where a
+         block has been dragged to — is measured in this fixed 1600x900 space,
+         and the whole box is then cover-scaled to the viewport by the same
+         max(vw/w, vh/h) the CSS `cover` keyword uses. Background and type are
+         therefore in ONE transformed space and cannot drift apart, and a saved
+         scene reloads identically on any screen. -->
+    <div id="scene" class="artboard">
+      <div id="bgLayer"></div>
+      <div id="scrim"></div>
+      <!-- A texture over the photograph, part of the background treatment like
+           the scrim and the grain. Two boxes: the outer clips, the inner is
+           oversized so a rotation cannot drag the tile's edges into view. -->
+      <div id="patternLayer" aria-hidden="true"><i></i></div>
+      <div id="fxLayer"></div>
+      <!-- The plate: a flat rectangle behind the type. It is what the old card
+           was, but a block in its own right, so it is placed and resized like
+           any other instead of wrapping them. Always below the text (and below
+           the menu, which is outside the scene entirely). -->
+      <div id="plate" class="editable" data-edit="plate"></div>
+
+      <!-- Each block is positioned absolutely in artboard coordinates and owns
+           its own x, y, box, colour and shadow. There is no shared container:
+           they are siblings on a canvas. -->
+      <h1 id="heading" class="editable" data-edit="heading" contenteditable="false" spellcheck="false">Randomize Studio</h1>
+      <span id="subheading" class="editable" data-edit="subheading" contenteditable="false" spellcheck="false">A playground for exploring typography</span>
+      <div id="body" class="editable" data-edit="body / columns" contenteditable="false" spellcheck="false">The green room where type tries on outfits before the big show. Pick a face for the title, a quieter one for the body, and let the dice handle the awkward first dates. Built for portfolio covers, case-study headers, album sleeves, and the hero section you'll secretly redesign at midnight. Every font streams live from Google Fonts, so you can flirt with Playfair, commit to Inter, and install nothing. When a pairing finally clicks — and it will — copy the CSS and walk away as though you planned the whole performance.</div>
+    </div>
+
+    <!-- Site chrome, not part of the cover: anchored to the SCREEN rather than
+         to the artboard, so the bar always spans the window and sits on its top
+         edge however much of the artboard the crop has taken. Its size, padding
+         and drag offset are therefore screen pixels, not artboard ones. -->
     <nav id="topmenu" class="editable" data-edit="top menu"></nav>
-    <div class="stageInner">
-      <div class="content" id="content">
-        <h1 id="heading" class="editable" data-edit="heading" contenteditable="false" spellcheck="false">Randomize Studio</h1>
-        <span id="subheading" class="editable" data-edit="subheading" contenteditable="false" spellcheck="false">A playground for exploring typography</span>
-        <div id="body" class="editable" data-edit="body / columns" contenteditable="false" spellcheck="false">The green room where type tries on outfits before the big show. Pick a face for the title, a quieter one for the body, and let the dice handle the awkward first dates. Built for portfolio covers, case-study headers, album sleeves, and the hero section you'll secretly redesign at midnight. Every font streams live from Google Fonts, so you can flirt with Playfair, commit to Inter, and install nothing. When a pairing finally clicks — and it will — copy the CSS and walk away as though you planned the whole performance.</div>
-      </div>
+
+    <!-- In artboard space, because that is what it measures, but a layer of its
+         own so it draws over the menu as well as the type. -->
+    <div id="safeArea" class="artboard" aria-hidden="true"><span></span></div>
+
+    <!-- The resize frame. One per selection, drawn in SCREEN space over the
+         bounding box of what is selected — that is what getBoundingClientRect
+         hands us, and it works for a block in the scaled artboard and for the
+         screen-anchored menu alike. Hidden from assistive tech: it is a pointer
+         affordance for the size sliders, which are the accessible control. -->
+    <div id="selFrame" aria-hidden="true">
+      <div class="handle" data-corner="nw"></div>
+      <div class="handle" data-corner="ne"></div>
+      <div class="handle" data-corner="se"></div>
+      <div class="handle" data-corner="sw"></div>
     </div>
   </section>
 
   <aside class="panel" id="panel">
     <div class="phead">
-      <b>Randomize Studio</b>
+      <b>Edit</b>
+      <button id="helpToggle" class="infobtn" type="button" aria-expanded="false" aria-controls="help" title="What the controls do">info</button>
       <span class="spacer"></span>
       <button id="randomize" class="primary" title="Randomize (R)">⤨ Randomize</button>
-      <button id="panelToggle" class="iconbtn" title="Hide panel — full screen">»</button>
+      <button id="sceneSaveTop" class="iconbtn" title="Save scene">⤓</button>
+      <button id="panelToggle" class="iconbtn" title="Minimize">&#8722;</button>
+    </div>
+
+    <!-- Reference, behind the info button in the titlebar. A band rather than a
+         popup: it sits between the fixed titlebar and the scrolling body, so it
+         is reachable wherever the panel happens to be scrolled to. -->
+    <div class="help" id="help" hidden>
+      <ul>
+        <li><b>Click</b> a block to select it — its section opens in the panel</li>
+        <li><b>Drag</b> to place it, <b>double-click</b> to edit its text</li>
+        <li><b>Corner handles</b> resize the box the text flows in</li>
+        <li><kbd>Ctrl</kbd>-click adds to the selection; they move together</li>
+        <li><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> nudge by one, with <kbd>Shift</kbd> by ten</li>
+        <li><kbd>R</kbd> randomizes, <kbd>Esc</kbd> deselects</li>
+        <li>Each block owns its colour, shadow and box; a <b>plate</b> sits behind them</li>
+        <li>Lock a section to keep its type, size and placement through a re-roll</li>
+      </ul>
     </div>
 
     <!-- Only the body scrolls: the titlebar above is the drag handle and has to
@@ -39,6 +95,7 @@
 
     <div class="grp" id="grp-bg">
       <h3>Background
+        <button class="eyebtn" data-vis="bg" aria-pressed="true" title="Hide the photograph">eye</button>
         <button class="iconbtn dice" data-rand="bg" title="Randomize background">⤨</button>
         <button class="lockbtn lock" data-lock="bg" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
       <div class="btnrow">
@@ -46,19 +103,39 @@
         <button id="bgGradient">⤨ Random gradient</button>
       </div>
       <label class="uploadbtn">⇪ Upload image<input id="bgUpload" type="file" accept="image/*" hidden></label>
-      <div class="row" style="grid-template-columns: 64px 1fr; margin-top:8px">
-        <label>fit</label>
-        <select id="bgFit"><option value="cover">cover</option><option value="contain">contain</option><option value="auto">tile</option></select>
+      <div class="row" style="margin-top:8px"><label>scrim</label>
+        <select id="scrimColor" class="narrow"><option value="dark">dark</option><option value="light">light</option></select>
+        <input id="scrimAmt" type="range" min="0" max="0.85" step="0.01"><output id="scrimAmtV"></output>
       </div>
-      <div class="row" style="grid-template-columns: 64px 1fr auto">
-        <label>scrim</label><input id="scrimAmt" type="range" min="0" max="0.85" step="0.01"><output id="scrimAmtV"></output>
+      <div class="row"><label>overlay</label><span></span><input id="pat-enabled" type="checkbox"></div>
+      <div id="pat-config" class="subgrp" style="display:none">
+        <!-- A trigger that expands the grid below it rather than a <select>: an
+             option element cannot draw, and the whole point of picking a
+             texture is seeing it. It opens in the panel's own flow, because the
+             panel body is a scroll container and a floating popup would be
+             clipped by it. -->
+        <div class="row"><label>pattern</label>
+          <button id="pat-trigger" class="pat-trigger" type="button" aria-expanded="false">
+            <span class="pat-swatch" id="pat-swatch"></span><span id="pat-name"></span></button></div>
+        <div class="pat-grid" id="pat-grid" hidden></div>
+        <div class="row"><label>scale</label><input id="pat-scale" type="range" min="0.1" max="8" step="0.1"><output id="pat-scaleV"></output></div>
+        <div class="row"><label>opacity</label><input id="pat-opacity" type="range" min="0" max="1" step="0.05"><output id="pat-opacityV"></output></div>
+        <div class="row"><label>colour</label><input id="pat-color" type="color"><span></span></div>
+        <div class="row"><label>blend</label>
+          <select id="pat-blend">
+            <option value="normal">normal</option>
+            <option value="multiply">multiply</option>
+            <option value="screen">screen</option>
+            <option value="overlay">overlay</option>
+            <option value="color-dodge">color-dodge</option>
+            <option value="color-burn">color-burn</option>
+            <option value="lighten">lighten</option>
+            <option value="darken">darken</option>
+          </select></div>
+        <div class="row"><label>rotation</label><input id="pat-rotate" type="range" min="0" max="360" step="15"><output id="pat-rotateV"></output></div>
       </div>
-      <div class="row" style="grid-template-columns: 64px 1fr">
-        <label>scrim tone</label>
-        <select id="scrimColor"><option value="dark">dark</option><option value="light">light</option></select>
-      </div>
-      <div class="row" style="grid-template-columns: 64px 1fr auto"><label>static fx</label><span></span><input id="fx-enabled" type="checkbox"></div>
-      <div id="fx-config" style="display:none">
+      <div class="row"><label>static fx</label><span></span><input id="fx-enabled" type="checkbox"></div>
+      <div id="fx-config" class="subgrp" style="display:none">
         <div class="row"><label>fx amount</label><input id="fx-opacity" type="range" min="0" max="0.5" step="0.01"><output id="fx-opacityV"></output></div>
         <div class="row"><label>fx fps</label><input id="fx-fps" type="range" min="6" max="60" step="1"><output id="fx-fpsV"></output></div>
         <div class="row"><label>fx cell</label><input id="fx-cell" type="range" min="1" max="6" step="0.5"><output id="fx-cellV"></output></div>
@@ -69,47 +146,34 @@
     <div id="roles"></div>
 
     <div class="grp">
-      <h3>Layout & legibility</h3>
-      <div class="row"><label>text</label><input id="textColor" type="color" style="justify-self:start"><span></span></div>
-      <div class="row"><label>width</label><input id="cWidth" type="range" min="380" max="1500" step="10"><output id="cWidthV"></output></div>
-      <div class="row" style="grid-template-columns:64px 1fr"><label>place</label>
-        <div style="display:flex; gap:10px; flex-wrap:wrap">
-          <div class="radios" id="vAlign">
-            <label title="Top"><input type="radio" name="vAlign" value="flex-start">↑</label>
-            <label title="Middle"><input type="radio" name="vAlign" value="center">–</label>
-            <label title="Bottom"><input type="radio" name="vAlign" value="flex-end">↓</label>
-          </div>
-          <div class="radios" id="hAlign">
-            <label title="Left"><input type="radio" name="hAlign" value="flex-start">L</label>
-            <label title="Center"><input type="radio" name="hAlign" value="center">C</label>
-            <label title="Right"><input type="radio" name="hAlign" value="flex-end">R</label>
-          </div>
-        </div></div>
-      <div class="row"><label>card</label><input id="cardColor" type="color" style="justify-self:start"><span></span></div>
-      <div class="row"><label>card α</label><input id="cardA" type="range" min="0" max="1" step="0.02"><output id="cardAV"></output></div>
-      <div class="row"><label>card pad</label><input id="cardPad" type="range" min="0" max="120" step="2"><output id="cardPadV"></output></div>
-      <div class="row"><label>nudge x</label><input id="offX" type="range" min="-600" max="600" step="2"><output id="offXV"></output></div>
-      <div class="row"><label>nudge y</label><input id="offY" type="range" min="-400" max="400" step="2"><output id="offYV"></output></div>
-      <div class="row" style="grid-template-columns:64px 1fr auto"><label>shadow</label><span></span><input id="shadow" type="checkbox"></div>
+      <h3>Plate
+        <button class="eyebtn" data-vis="plate" aria-pressed="true" title="Hide this on the cover">eye</button>
+        <button class="iconbtn dice" data-rand="plate" title="Fit the plate to the text">⤢</button>
+        <button class="lockbtn lock" data-lock="plate" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <div class="row"><label>colour</label><input id="plate-color" type="color"><span></span></div>
+      <div class="row"><label>opacity</label><input id="plate-alpha" type="range" min="0" max="1" step="0.02"><output id="plate-alphaV"></output></div>
+      <div class="row"><label>inset</label><input id="plate-pad" type="range" min="0" max="160" step="2"><output id="plate-padV"></output></div>
+      <div class="btnrow" style="margin-top:8px"><button id="plateFit">⤢ Fit to text</button></div>
+      <p class="hint" style="margin:8px 0 0">A flat rectangle behind the type — the old card, now a block you can place and resize like the rest. <b>Inset</b> is how far it spreads past the text when fitted.</p>
     </div>
 
     <div class="grp">
       <h3>Top menu
+        <button class="eyebtn" data-vis="topmenu" aria-pressed="true" title="Hide this on the cover">eye</button>
         <button class="iconbtn dice" data-rand="topmenu" title="Randomize this section">⤨</button>
         <button class="lockbtn lock" data-lock="topmenu" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
-      <div class="row" style="grid-template-columns:60px 1fr auto"><label>show</label><span></span><input id="tm-enabled" type="checkbox"></div>
+      <div class="row"><label>font-size</label><input id="tm-size" type="range" min="10" max="32" step="1"><output id="tm-sizeV"></output></div>
+      <div class="row"><label>font/color</label><select id="tm-font"></select><input id="tm-color" type="color"></div>
+      <div class="row"><label>weight</label><div class="chips" id="tm-weight"></div></div>
       <div class="row"><label>links</label><input id="tm-links" type="range" min="2" max="8" step="1"><output id="tm-linksV"></output></div>
-      <div class="row" style="grid-template-columns:60px 1fr"><label>font</label><select id="tm-font"></select></div>
-      <div class="row" style="grid-template-columns:60px 1fr"><label>weight</label><div class="chips" id="tm-weight"></div></div>
-      <div class="row"><label>size</label><input id="tm-size" type="range" min="10" max="32" step="1"><output id="tm-sizeV"></output></div>
       <div class="row"><label>tracking</label><input id="tm-ls" type="range" min="-0.02" max="0.4" step="0.005"><output id="tm-lsV"></output></div>
-      <div class="row" style="grid-template-columns:60px 1fr"><label>case</label>
+      <div class="row"><label>case</label>
         <div class="radios" id="tm-transform">
           <label title="None"><input type="radio" name="tm-tf" value="none">Aa</label>
           <label title="UPPERCASE"><input type="radio" name="tm-tf" value="uppercase">AA</label>
           <label title="lowercase"><input type="radio" name="tm-tf" value="lowercase">aa</label>
         </div></div>
-      <div class="row" style="grid-template-columns:60px 1fr"><label>align</label>
+      <div class="row"><label>align</label>
         <div class="radios" id="tm-align">
           <label><input type="radio" name="tm-al" value="spread">spread</label>
           <label><input type="radio" name="tm-al" value="left">left</label>
@@ -118,10 +182,28 @@
         </div></div>
       <div class="row"><label>gap</label><input id="tm-gap" type="range" min="6" max="72" step="1"><output id="tm-gapV"></output></div>
       <div class="row"><label>padding</label><input id="tm-pad" type="range" min="6" max="72" step="1"><output id="tm-padV"></output></div>
-      <div class="row" style="grid-template-columns:60px 1fr auto"><label>brand</label><span></span><input id="tm-brand" type="checkbox"></div>
-      <div class="row"><label>color</label><input id="tm-color" type="color" style="justify-self:start"><span></span></div>
-      <div class="row"><label>bar</label><input id="tm-bg" type="color" style="justify-self:start"><span></span></div>
+      <div class="row"><label>brand</label><span></span><input id="tm-brand" type="checkbox"></div>
+      <div class="row"><label>shadow</label><span></span><input id="tm-shadow" type="checkbox"></div>
+      <div class="row"><label>bar</label><input id="tm-bg" type="color"><span></span></div>
       <div class="row"><label>bar α</label><input id="tm-bgA" type="range" min="0" max="1" step="0.02"><output id="tm-bgAV"></output></div>
+    </div>
+
+    <div class="grp">
+      <h3>Scene</h3>
+      <div class="row"><label>artboard</label><span></span><output id="sceneFit"></output></div>
+      <div class="row"><label>safe area</label><span></span><input id="safeToggle" type="checkbox"></div>
+      <div class="row"><label>saved</label>
+        <select id="sceneList"></select>
+        <button id="sceneRefresh" class="iconbtn" title="Rescan">⟳</button>
+        <button id="sceneDelete" class="iconbtn" title="Delete the selected browser scene">✕</button>
+      </div>
+      <div class="row"><label>name</label><input id="sceneName" type="text" placeholder="untitled" spellcheck="false"></div>
+      <div class="btnrow" style="margin-top:8px">
+        <button id="sceneStore">★ Save here</button>
+        <button id="sceneSave">⤓ Export</button>
+      </div>
+      <label class="uploadbtn">⤒ Import file<input id="sceneLoad" type="file" accept=".json,application/json" hidden></label>
+      <p class="hint" id="sceneNote" style="margin:8px 0 0">Every parameter is in artboard units, so a scene reloads the same at any window size. <b>Save here</b> keeps it in this browser; <b>Export</b> writes a file for <b>scenes/</b>.</p>
     </div>
 
     <div class="grp">
@@ -129,13 +211,13 @@
         <button id="randFonts">⤨ Randomize fonts only</button>
         <!-- <button id="copyCss">⧉ Copy CSS</button> -->
       </div>
-      <p class="hint" style="margin:10px 0 0">Click a block on the cover to select it, drag to place it, double-click to edit its text. Lock a section to hold it — type, size and placement — while the rest re-rolls. Press <b>R</b> to randomize, <b>Esc</b> to drop the selection.</p>
     </div>
 
     </div><!-- /.pbody -->
   </aside>
 
 <script src="static-background.js"></script>
+<script src="overlay-patterns.js"></script>
 <script src="fonts.js"></script>
 <script src="script.js"></script>
 </body>

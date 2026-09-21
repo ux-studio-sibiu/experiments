@@ -7,6 +7,12 @@
    ========================================================================== */
 
 :root {
+  /* The artboard. Overwritten from a scene file on load, so changing the
+     default here never invalidates a scene saved against the old one. */
+  --ref-w: 1600px;
+  --ref-h: 900px;
+  --scene-scale: 1;
+
   --panel: 356px;
   --panel-max: 90vh;
   --panel-gap: 20px;
@@ -35,19 +41,112 @@ body {
   font-family: var(--ui-sans);
 }
 
-/* ---- stage: always full screen; the panel floats over it ---- */
+/* ---- stage: the viewport, and the artboard that covers it ----
+   The stage is the window and does nothing but clip. #scene is the design
+   surface: a fixed --ref-w by --ref-h box, laid out at its full size and then
+   scaled about its centre by --scene-scale, which script.js keeps at
+   max(vw/ref-w, vh/ref-h) — the same number `background-size: cover` computes,
+   so the box always covers the window exactly.
+
+   Centred by translate rather than by a grid or flex box: the artboard is
+   usually WIDER than the window it sits in, and a grid track sizes itself to
+   the item, so the overflow lands entirely on one side instead of splitting
+   evenly. translate(-50%,-50%) off a 50%/50% origin is exact at any size.
+
+   Everything inside is therefore in artboard units, including every px in the
+   panel: they are design pixels, not device ones. That is the whole reason a
+   saved scene can be trusted to come back the same. */
 .stage { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
-#bgLayer { position: absolute; inset: 0; background-position: center; background-repeat: no-repeat; background-color:#15151a; }
-#scrim  { position: absolute; inset: 0; pointer-events: none; }
-#fxLayer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }  /* static grain: over the bg, under the type */
-.stageInner {
-  position: absolute; inset: 0; z-index: 2; display: flex; padding: 6vmin;
+
+/* A layer in artboard space. More than one thing needs this transform — the
+   scene itself and the safe-area guide, which has to sit in the space it
+   measures while drawing over everything in it — so it is a named concept
+   rather than a rule repeated twice. */
+.artboard {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--ref-w); height: var(--ref-h);
+  transform: translate(-50%, -50%) scale(var(--scene-scale, 1));
 }
-.content { width: 100%; }
-.content [contenteditable] { outline: none; margin: 0; }
-#heading { margin: 0 0 .35em; }
-#subheading { margin: 0 0 1.1em; display: block; }
-#body { display: block; }
+/* The picture always fills the artboard from its centre — the only thing the
+   script sets here is which picture. */
+#bgLayer {
+  position: absolute; inset: 0; background-color: #15151a;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+}
+#scrim  { position: absolute; inset: 0; pointer-events: none; }
+
+/* ---- the pattern overlay ----
+   An SVG tile used as a MASK, so only its alpha counts and the colour comes
+   from `background-color` — which is why any tile works whatever it was drawn
+   in. It sits with the scrim and the grain: over the photograph, under the
+   type. #scene carries a transform and is therefore a stacking context, so the
+   blend modes blend against the picture rather than escaping to the page.
+
+   Two boxes, because the inner one rotates: oversized so turning it cannot drag
+   the tile's edges into view, and clipped by the outer so the overspill is not
+   the artboard's problem. */
+#patternLayer { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+#patternLayer i { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; display: block; }
+
+#fxLayer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }  /* static grain: over the pattern, under the type */
+/* ---- the blocks ----
+   Free-standing siblings on the artboard, each placed by its own left/top in
+   artboard pixels. There is no shared container and no flow, so moving one
+   cannot shift another — which is the whole point of giving them their own
+   boxes. The plate sits under the type; both sit under the menu, which is
+   outside the scene. */
+#plate { position: absolute; z-index: 2; }
+#heading, #subheading, #body { position: absolute; z-index: 3; }
+
+/* ---- safe area: the part of the artboard this window actually shows ----
+   Cover-scaling means the window only ever shows the middle of the artboard in
+   whichever direction it is proportionally shorter. This box is that region —
+   the same fraction a `contain` fit would have shown, which is the roomiest
+   bound there is. Two offset dashed rules rather than one, for the same reason
+   the selection marks use two: the backdrop is an arbitrary photograph. */
+#safeArea {
+  --safe-x: 0%; --safe-y: 0%;      /* written by fitSafeArea() */
+  z-index: 6; display: none; pointer-events: none;
+}
+body.show-safe #safeArea { display: block; }
+#safeArea::before, #safeArea::after {
+  content: ""; position: absolute; inset: var(--safe-y) var(--safe-x); border: 1px dashed;
+}
+#safeArea::before { border-color: rgba(0,0,0,.65); transform: translate(1px, 1px); }
+#safeArea::after { border-color: rgba(255,255,255,.85); }
+/* Inside the box, not above it: tracking the window puts the top edge at 0 on a
+   16:9 screen, and a label hung above that one would be off the top. */
+#safeArea span {
+  position: absolute; left: var(--safe-x); top: var(--safe-y);
+  padding: 3px 7px 4px; background: #000; color: #fff; box-shadow: 0 0 0 1px #fff;
+  font-family: var(--ui-mono); font-size: 11px; font-weight: 700; line-height: 1;
+  letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+}
+/* ---- resize frame ----
+   Four corner handles over the selection's bounding box. No frame line: each
+   selected block already draws its own, and another dashed rectangle here would
+   compete with the safe-area guide. Above the guide (6) and the menu (4) so a
+   handle is always the thing under the pointer.
+
+   Position is written by placeFrame() in client pixels, which is why this sits
+   in the stage rather than in the artboard — it has to frame the menu too, and
+   that lives in screen space. */
+#selFrame { position: absolute; z-index: 7; display: none; pointer-events: none; }
+body.has-selection #selFrame { display: block; }
+
+.handle {
+  position: absolute; width: 9px; height: 9px; pointer-events: auto;
+  background: #fff; box-shadow: 0 0 0 1px #000;
+}
+.handle[data-corner="nw"] { left: -5px;  top: -5px;    cursor: nwse-resize; }
+.handle[data-corner="ne"] { right: -5px; top: -5px;    cursor: nesw-resize; }
+.handle[data-corner="se"] { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.handle[data-corner="sw"] { left: -5px;  bottom: -5px; cursor: nesw-resize; }
+/* A bigger target than it looks, because 9px is a hard thing to hit. */
+.handle::before { content: ""; position: absolute; inset: -6px; }
+
+/* Margins would be dead weight now that each block carries its own y. */
+#heading, #subheading, #body { margin: 0; display: block; outline: none; }
 
 /* ---- editable regions: what the pointer can pick up ----
    Each of these is a block on a canvas: click to select it (which brings its
@@ -65,9 +164,14 @@ body {
    wherever the pointer went down. */
 .editable:not(.is-editing) { -webkit-user-select: none; user-select: none; }
 
-/* Selected: the mark stays up, and the pointer says the block can be moved. */
+/* Selected: the box stays up, and the pointer says the block can be moved.
+   Ctrl/cmd/shift-click adds blocks, and they all move together — so the box
+   means "this moves with the drag", while the NAME TAG is reserved for the
+   primary, the one clicked last. The tag answers "which block is the panel
+   editing?", and that has exactly one answer however many are selected. */
 .editable.is-selected { cursor: move; }
-.editable.is-selected::before, .editable.is-selected::after { opacity: 1; }
+.editable.is-selected::before { opacity: 1; }
+.editable.is-primary::after { opacity: 1; }
 /* Dragging one block passes the pointer over the others; without this they
    each light up in turn behind whatever is being placed. */
 .editable.is-moving::before, .editable.is-moving::after { transition: none; }
@@ -114,10 +218,11 @@ body.is-moving .editable { cursor: move; }
 .editable.is-editing::before { opacity: 1; box-shadow: 0 0 0 1px #000, 0 0 0 2px #fff; }
 .editable.is-editing::after { opacity: 1; background: #fff; color: #000; box-shadow: 0 0 0 1px #000; }
 
-.badge { position: absolute; left: 14px; bottom: 12px; z-index: 5; font-size: 11px; letter-spacing:.12em;
-  text-transform: uppercase; color: rgba(255,255,255,.6); mix-blend-mode: difference; pointer-events:none; }
-
-/* top menu rendered into the preview */
+/* Top menu: site chrome, so it is anchored to the SCREEN and not to the
+   artboard — a sibling of the scene rather than a child of it. The bar spans
+   the window and sits on its top edge whatever the crop does, which is how real
+   navigation behaves; the trade is that its type no longer scales with the
+   cover, so its size and padding are screen pixels. */
 #topmenu { position: absolute; top: 0; left: 0; right: 0; z-index: 4; display: flex; align-items: center; }
 #topmenu a { text-decoration: none; white-space: nowrap; }
 #topmenu .tm-links { display: flex; align-items: center; }
@@ -134,7 +239,9 @@ body.is-moving .editable { cursor: move; }
   width: var(--panel); max-height: var(--panel-max);
   background: var(--bg); color: var(--ink);
   border: 2px solid var(--ink);
-  transition: opacity .18s ease, transform .18s ease;
+  /* Matched to the minimize transition, so restoring grows back out of the
+     button on the same curve rather than snapping. */
+  transition: opacity .2s ease, transform .24s cubic-bezier(.33, 0, .2, 1);
   font-family: var(--ui-mono); font-size: 11px; line-height: 1.4;
   -webkit-font-smoothing: antialiased;
 }
@@ -157,13 +264,26 @@ body.is-moving .editable { cursor: move; }
 .panel::after { left: 10px; right: -10px; bottom: -10px; height: 10px; }  /* along the bottom */
 body.panel-hidden .panel::before, body.panel-hidden .panel::after { display: none; }
 
-/* Hidden by fading in place, not by sliding off the right edge: once the window
-   can be dragged anywhere, "off to the right" is no longer where it lives. */
-/* `visibility` on a delay as well as opacity, so a hidden window is out of the
-   tab order rather than merely invisible. */
+/* ---- minimizing: the window goes to the button that brings it back ----
+   Not a fade in place. It shrinks along a vector to the maximize button, so the
+   two read as the same object and you can see where it went — which matters
+   because the window can be dragged anywhere, and "it collapsed to over there"
+   is the only thing that says where "there" is.
+
+   --dock-x/y are written by the script at the moment of minimizing, measured
+   from wherever the window happens to be sitting. Restoring plays the same
+   journey backwards, so it grows back out of the button.
+
+   `visibility` on a delay as well as opacity, so a hidden window leaves the tab
+   order rather than merely going invisible. */
+.panel { --dock-x: 0px; --dock-y: 0px; }
 body.panel-hidden .panel {
-  opacity: 0; transform: scale(.985); pointer-events: none; visibility: hidden;
-  transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+  opacity: 0;
+  /* translate after scale in the list, so the distance is in screen pixels and
+     not multiplied by the 0.12. */
+  transform: translate(var(--dock-x), var(--dock-y)) scale(.12);
+  pointer-events: none; visibility: hidden;
+  transition: opacity .2s ease, transform .24s cubic-bezier(.33, 0, .2, 1), visibility 0s linear .24s;
 }
 
 .panel ::selection { background: var(--ink); color: var(--bg); }
@@ -198,7 +318,49 @@ body.panel-hidden .panel {
 }
 .phead .spacer { flex: 1; }
 
-/* the two controls that live in the black band invert the usual button */
+/* ---- the info button and its band ----
+   A circled "i" drawn from a border rather than set in a glyph, so it cannot
+   depend on a font having one — the same reason the padlock and the eye are
+   drawn. The band it opens sits BETWEEN the fixed titlebar and the scrolling
+   body, so the reference is reachable wherever the panel is scrolled to. */
+.infobtn { position: relative; width: 20px; height: 18px; padding: 0; font-size: 0; }
+.infobtn::before {
+  content: "i";
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700; line-height: 12px;
+  text-align: center; letter-spacing: 0;
+}
+/* Scoped under .phead so it plainly outranks the `.phead button` reset above,
+   rather than relying on an attribute selector edging out a type one. */
+.phead .infobtn[aria-expanded="true"] { background: var(--bg); color: var(--ink); }
+
+.help {
+  flex: 0 0 auto;
+  padding: 10px 14px 12px;
+  background: var(--wash);
+  border-bottom: 1px solid var(--ink);
+  font-family: var(--ui-sans); font-size: 11px; line-height: 1.6; color: var(--muted);
+}
+.help b { color: var(--ink); font-weight: 600; }
+.help ul { margin: 0; padding: 0; list-style: none; }
+.help li { position: relative; padding-left: 13px; margin-bottom: 5px; }
+.help li:last-child { margin-bottom: 0; }
+/* A dash rather than a dot: the panel is drawn in hairlines. */
+.help li::before {
+  content: ""; position: absolute; left: 1px; top: .6em;
+  width: 5px; height: 1px; background: var(--muted);
+}
+/* A key looks like a key. Mono because every other literal value in the panel
+   is, and boxed so a lone R reads as a keystroke rather than a stray letter. */
+.help kbd {
+  padding: 0 4px;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  background: var(--bg); color: var(--ink); border: 1px solid var(--faint);
+  white-space: nowrap;
+}
+
+/* the controls that live in the black band invert the usual button */
 .phead button { background: transparent; color: var(--bg); border-color: var(--bg); }
 .phead button:hover { background: var(--bg); color: var(--ink); }
 .phead button:active { background: var(--faint); border-color: var(--faint); color: var(--ink); }
@@ -206,9 +368,12 @@ body.panel-hidden .panel {
 .phead button.primary:hover { background: transparent; color: var(--bg); }
 .phead :focus-visible { outline-color: var(--bg); }
 
-/* ---- floating button to reopen the panel ---- */
+/* ---- floating button to bring the panel back ----
+   Bottom right, where the panel is not: minimized, the whole top of the cover
+   is what you want to look at, and a control sitting over the heading is the
+   one place it should not be. */
 #panelShow {
-  position: fixed; top: 14px; right: 14px; z-index: 50; display: none;
+  position: fixed; bottom: 14px; right: 14px; z-index: 50; display: none;
   height: 26px; padding: 0 12px;
   background: var(--ink); color: var(--bg); border: 1px solid var(--ink); cursor: pointer;
   font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
@@ -231,12 +396,30 @@ body.panel-hidden #panelShow { display: block; }
   border-left: 5px solid currentColor; border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
   transform: rotate(90deg); transition: transform .12s ease;
 }
-.grp h3 .dice { margin-left: auto; }   /* push the section controls to the right */
+/* Push the whole cluster of section controls right, off whichever of them comes
+   first — the eye now, the dice in the sections that have no eye. */
+.grp h3 button:first-of-type { margin-left: auto; }
 .grp.collapsed h3 { margin-bottom: 0; }
 .grp.collapsed h3 .chev { transform: rotate(0deg); }
 .grp.collapsed .grp-body { display: none; }
 /* The window has its own bottom edge; the last section does not need a second. */
 .pbody > .grp:last-child { border-bottom: none; }
+
+/* ---- a block that belongs to the switch above it ----
+   The settings a checkbox reveals need to read as ITS settings, not as more
+   rows of the section — so they sit on the wash. Bled to the section's edges
+   with a negative margin and the same padding put back, which makes it a full
+   width band while keeping every label on the panel's one measure. */
+.subgrp {
+  margin: 5px -14px 0;
+  padding: 4px 14px 8px;
+  background: var(--wash);
+  /* The wash alone is a four percent step off white — enough to notice, not
+     enough to say where the group ends. The hairlines do that, in the grey the
+     chips already use rather than a new one. */
+  border-top: 1px solid var(--faint);
+  border-bottom: 1px solid var(--faint);
+}
 
 /* ---- rows: fixed label measure, everything else takes the rest ----
    Flex rather than grid so the per-row column widths written inline in the
@@ -244,7 +427,7 @@ body.panel-hidden #panelShow { display: block; }
    dense inspector scannable. */
 .row { display: flex; align-items: center; gap: 10px; min-height: var(--ctl); margin: 5px 0; }
 .row > label { flex: 0 0 var(--lbl); color: var(--muted); letter-spacing: .01em; }
-.row > input[type=range], .row > select, .row > .chips, .row > div, .row > span {
+.row > input[type=range], .row > input[type=text], .row > select, .row > .chips, .row > div, .row > span {
   flex: 1 1 auto; min-width: 0;
 }
 /* A segmented control is as wide as its segments — stretching it would put air
@@ -275,6 +458,9 @@ select {
 }
 select:hover { background-color: var(--wash); }
 input[type=text], input[type=number] { padding-right: 7px; }
+/* A select sharing its row with a slider: as wide as its longest option and no
+   wider, so the slider keeps the room. */
+.row > select.narrow { flex: 0 0 70px; }
 
 input[type=color] {
   width: 30px; height: var(--ctl); padding: 0;
@@ -317,6 +503,33 @@ button.primary:hover { background: var(--bg); color: var(--ink); }
 .btnrow { display: flex; gap: 6px; flex-wrap: wrap; }
 .btnrow button { flex: 1; }
 
+/* ---- the visibility eye ----
+   Photoshop's layer eye: shown is an open eye, hidden is the same lens struck
+   through and dimmed. Drawn rather than set in a glyph, for the same reason the
+   padlock is — the emoji is coloured, and this panel has no colour in it. */
+.eyebtn {
+  position: relative; width: 22px; height: 18px; padding: 0; font-size: 0;
+  background: transparent; border: 1px solid transparent; cursor: pointer;
+}
+.eyebtn:hover { border-color: var(--faint); }
+.eyebtn::before {                        /* the lens */
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 15px; height: 9px; margin: -5px 0 0 -7.5px;
+  border: 1px solid currentColor; border-radius: 50%;
+}
+.eyebtn::after {                         /* the pupil */
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 5px; height: 5px; margin: -3px 0 0 -2.5px;
+  background: currentColor; border-radius: 50%;
+}
+/* Hidden: no pupil, a slash across the lens, and the whole thing goes quiet so
+   a glance down the panel shows which sections are off. */
+.eyebtn[aria-pressed="false"] { color: var(--faint); }
+.eyebtn[aria-pressed="false"]::after {
+  width: 17px; height: 1px; margin: -1px 0 0 -8.5px;
+  border-radius: 0; transform: rotate(-24deg);
+}
+
 /* small square controls — per-section randomize, panel toggle, lock */
 .iconbtn, .lockbtn {
   height: 18px; min-width: 20px; padding: 0 4px;
@@ -356,6 +569,32 @@ button.primary:hover { background: var(--bg); color: var(--ink); }
 .radios label:first-of-type { border-left: 1px solid var(--ink); }
 .radios label:hover { background: var(--wash); color: var(--ink); }
 .radios label:has(input:checked) { color: var(--bg); background: var(--ink); }
+
+/* ---- pattern picker ----
+   Previews, so a trigger plus a grid rather than a <select>: an <option> cannot
+   draw a tile. The grid is a sibling in the panel's flow, not a floating popup
+   — the panel body is a scroll container and would clip one. */
+.row > button.pat-trigger { flex: 1 1 auto; min-width: 0; }
+.pat-trigger { justify-content: flex-start; gap: 8px; letter-spacing: .02em; text-transform: none; font-weight: 400; }
+.pat-swatch { width: 14px; height: 14px; flex: none; border: 1px solid var(--faint); background-repeat: repeat; }
+.pat-trigger span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pat-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 3px;
+  margin: 6px 0; padding: 4px; max-height: 190px; overflow: auto;
+  border: 1px solid var(--ink);
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+}
+.pat-grid::-webkit-scrollbar { width: 6px; }
+.pat-grid::-webkit-scrollbar-thumb { background: var(--faint); }
+/* The tile itself is an inline background-image, which is why the shared
+   button:hover fill cannot wipe it — only the colour under it is overridden. */
+.pat-grid button {
+  height: auto; aspect-ratio: 1; padding: 0; border: 1px solid var(--faint);
+  background-color: var(--bg); background-repeat: repeat;
+}
+.pat-grid button:hover { background-color: var(--wash); border-color: var(--ink); }
+.pat-grid button[aria-pressed="true"] { border: 2px solid var(--ink); }
 
 /* weight chips — wrap, because a font can expose up to nine weights */
 .chips { display: flex; flex-wrap: wrap; gap: 3px; }
