@@ -12,6 +12,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "http-server", "font-experiments", "-p", "8128", "-c-1"],
       "port": 8128
+    },
+    {
+      "name": "icons",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", "icons", "-p", "8129", "-c-1"],
+      "port": 8129
     }
   ]
 }

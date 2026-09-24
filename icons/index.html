@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Icon Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- The shared chrome first, then what this studio adds to it. -->
+<link rel="stylesheet" href="css/studio.css">
+<link rel="stylesheet" href="css/icons.css">
+</head>
+<body>
+  <button id="panelShow" title="Show the panel">+ Show panel</button>
+
+  <!-- The stage: the tile you would ship, the size ladder under it, and the
+       contact sheet in place of both when you want to compare the set. -->
+  <main id="stage">
+    <div class="bench" id="bench">
+      <div class="tile" id="tile"></div>
+      <div class="ladder" id="ladder"></div>
+    </div>
+    <div class="sheet" id="sheet" hidden></div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <div class="phead" id="phead">
+      <b>Icons</b>
+      <button id="helpToggle" class="infobtn" type="button" aria-expanded="false" aria-controls="help" title="Shortcuts">info</button>
+      <span class="spacer"></span>
+      <button id="randomize" class="primary" title="Random icon (R)">&#10536; Random</button>
+      <button id="panelToggle" class="iconbtn" title="Minimize (H)">&#8722;</button>
+    </div>
+
+    <div class="help" id="help" hidden>
+      <ul>
+        <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> step through what the filter is showing</li>
+        <li><kbd>R</kbd> a random icon, <kbd>H</kbd> hides the panel</li>
+        <li><b>Sheet</b> swaps the single tile for the whole filtered set</li>
+        <li>The <b>ladder</b> is the same icon at 16 / 20 / 24 / 32 / 48 &mdash; where an icon usually breaks</li>
+        <li><b>Copy SVG</b> gives you the icon with the colour and size you set</li>
+        <li>Drag the black titlebar to move the panel</li>
+      </ul>
+    </div>
+
+    <div class="pbody">
+      <div class="grp" data-section="library">
+        <h3>Library <span class="count" id="count"></span></h3>
+        <div class="row"><label>search</label><input id="q" type="search" placeholder="name" spellcheck="false"></div>
+        <div class="chips" id="sets"></div>
+        <div class="chips" id="tags"></div>
+        <div class="icongrid" id="grid"></div>
+        <p class="picked" id="picked"></p>
+      </div>
+
+      <div class="grp" data-section="icon">
+        <h3>Icon</h3>
+        <div class="row"><label>size</label><input id="size" type="range" min="16" max="320" step="1"><output id="sizeV"></output></div>
+        <div class="row"><label>colour</label><input id="color" type="color"><input id="opacity" type="range" min="0.05" max="1" step="0.05"><output id="opacityV"></output></div>
+        <div class="row"><label>rotation</label><input id="rotate" type="range" min="0" max="360" step="15"><output id="rotateV"></output></div>
+        <div class="row"><label>flip</label>
+          <span class="inline-check"><input id="flipH" type="checkbox"> <label for="flipH">horizontal</label></span>
+          <span class="inline-check"><input id="flipV" type="checkbox"> <label for="flipV">vertical</label></span></div>
+      </div>
+
+      <div class="grp" data-section="tile">
+        <h3>Tile</h3>
+        <div class="row"><label>fill</label><input id="tileBg" type="color"><input id="tileBgA" type="range" min="0" max="1" step="0.02"><output id="tileBgAV"></output></div>
+        <div class="row"><label>padding</label><input id="tilePad" type="range" min="0" max="80" step="1"><output id="tilePadV"></output></div>
+        <div class="row"><label>radius</label><input id="tileRadius" type="range" min="0" max="80" step="1"><output id="tileRadiusV"></output></div>
+        <div class="row"><label>border</label><input id="tileBorderColor" type="color"><input id="tileBorder" type="range" min="0" max="8" step="1"><output id="tileBorderV"></output></div>
+        <div class="row"><label>shadow</label><span></span><input id="tileShadow" type="checkbox"></div>
+      </div>
+
+      <div class="grp" data-section="stage">
+        <h3>Stage</h3>
+        <div class="row"><label>backdrop</label><input id="stageBg" type="color"><span></span></div>
+        <div class="row"><label>checkerboard</label><span></span><input id="checker" type="checkbox"></div>
+        <div class="row"><label>ladder</label><span></span><input id="showLadder" type="checkbox" checked></div>
+        <div class="row"><label>sheet</label><span></span><input id="sheetToggle" type="checkbox"></div>
+        <div class="row"><label>sheet size</label><input id="sheetSize" type="range" min="16" max="64" step="1"><output id="sheetSizeV"></output></div>
+      </div>
+
+      <div class="grp" data-section="export">
+        <h3>Export</h3>
+        <div class="btnrow">
+          <button id="copySvg">&#10697; Copy SVG</button>
+          <button id="downloadSvg">&#10515; SVG</button>
+        </div>
+        <pre class="code" id="code"></pre>
+        <p class="hint" id="credit"></p>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/icons-data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{
+  "folders": [
+    "currated",
+    "initial-load"
+  ],
+  "scenes": [
+    {
+      "file": "initial-load/high-office.json"
+    },
+    {
+      "file": "currated/scene-red-scarf.json",
+      "name": "red-scarf"
+    },
+    {
+      "file": "currated/scene-2026-09-24-17-34-57.json"
+    },
+    {
+      "file": "currated/scene-2026-09-24-1228.json"
+    },
+    {
+      "file": "currated/scene-2026-09-24-12-18-51.json"
+    },
+    {
+      "file": "currated/scene-2026-09-24-0711.json"
+    },
+    {
+      "file": "currated/scene-2026-09-22-1114.json",
+      "name": "2026-09-22 11:14"
+    },
+    {
+      "file": "currated/scene-2026-09-21-1253.json"
+    },
+    {
+      "file": "currated/scene-2026-09-21-1230.json"
+    },
+    {
+      "file": "currated/scene-2026-09-21-1153.json"
+    },
+    {
+      "file": "currated/scene-2026-09-21-1047.json"
+    },
+    {
+      "file": "currated/scene-2026-09-21-0915.json"
+    },
+    {
+      "file": "currated/lemon-lines.json"
+    },
+    {
+      "file": "currated/colorfull-squares.json"
+    }
+  ]
+}

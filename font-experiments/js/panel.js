@@ -15,9 +15,9 @@ function rolePanelHTML(role, label) {
   return `
   <div class="sub" data-section="${role}">
     <h4>${label}
-      <button class="eyebtn" data-vis="${role}" aria-pressed="true" title="Hide this on the cover">eye</button>
-      <button class="iconbtn dice" data-rand="${role}" title="Randomize this layer">⤨</button>
-      <button class="lockbtn lock" data-lock="${role}" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+      <button class="eyebtn" data-vis="${role}" aria-pressed="true" title="Hide this on the cover"></button>
+      <button class="iconbtn dice" data-rand="${role}" title="Randomize this layer"></button>
+      <button class="lockbtn lock" data-lock="${role}" aria-pressed="false" title="Lock during randomize"></button></h4>
     <div class="sub-body">
     <div class="row"><label>font-size</label><input id="${role}-size" type="range"><output id="${role}-sizeV"></output></div>
     <div class="row"><label>font/color</label><select id="${role}-font">${fontOptionsHTML()}</select><input id="${role}-color" type="color"></div>
@@ -76,8 +76,35 @@ function setWeightOptions(r) {
   if (it) { it.disabled = !f.i; if (!f.i) c.italic = false; }
 }
 $('tm-font').innerHTML = fontOptionsHTML();
+
+/* ---- the anchor ----
+   Nine squares for the nine points of the window a position can be measured
+   from. The bar lives in screen pixels, so "120px from the left" means a
+   different place on a different screen — but "8px in from the bottom-right"
+   means the same place everywhere, which is what makes a saved scene survive
+   the window it is reopened in. */
+const ANCHORS = [['t','l','Top left'], ['t','c','Top centre'], ['t','r','Top right'],
+                 ['m','l','Middle left'], ['m','c','Centre'], ['m','r','Middle right'],
+                 ['b','l','Bottom left'], ['b','c','Bottom centre'], ['b','r','Bottom right']];
+$('tm-anchor').innerHTML = ANCHORS.map(([v, h, label]) =>
+  `<button type="button" data-anchor="${v}${h}" title="${label}" aria-pressed="false"></button>`).join('');
+
+// Nothing moves. The anchor only decides what gets written into a scene file
+// and how it is read back, so picking one is a decision about the future, not
+// an edit to the cover in front of you.
+function setMenuAnchor(next) {
+  state.topmenu.anchor = next;
+  syncTopMenu();
+}
+$('tm-anchor').addEventListener('click', e => {
+  const btn = e.target.closest('[data-anchor]');
+  if (btn && btn.dataset.anchor !== state.topmenu.anchor) setMenuAnchor(btn.dataset.anchor);
+});
+
 function syncTopMenu() {
   const m = state.topmenu;
+  $('tm-anchor').querySelectorAll('[data-anchor]')
+    .forEach(b => b.setAttribute('aria-pressed', String(b.dataset.anchor === m.anchor)));
   $('tm-links').value = m.links;   $('tm-linksV').value = m.links;
   $('tm-font').value = m.font;     setWeightOptions('topmenu');
   $('tm-size').value = m.size;     $('tm-sizeV').value = m.size + 'px';
@@ -114,6 +141,7 @@ function syncInputs() {
   const p = state.plate;
   $('plate-color').value = p.color;
   $('plate-alpha').value = p.alpha; $('plate-alphaV').value = Math.round(p.alpha*100) + '%';
+  syncBgTreatment();
   syncTopMenu();
   syncPattern();
   CTA.sync();
@@ -266,18 +294,38 @@ document.querySelectorAll('[data-vis]').forEach(btn => {
     render();
   });
 });
-// Visibility only. Opening and shutting a layer is the chevron's job — the two
-// are different questions ("is it on the cover?" and "am I looking at its
-// settings?") and tying them together means you cannot adjust a layer you have
-// turned off to compare.
-const syncEyes = () => document.querySelectorAll('[data-vis]')
-  .forEach(b => b.setAttribute('aria-pressed', String(!!state[b.dataset.vis].enabled)));
+// A hidden layer goes quiet and shuts: its title dims to the same grey as its
+// struck-through eye, its settings fold away, and it stays folded until the eye
+// brings it back. Nothing below it is worth reading while it is off the cover,
+// and a panel of open sections that draw nothing is a panel that lies about
+// what you are looking at.
+const HIDDEN_TIP = 'Hidden — turn its eye back on to open it';
+const syncEyes = () => document.querySelectorAll('[data-vis]').forEach(b => {
+  const on = !!state[b.dataset.vis].enabled;
+  b.setAttribute('aria-pressed', String(on));
+  const sec = b.closest('.grp, .sub');
+  if (!sec) return;
+  sec.classList.toggle('is-hidden', !on);
+  if (!on) sec.classList.add('collapsed');
+  const head = sec.querySelector(':scope > h3, :scope > h4');
+  if (head) head.title = on ? '' : HIDDEN_TIP;
+  // Nothing to roll on a layer that is off the cover: the dice goes with the
+  // settings it would change. The lock stays live — locking a hidden layer is
+  // how you keep it that way through a re-roll. Its own tooltip is kept the
+  // first time through, since it says which layer it rolls and that is worth
+  // having back when the layer returns.
+  const dice = head && head.querySelector('[data-rand]');
+  if (dice) {
+    dice.dataset.tip ??= dice.title;
+    dice.disabled = !on;
+    dice.title = on ? dice.dataset.tip : HIDDEN_TIP;
+  }
+});
 
 document.querySelectorAll('[data-lock]').forEach(btn => {
   btn.addEventListener('click', () => {
     const k = btn.dataset.lock; locks[k] = !locks[k];
     btn.setAttribute('aria-pressed', String(locks[k]));
-    btn.textContent = locks[k] ? '🔒' : '🔓';
   });
 });
 
@@ -297,7 +345,10 @@ document.querySelectorAll('.panel .grp').forEach(grp => {
   // made of, and you open the one you came for. Clicking a block on the cover
   // opens its section anyway, which is the shorter way in.
   grp.classList.add('collapsed');
-  h.addEventListener('click', e => { if (!e.target.closest('.lock')) grp.classList.toggle('collapsed'); });
+  h.addEventListener('click', e => {
+    if (e.target.closest('.lock') || grp.classList.contains('is-hidden')) return;
+    grp.classList.toggle('collapsed');
+  });
 });
 
 /* ---- collapsible sub-layers ----
@@ -313,7 +364,12 @@ document.querySelectorAll('.panel .sub').forEach(sub => {
   if (!h) return;
   h.insertBefore(Object.assign(document.createElement('span'), { className: 'chev' }), h.firstChild);
   sub.classList.add('collapsed');
-  h.addEventListener('click', e => { if (!e.target.closest('button')) sub.classList.toggle('collapsed'); });
+  h.addEventListener('click', e => {
+    // A click on any of the three buttons is that button's business, and a
+    // hidden layer does not open: its eye is the way back in.
+    if (e.target.closest('button') || sub.classList.contains('is-hidden')) return;
+    sub.classList.toggle('collapsed');
+  });
 });
 
 // Open one section (and collapse the rest) — used when clicking the matching

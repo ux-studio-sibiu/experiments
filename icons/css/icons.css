@@ -1,0 +1,91 @@
+/* icons — what this studio adds to the shared chrome.
+
+   studio.css is the same panel the other playgrounds in this workspace use:
+   black ink on white paper, one grey, small mono type. Everything below is the
+   stage an icon is tried out on and the grid it is picked from. */
+
+/* ---- the stage ----
+   An icon is never seen on its own, so the stage is three answers at once: the
+   tile you would actually ship, the same icon down at the sizes a UI uses, and
+   the whole set together when you want to compare shapes. */
+#stage { display: grid; place-items: center; background-color: var(--wash); }
+/* A checkerboard for judging what a transparent tile does to a background. */
+#stage.is-checker {
+  background-image:
+    linear-gradient(45deg, rgba(0,0,0,.08) 25%, transparent 25% 75%, rgba(0,0,0,.08) 75%),
+    linear-gradient(45deg, rgba(0,0,0,.08) 25%, transparent 25% 75%, rgba(0,0,0,.08) 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.bench { display: flex; flex-direction: column; align-items: center; gap: 36px; }
+
+/* The tile: the icon with everything the panel says around it. */
+.tile {
+  display: grid; place-items: center;
+  transition: background-color .12s ease, border-radius .12s ease;
+}
+.tile svg { display: block; fill: currentColor; }
+
+/* ---- the size ladder ----
+   The same icon at the sizes interfaces are actually built from. An icon that
+   holds at 48 and falls apart at 16 is a drawing, not an icon, and this is the
+   quickest way to find out. */
+.ladder { display: flex; align-items: flex-end; gap: 26px; }
+.ladder .step { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.ladder svg { display: block; fill: currentColor; }
+.ladder .px {
+  font-family: var(--ui-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: .14em; color: var(--muted);
+}
+
+/* ---- the contact sheet ----
+   Every icon the filter is showing, at one size, in one colour: the view that
+   answers "do these belong to the same family?". */
+.sheet {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 14px;
+  width: min(84vw, 900px); max-height: 78vh; overflow: auto; padding: 22px;
+}
+.sheet svg { display: block; margin: 0 auto; fill: currentColor; }
+
+/* ---- the library ----
+   The same grid the pattern and background pickers use, because it is the same
+   question: which of these, and none of them have a name worth reading first. */
+.icongrid {
+  position: relative;      /* the offset parent the scroll maths measures against */
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 3px;
+  padding: 4px; margin: 2px 0 4px; max-height: 232px; overflow: auto;
+  border: 1px solid var(--ink);
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+}
+.icongrid::-webkit-scrollbar { width: 6px; }
+.icongrid::-webkit-scrollbar-thumb { background: var(--faint); }
+.icongrid button {
+  height: auto; aspect-ratio: 1; padding: 4px; display: grid; place-items: center;
+  border: 1px solid transparent; background: var(--bg); color: var(--ink);
+  transition: border-color .12s ease, transform .12s ease;
+}
+.icongrid button:hover { border-color: var(--faint); transform: scale(1.12); background: var(--bg); color: var(--ink); }
+.icongrid button[aria-pressed="true"] {
+  border-color: var(--bg);
+  outline: 2px solid var(--ink); outline-offset: -3px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.icongrid svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+
+/* The name of what is selected, under the grid — one line, since the grid
+   itself is the thing you read. */
+.picked {
+  margin: -2px 0 2px; padding-left: 1px;
+  font-family: var(--ui-mono); font-size: 10px; letter-spacing: .04em; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.picked b { color: var(--ink); font-weight: 500; }
+
+/* A search field earns its place at 342 icons and would not at 20. */
+.row > input[type=search] {
+  flex: 1 1 auto; min-width: 0; height: var(--ctl); padding: 0 7px;
+  background: var(--bg); color: var(--ink); border: 1px solid var(--ink); border-radius: 0;
+  font-family: var(--ui-mono); font-size: 11px;
+}
+.row > input[type=search]::-webkit-search-cancel-button { filter: grayscale(1); }

@@ -21,6 +21,9 @@ let primary = null, editing = null;
 
 // Position only, no other styles — cheap enough to run on every pointermove.
 const applyMove = (key) => {
+  // The menu is measured from whichever point its anchor names, so there is one
+  // function that knows how to place it and this is not it.
+  if (key === 'topmenu') return placeMenu();
   const c = state[key], el = els[key];
   el.style.left = c.x + 'px';
   el.style.top = c.y + 'px';
@@ -331,6 +334,9 @@ let nudgeTimer = 0;
 document.addEventListener('keydown', e => {
   const step = NUDGE[e.key];
   if (!step || !selected.size || editing || typingInto()) return;
+  // An arrow pressed inside the panel belongs to the panel — stepping through
+  // the scene list, say — and not to whatever is selected on the cover.
+  if (e.target.closest && e.target.closest('.panel')) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;    // those belong to the browser
   e.preventDefault();
   const by = e.shiftKey ? 10 : 1;

@@ -93,6 +93,25 @@ function randomGradient() {
 // (the "Random gradient" button); they're never picked by Randomize.
 function randomBg() { loadRandomPhoto(); }
 
+/* ---- treatment of the picture ----
+   Saturation and blur belong to the layer, not to the file: a re-roll swaps the
+   photograph and leaves the treatment standing, which is how "a washed-out,
+   softly blurred backdrop" survives twenty rolls of what is behind the type. */
+$('bg-sat').addEventListener('input', e => {
+  state.bg.sat = +e.target.value;
+  $('bg-satV').value = Math.round(state.bg.sat * 100) + '%';
+  render();
+});
+$('bg-blur').addEventListener('input', e => {
+  state.bg.blur = +e.target.value;
+  $('bg-blurV').value = state.bg.blur + 'px';
+  render();
+});
+function syncBgTreatment() {
+  $('bg-sat').value = state.bg.sat;   $('bg-satV').value = Math.round(state.bg.sat * 100) + '%';
+  $('bg-blur').value = state.bg.blur; $('bg-blurV').value = state.bg.blur + 'px';
+}
+
 /* ---- static-background effect (toggled from the Background section) ---- */
 const FX_DEF = { opacity: 0.12, fps: 24, cell: 2 };
 const fxStatic = createStaticBackground({ container: $('fxLayer'), opacity: FX_DEF.opacity, fps: FX_DEF.fps, cellSize: FX_DEF.cell, autostart: false });

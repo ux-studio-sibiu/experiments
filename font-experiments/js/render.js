@@ -54,6 +54,14 @@ function render() {
   // Everything else about the layer — cover, centred, no repeat — is fixed, so
   // it lives in the stylesheet and only the picture itself changes here.
   bgLayer.style.backgroundImage = (state.bg.enabled && bgUrl) ? `url("${bgUrl}")` : 'none';
+  // Treatment, applied to the layer rather than baked into the picture, so a
+  // re-roll of the photograph keeps it. A blur on a box that ends exactly at
+  // the artboard's edge fades the edge out with it, so the layer is grown by
+  // the radius it is blurred with — it is a cover-sized background, and there
+  // is always more picture to show.
+  const { sat, blur } = state.bg;
+  bgLayer.style.filter = (sat === 1 && !blur) ? 'none' : `saturate(${sat}) blur(${blur}px)`;
+  bgLayer.style.inset = blur ? `-${Math.round(blur * 2)}px` : '0';
   SVGBG.render();               // a drawn background over the picture, if one is on
   scrimEl.style.background = scrim.enabled
     ? hexRgba(scrim.color === 'dark' ? '#000000' : '#ffffff', scrim.amount)
@@ -109,17 +117,57 @@ function renderPattern() {
   patternLayer.style.opacity = p.opacity;
   patternLayer.style.mixBlendMode = p.blend;
 }
+/* Where the bar sits: left and top in screen pixels, the way every other block
+   is placed. Its own function only because a drag writes the position dozens of
+   times a second and must not go the long way round through a whole render.
+
+   The anchor is NOT here. It says how a position is written down and read back
+   — see menuOffsets() below — and never how the bar behaves while you are
+   moving it. Dragging, nudging and resizing stay exactly what they were. */
+function placeMenu() {
+  const m = state.topmenu, el = els.topmenu;
+  el.style.left = m.x + 'px';
+  el.style.top = m.y + 'px';
+  el.style.right = el.style.bottom = 'auto';
+  el.style.transform = '';
+}
+
+/* ---- the anchor: a way of writing a position down ----
+   The bar is the one thing measured in screen pixels, so "120 from the left"
+   means a different place on a different screen. The anchor names the point a
+   saved position is counted from, and these two functions are the whole of it:
+   one converts the live left/top into that form on the way into a scene file,
+   the other converts it back on the way out, against whatever window is there
+   now. In between, x and y are plain left and top like everything else. */
+function menuOffsets() {
+  const m = state.topmenu, [v, h] = m.anchor || 'tl';
+  const r = els.topmenu.getBoundingClientRect();
+  const w = r.width || m.boxW || 0, ht = r.height || m.boxH || 0;
+  return {
+    x: Math.round(h === 'l' ? m.x : h === 'c' ? m.x + w / 2 - innerWidth / 2 : innerWidth - (m.x + w)),
+    y: Math.round(v === 't' ? m.y : v === 'm' ? m.y + ht / 2 - innerHeight / 2 : innerHeight - (m.y + ht)),
+  };
+}
+// The other direction, run once after a scene has been applied and the bar has
+// been laid out — its size is half of the sum, and only the DOM knows it.
+function menuFromOffsets(ax, ay) {
+  const m = state.topmenu, [v, h] = m.anchor || 'tl';
+  const r = els.topmenu.getBoundingClientRect();
+  const w = r.width || m.boxW || 0, ht = r.height || m.boxH || 0;
+  m.x = Math.round(h === 'l' ? ax : h === 'c' ? innerWidth / 2 + ax - w / 2 : innerWidth - ax - w);
+  m.y = Math.round(v === 't' ? ay : v === 'm' ? innerHeight / 2 + ay - ht / 2 : innerHeight - ay - ht);
+  placeMenu();
+}
+
 function renderTopMenu() {
   const m = state.topmenu, el = els.topmenu;
   if (!m.enabled) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
   // Screen pixels, not artboard ones: the bar is chrome, anchored to the window.
-  el.style.left = m.x + 'px';
-  el.style.top = m.y + 'px';
-  // Given a width the bar stops spanning the window, so the right anchor has to
-  // let go — otherwise the two fight and the width is ignored.
-  el.style.width = m.boxW ? m.boxW + 'px' : '';
-  el.style.right = m.boxW ? 'auto' : '';
+  placeMenu();
+  // Its own box if it has been given one, the width of the window otherwise —
+  // the same bar whichever corner it is measured from.
+  el.style.width = m.boxW ? m.boxW + 'px' : '100%';
   el.style.minHeight = m.boxH ? m.boxH + 'px' : '';
   el.style.background = m.bgA > 0 ? hexRgba(m.bg, m.bgA) : 'transparent';
   el.style.padding = m.pad + 'px';

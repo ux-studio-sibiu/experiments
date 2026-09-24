@@ -98,17 +98,26 @@ body.panel-hidden .panel {
    depend on a font having one — the same reason the padlock and the eye are
    drawn. The band it opens sits BETWEEN the fixed titlebar and the scrolling
    body, so the reference is reachable wherever the panel is scrolled to. */
-.infobtn { position: relative; width: 20px; height: 18px; padding: 0; font-size: 0; }
-.infobtn::before {
-  content: "i";
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%;
-  font-family: var(--ui-mono); font-size: 10px; font-weight: 700; line-height: 12px;
-  text-align: center; letter-spacing: 0;
+/* The mark itself is drawn by the shared [data-mark] rule in controls.css; the
+   button is nothing but the circle. No box around it — a square frame around a
+   round mark is one frame too many on a bar this small — and the circle is a
+   size up from the other marks so that it reads as a symbol rather than as
+   another little control. */
+.infobtn {
+  position: relative; width: 22px; height: 20px; padding: 0; font-size: 0;
+  border: 0; background: transparent;
 }
-/* Scoped under .phead so it plainly outranks the `.phead button` reset above,
-   rather than relying on an attribute selector edging out a type one. */
-.phead .infobtn[aria-expanded="true"] { background: var(--bg); color: var(--ink); }
+/* Under .phead as well, so it outranks the shared 13px every other mark takes
+   from controls.css — which loads after this file. */
+.phead .infobtn::before { width: 16px; height: 16px; }
+/* Scoped under .phead so these plainly outrank the `.phead button` rules above,
+   rather than relying on an attribute selector edging out a type one. The band
+   opening is the answer to a press, so the button only has to go quiet under
+   the pointer rather than invert. */
+.phead .infobtn:hover,
+.phead .infobtn:active,
+.phead .infobtn[aria-expanded="true"] { background: transparent; color: var(--bg); border-color: transparent; }
+.phead .infobtn:hover::before { opacity: .65; }
 
 .help {
   flex: 0 0 auto;
@@ -169,6 +178,23 @@ body.panel-hidden #panelShow { display: block; }
   letter-spacing: .16em; text-transform: uppercase; color: var(--ink);
 }
 .grp h3:hover, .sub h4:hover { color: var(--muted); }
+
+/* ---- a layer that is off the cover ----
+   The title goes to the same grey its struck-through eye is, and it stops
+   behaving like a thing to open: it is shut, it stays shut, and the pointer
+   says so. Only the title dims — the dice and the lock still act on a hidden
+   layer, so they stay in ink. */
+.grp.is-hidden > h3, .sub.is-hidden > h4 { color: var(--faint); cursor: default; }
+.grp.is-hidden > h3:hover, .sub.is-hidden > h4:hover { color: var(--faint); }
+.grp.is-hidden > h3 > button:not(.eyebtn),
+.sub.is-hidden > h4 > button:not(.eyebtn) { color: var(--ink); }
+/* ...except the dice, which has nothing to roll while the layer is off. */
+.grp h3 > button:disabled, .sub h4 > button:disabled {
+  color: var(--faint); cursor: default;      /* `disabled` already refuses the click */
+}
+.grp h3 > button:disabled:hover, .sub h4 > button:disabled:hover {
+  background: transparent; color: var(--faint);
+}
 /* Push the cluster of controls right, off whichever comes first — the eye where
    there is one, the dice where there is not. */
 .grp h3 button:first-of-type, .sub h4 button:first-of-type { margin-left: auto; }

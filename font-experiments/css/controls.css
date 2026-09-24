@@ -98,56 +98,88 @@ button.primary:hover { background: var(--bg); color: var(--ink); }
 .btnrow button { flex: 1; }
 
 /* ---- the visibility eye ----
-   Photoshop's layer eye: shown is an open eye, hidden is the same lens struck
-   through and dimmed. Drawn rather than set in a glyph, for the same reason the
-   padlock is — the emoji is coloured, and this panel has no colour in it. */
+   Photoshop's layer eye: shown is an open eye, hidden is the struck-through one
+   and the whole button goes quiet, so a glance down the panel shows which
+   layers are off. Both marks come from the same icon set as everything else. */
 .eyebtn {
   position: relative; width: 22px; height: 18px; padding: 0; font-size: 0;
   background: transparent; border: 1px solid transparent; cursor: pointer;
 }
 .eyebtn:hover { border-color: var(--faint); }
-.eyebtn::before {                        /* the lens */
-  content: ""; position: absolute; left: 50%; top: 50%;
-  width: 15px; height: 9px; margin: -5px 0 0 -7.5px;
-  border: 1px solid currentColor; border-radius: 50%;
+.eyebtn::before {
+  content: ""; display: block; width: 15px; height: 15px; margin: 0 auto;
+  background: currentColor;
+  -webkit-mask: var(--icon-eye) center / contain no-repeat;
+  mask: var(--icon-eye) center / contain no-repeat;
 }
-.eyebtn::after {                         /* the pupil */
-  content: ""; position: absolute; left: 50%; top: 50%;
-  width: 5px; height: 5px; margin: -3px 0 0 -2.5px;
-  background: currentColor; border-radius: 50%;
-}
-/* Hidden: no pupil, a slash across the lens, and the whole thing goes quiet so
-   a glance down the panel shows which sections are off. */
 .eyebtn[aria-pressed="false"] { color: var(--faint); }
-.eyebtn[aria-pressed="false"]::after {
-  width: 17px; height: 1px; margin: -1px 0 0 -8.5px;
-  border-radius: 0; transform: rotate(-24deg);
+.eyebtn[aria-pressed="false"]::before {
+  -webkit-mask-image: var(--icon-eye-off);
+  mask-image: var(--icon-eye-off);
 }
 
 /* small square controls — per-section randomize, panel toggle, lock */
+/* ---- the marks on the buttons ----
+   Every control that is a picture rather than a word draws it the same way: a
+   mask in currentColor, so one drawing serves a white button and the inverted
+   black one, and the picture is the button's own business rather than a glyph
+   the markup has to carry. `data-mark` names which; `data-rand` needs no name
+   because rolling something is always the same mark.
+
+   The icons are Dashicons (GPL-2.0-or-later), inlined as tokens in base.css —
+   see icons/sets/dashicons/ for the set and its licence. */
+/* :where(), so this carries no specificity at all: it is the default mark for
+   anything that rolls, and a data-mark below always outranks it — which is how
+   the plate's dice keeps its own. Set on the element rather than on ::before,
+   because a property set straight on the pseudo cannot be overridden by one
+   inherited from the element. */
+:where(button[data-rand], #randomize, #randFonts, #bgPhoto, #bgGradient, #sv-palRandom) { --mark: var(--icon-randomize); }
+
+[data-mark="info"]      { --mark: var(--icon-info); }
+[data-mark="minus"]     { --mark: var(--icon-minus); }
+[data-mark="plus"]      { --mark: var(--icon-plus); }
+[data-mark="download"]  { --mark: var(--icon-download); }
+[data-mark="upload"]    { --mark: var(--icon-upload); }
+[data-mark="db-export"] { --mark: var(--icon-db-export); }
+[data-mark="refresh"]   { --mark: var(--icon-refresh); }
+[data-mark="trash"]     { --mark: var(--icon-trash); }
+[data-mark="star"]      { --mark: var(--icon-star); }
+[data-mark="undo"]      { --mark: var(--icon-undo); }
+[data-mark="redo"]      { --mark: var(--icon-redo); }
+/* The plate's dice fits the plate to the text rather than rolling it, and the
+   mark it carries says so — which is why data-mark wins over data-rand here. */
+[data-mark="expand"]    { --mark: var(--icon-expand); }
+
+button[data-rand]::before,
+#randomize::before, #randFonts::before,
+#bgPhoto::before, #bgGradient::before, #sv-palRandom::before,
+[data-mark]::before {
+  content: ""; flex: none; width: 13px; height: 13px;
+  background: currentColor;
+  -webkit-mask: var(--mark) center / contain no-repeat;
+  mask: var(--mark) center / contain no-repeat;
+}
+
 .iconbtn, .lockbtn {
   height: 18px; min-width: 20px; padding: 0 4px;
   font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none;
 }
-/* The padlock the script writes is a colour emoji, and this panel has no colour
-   in it. Draw the lock instead — a shackle and a body in currentColor, so it
-   inverts with the button when the section is locked and stays crisp at 18px,
-   which a scaled-down emoji does not. The glyph itself is kept in the DOM (the
-   script still swaps it) but set to nothing, so no markup has to change. */
+/* The padlock: open while the layer is free to change, shut and inverted while
+   it is held through a re-roll. `aria-pressed` is what the script sets and what
+   a screen reader reads, so it is what draws the state too — there is no second
+   place saying the same thing. */
 .lockbtn { position: relative; width: 20px; padding: 0; font-size: 0; }
-.lockbtn::before {                 /* shackle */
-  content: ""; position: absolute; left: 50%; top: 3px; margin-left: -3px;
-  width: 6px; height: 5px;
-  border: 1px solid currentColor; border-bottom: none; border-radius: 3px 3px 0 0;
-  transform-origin: right bottom; transition: transform .12s ease;
+.lockbtn::before {
+  content: ""; display: block; width: 14px; height: 14px; margin: 0 auto;
+  background: currentColor;
+  -webkit-mask: var(--icon-unlock) center / contain no-repeat;
+  mask: var(--icon-unlock) center / contain no-repeat;
 }
-.lockbtn::after {                  /* body */
-  content: ""; position: absolute; left: 50%; bottom: 3px; margin-left: -5px;
-  width: 10px; height: 7px; background: currentColor;
-}
-/* Open: the shackle swings clear of the body. */
-.lockbtn[aria-pressed="false"]::before { transform: translateX(2px) rotate(20deg); }
 .lockbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.lockbtn[aria-pressed="true"]::before {
+  -webkit-mask-image: var(--icon-lock);
+  mask-image: var(--icon-lock);
+}
 
 /* ---- segmented toggles: shared hairlines, solid black for the choice ---- */
 .radios { display: flex; }
@@ -213,6 +245,61 @@ button.primary:hover { background: var(--bg); color: var(--ink); }
 .chips label:has(input:checked) { color: var(--bg); background: var(--ink); border-color: var(--ink); }
 
 /* ---- running text: the one place the sans face is used ---- */
+/* ---- the anchor ----
+   Nine squares in the shape of what they mean: the window, and the point in it
+   a position is measured from. The chosen one is filled, the rest are outlines,
+   and there is no frame around the set — the nine squares already draw the
+   rectangle they stand for. */
+.anchorgrid {
+  flex: 0 0 auto;
+  display: grid; grid-template-columns: repeat(3, 10px); gap: 2px;
+}
+.anchorgrid button {
+  width: 10px; height: 10px; min-width: 0; padding: 0;
+  border: 1px solid var(--faint); background: var(--bg);
+  transition: border-color .12s ease, background-color .12s ease;
+}
+.anchorgrid button:hover { border-color: var(--ink); background: var(--wash); }
+.anchorgrid button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
+
+/* ---- the scene list ----
+   Open rather than a dropdown: a saved scene is something you browse, and a
+   list you have to open first hides how much is in there. Same scroll box as
+   the pattern and palette pickers, with a heading per source. */
+.scenelist {
+  position: relative;      /* the offset parent the scroll maths measures against */
+  max-height: 168px; overflow: auto; margin: 2px 0 4px;
+  border: 1px solid var(--ink);
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+}
+.scenelist::-webkit-scrollbar { width: 6px; }
+.scenelist::-webkit-scrollbar-thumb { background: var(--faint); }
+/* Where these live. Sticky, so the heading is still there when you are three
+   folders down the box. */
+.scenegroup {
+  position: sticky; top: 0; z-index: 1;
+  padding: 4px 6px 3px; background: var(--bg);
+  border-bottom: 1px solid var(--faint);
+  font-family: var(--ui-mono); font-size: 9px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.scenegroup ~ .scenegroup { border-top: 1px solid var(--faint); margin-top: 4px; }
+/* A block rather than the flex the other buttons are: the name is one line that
+   has to trail off when it is too long, and ellipsis needs a block to do it. */
+.scenerow {
+  display: block; width: 100%; height: 20px; padding: 0 6px;
+  border: 0; background: var(--bg); color: var(--muted);
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 400; line-height: 20px;
+  letter-spacing: .02em; text-transform: none; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.scenerow:hover { background: var(--wash); color: var(--ink); }
+.scenerow[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.scene-empty {
+  margin: 0; padding: 7px 6px;
+  font-family: var(--ui-mono); font-size: 10px; color: var(--muted);
+}
+
 .hint {
   margin: 8px 0 0;
   font-family: var(--ui-sans); font-size: 11px; line-height: 1.6; color: var(--muted);

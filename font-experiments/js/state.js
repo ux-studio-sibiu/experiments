@@ -12,7 +12,10 @@ const state = {
   // survive a save — picsum's ?random= is a cache-buster that hands back a
   // different photo each call, and a gradient's data: URI is ~100KB of base64.
   // How it is fitted is not a choice: centred cover, stated once in the CSS.
-  bg: { enabled: true, kind: "photo", seed: 'studio', preset: null, src: null },
+  // `sat` and `blur` are treatment rather than content: they belong to the
+  // picture, not to which picture it is, so they survive a re-roll of the
+  // photograph itself.
+  bg: { enabled: true, kind: "photo", seed: 'studio', preset: null, src: null, sat: 1, blur: 0 },
   // A drawn background from the svgbackgrounds.com set, with the edits made to
   // it: which colours were swapped, which palette was laid over it, and the
   // shift applied to the lot. All scalars and a flat map, so it saves and
@@ -39,7 +42,12 @@ const state = {
   heading:    { enabled:true, font:'Playfair Display', weight:700, size:96, lh:1.04, ls:-0.01, italic:false, transform:'none', align:'left', amount:5,   color:'#ffffff', shadow:true, x:54, y:250, boxW:940, boxH:40 },
   subheading: { enabled:true, font:'Inter',           weight:500, size:22, lh:1.35, ls:0.18,  italic:false, transform:'uppercase', align:'left', amount:11, color:'#ffffff', shadow:true, x:54, y:400, boxW:940, boxH:30 },
   body:       { enabled:true, font:'Inter',           weight:400, size:18, lh:1.7,  ls:0,     italic:false, transform:'none', align:'left', columns:2, amount:180, color:'#ffffff', shadow:true, x:54, y:470, boxW:940, boxH:40 },
-  topmenu:    { enabled:true, links:4, font:'Inter', weight:500, size:14, ls:0.08, transform:'uppercase', align:'spread', gap:28, pad:28, color:'#ffffff', shadow:true, brand:true, bg:'#0b0b0d', bgA:0, x:0, y:0, boxW:null, boxH:null },
+  // `anchor` is which point of the WINDOW x and y are measured from — two
+  // letters, vertical then horizontal, from 'tl' to 'br'. It is what makes a
+  // saved position survive a different window: a bar anchored 'br' stays in the
+  // bottom-right corner rather than at some number of pixels that only meant
+  // the corner on the screen it was saved from.
+  topmenu:    { enabled:true, anchor:'tl', links:4, font:'Inter', weight:500, size:14, ls:0.08, transform:'uppercase', align:'spread', gap:28, pad:28, color:'#ffffff', shadow:true, brand:true, bg:'#0b0b0d', bgA:0, x:0, y:0, boxW:null, boxH:null },
   // The call to action. `style` names one of the ten shapes in css/cta.css; the
   // padding around the label follows `size`, and a box of your own comes from
   // the corner handles. Off until you ask for it: a cover does not always want
@@ -47,6 +55,15 @@ const state = {
   cta:        { enabled:false, text:'Get started', style:'solid', font:'Inter', weight:600, size:16, ls:0.04,
                 transform:'none', color:'#ffffff', bg:'#000000', bgA:1, radius:4, shadow:false, x:54, y:650, boxW:null, boxH:null },
 };
+/* The cover as it starts, kept whole and untouched.
+
+   A scene describes the WHOLE cover, so a scene that does not mention a layer
+   means that layer is off — not that it keeps whatever is on screen. Scenes
+   saved before a layer existed say nothing about it, and without a default to
+   fall back to, loading an old one leaves the newer layers from the cover you
+   were just looking at sitting on top of it. */
+const DEFAULTS = structuredClone(state);
+
 const locks = { heading:false, subheading:false, body:false, bg:false, topmenu:false, plate:false, cta:false,
                 background:false, typography:false, webelements:false, scrim:false, pattern:false, fx:false, svgbg:false };
 const $ = (id) => document.getElementById(id);

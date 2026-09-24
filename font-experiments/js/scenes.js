@@ -95,7 +95,10 @@ const sceneStamp = () => new Date().toISOString().slice(0, 16).replace('T', ' ')
 const BG_KEY = { photo: 'seed', gradient: 'preset', image: 'src' };
 function bgOut() {
   const b = state.bg, key = BG_KEY[b.kind];
-  return { enabled: b.enabled, kind: b.kind, ...(key ? { [key]: b[key] } : {}) };
+  // The treatment travels with the descriptor: it is part of how the background
+  // looks, and a scene that reloaded the right photograph with the wrong
+  // saturation would be the wrong cover.
+  return { enabled: b.enabled, kind: b.kind, sat: b.sat, blur: b.blur, ...(key ? { [key]: b[key] } : {}) };
 }
 
 function serializeScene() {
@@ -120,6 +123,11 @@ function serializeScene() {
     },
   };
   BLOCKS.forEach(k => { out[k] = { ...state[k] }; });   // all scalars now, so a shallow copy is a whole one
+  // The menu's position is written down the way its anchor says: live it is
+  // plain left/top, on paper it is a distance from the corner it is anchored
+  // to. That is the whole job of the anchor, and this is one of the two places
+  // it happens.
+  Object.assign(out.topmenu, menuOffsets());
   return out;
 }
 
@@ -128,23 +136,33 @@ function applyScene(data) {
   if (data.v !== SCENE_V) throw new Error(`scene version ${data.v} is not supported`);
   if (typeof data.name === 'string') $('sceneName').value = data.name;
   if (data.ref) setRef(+data.ref.w, +data.ref.h);
-  if (data.bg) Object.assign(state.bg, data.bg);
-  if (data.scrim) Object.assign(state.scrim, data.scrim);
-  if (data.svgbg) Object.assign(state.svgbg, data.svgbg, { overrides: { ...data.svgbg.overrides } });
-  if (data.layout) Object.assign(state.layout, data.layout);
-  if (data.plate) Object.assign(state.plate, data.plate);
-  if (data.pattern) Object.assign(state.pattern, data.pattern);
-  BLOCKS.forEach(k => { if (data[k]) Object.assign(state[k], data[k]); });
+  // Default first, then what the scene says. A scene saved before a layer
+  // existed says nothing about it, and "nothing" has to mean the default —
+  // otherwise loading an older cover leaves the newer layers of the one you
+  // were just looking at sitting on top of it, which is how a scene with no
+  // drawn background used to arrive still wearing one.
+  const put = (k) => Object.assign(state[k], DEFAULTS[k], data[k] || {});
+  ['bg', 'scrim', 'layout', 'pattern'].forEach(put);
+  BLOCKS.forEach(put);
+  // The one nested value in a scene, so the one that cannot be copied flat.
+  put('svgbg');
+  state.svgbg.overrides = { ...(data.svgbg ? data.svgbg.overrides : DEFAULTS.svgbg.overrides) };
   if (data.text) {
     if (typeof data.text.heading === 'string') els.heading.textContent = data.text.heading;
     if (typeof data.text.subheading === 'string') els.subheading.textContent = data.text.subheading;
     if (typeof data.text.body === 'string') els.body.textContent = data.text.body;
   }
-  applyFx(data.fx);
+  applyFx({ ...DEFAULTS.fx, ...data.fx });   // same rule: unmentioned is default, not current
   TYPE_BLOCKS.forEach(k => loadFont(state[k].font));
   deselect();
   syncInputs();
   applyBg();                      // resolves the descriptor, then renders
+  // The other half of the anchor: the file's numbers are a distance from the
+  // corner it names, and this turns them back into left/top for the window that
+  // is actually here. After the render above, because the bar's own size is
+  // half of that sum and only a laid-out bar knows it.
+  const saved = data.topmenu || {};
+  menuFromOffsets(saved.x ?? DEFAULTS.topmenu.x, saved.y ?? DEFAULTS.topmenu.y);
 }
 
 const NOTE_DEFAULT = $('sceneNote').textContent;
@@ -235,33 +253,71 @@ function sceneName(file) {
   return m ? `${m[1]} ${m[2]}:${m[3]}` : base;
 }
 
+// A scene's folder is its group in the dropdown, and the empty string is the
+// root of scenes/ itself. Paths are relative to SCENES_DIR throughout.
+const groupOf = (file) => file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '';
+
+// One directory: the .json files in it, and the folders under it. Returns null
+// when the path is not a listing at all, which is how an empty folder is told
+// apart from a host that answers every path with the same page.
+async function readDir(path) {
+  const res = await fetch(path, { cache: 'no-store' });
+  if (!res.ok) return null;
+  const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+  const hrefs = [...doc.querySelectorAll('a[href]')].map(a => a.getAttribute('href') || '');
+  // A generated index always links to its parent; an app's own index page does
+  // not. Without that distinction an empty scenes/ would probe for the manifest
+  // and log a 404 on every load.
+  const isListing = hrefs.some(h => /(^|\/)\.\.\/?$/.test(h));
+  const names = hrefs
+    .filter(h => !/(^|\/)\.\.\/?$/.test(h))
+    .map(h => decodeURIComponent(h.replace(/\/$/, '').split('/').filter(Boolean).pop() || '') + (h.endsWith('/') ? '/' : ''));
+  const files = names.filter(n => /\.json$/i.test(n) && n !== 'index.json');
+  const dirs = names.filter(n => n.endsWith('/')).map(n => n.slice(0, -1)).filter(Boolean);
+  if (!files.length && !dirs.length && !isListing) return null;
+  return { files, dirs };
+}
+
+// { scenes: [{ file, name, group }], folders: [name] } — the folders separately,
+// because an empty one still has to be listed. A folder that is simply missing
+// from the panel reads as "subfolders are not being read"; one that says it is
+// empty reads as what it is.
 async function listScenes() {
   try {
-    const res = await fetch(SCENES_DIR, { cache: 'no-store' });
-    if (res.ok) {
-      const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-      const hrefs = [...doc.querySelectorAll('a[href]')].map(a => a.getAttribute('href') || '');
-      const files = hrefs
-        .map(h => decodeURIComponent(h.split('/').filter(Boolean).pop() || ''))
-        .filter(f => /\.json$/i.test(f) && f !== 'index.json')
-        // Names are timestamps, so reverse-alphabetical puts the newest on top.
-        .sort((a, b) => b.localeCompare(a));
-      // A generated index always links to its parent, and an app's own index
-      // page does not — which is how an EMPTY folder is told apart from a host
-      // that answers every path with the same page. Without that distinction an
-      // empty scenes/ would probe for the manifest and log a 404 on every load.
-      const isListing = hrefs.some(h => /(^|\/)\.\.\/?$/.test(h));
-      if (files.length || isListing) return files.map(f => ({ file: f, name: sceneName(f) }));
+    const root = await readDir(SCENES_DIR);
+    if (root) {
+      // One level down and no further: a folder is a way to keep a set of
+      // covers together, not a tree to go exploring, and every extra level is
+      // another request on every load.
+      const nested = await Promise.all(root.dirs.map(async d => {
+        const sub = await readDir(`${SCENES_DIR}${encodeURIComponent(d)}/`);
+        return (sub ? sub.files : []).map(f => `${d}/${f}`);
+      }));
+      // Names are timestamps as often as not, so reverse-alphabetical puts the
+      // newest on top within each group.
+      const files = [...root.files, ...nested.flat()].sort((a, b) => b.localeCompare(a));
+      return {
+        source: 'listing',
+        scenes: files.map(f => ({ file: f, name: sceneName(f.split('/').pop()), group: groupOf(f) })),
+        folders: [...root.dirs].sort((a, b) => a.localeCompare(b)),
+      };
     }
   } catch {}
   try {
+    // No listing: a plain file host, a server with directory indexes turned
+    // off, or the page opened straight off the disk. The manifest is the way
+    // in then — tools/build-scenes-index.js writes it — and it can name a
+    // folder too: "covers/dark.json" groups the same way a real folder does.
     const j = await getJSON(SCENES_DIR + 'index.json');
     const arr = Array.isArray(j) ? j : (j.scenes || []);
-    return arr.map(e => typeof e === 'string'
-      ? { file: e, name: sceneName(e) }
-      : { file: e.file, name: e.name || sceneName(e.file) });
+    const scenes = arr.map(e => typeof e === 'string' ? { file: e } : e)
+      .map(e => ({ file: e.file, name: e.name || sceneName(e.file.split('/').pop()), group: e.group ?? groupOf(e.file) }));
+    const named = Array.isArray(j) ? [] : (j.folders || []);
+    return { source: 'manifest', scenes, folders: [...new Set([...named, ...scenes.map(s => s.group).filter(Boolean)])].sort() };
   } catch {}
-  return [];
+  // Neither route answered, which is a thing worth saying rather than an empty
+  // list to puzzle over — the rescan note says it.
+  return { source: 'none', scenes: [], folders: [] };
 }
 
 /* ---- scenes kept in the browser ----
@@ -281,57 +337,139 @@ function writeStore(map) {
   catch (err) { sceneNote(`This browser refused to store it (${err.name}) — use Export instead.`); return false; }
 }
 
-/* ---- the dropdown: both sources in one list ----
-   Values are prefixed by where they live, because a browser scene and a file
-   can carry the same name and they are fetched differently. */
+/* ---- the list: both sources, open ----
+   Every scene on screen under a heading for where it lives, rather than behind
+   a dropdown that has to be opened before it says how much is in there.
+   Values are prefixed by their source, because a browser scene and a file can
+   carry the same name and they are fetched differently. */
+let picked = '';                     // 'local:<name>' or 'file:<path>', or nothing yet
+
 async function refreshScenes(selectValue) {
-  const sel = $('sceneList');
+  const list = $('sceneList');
   const local = Object.keys(readStore()).sort((a, b) => a.localeCompare(b));
-  const files = await listScenes();
+  const { scenes: files, folders, source } = await listScenes();
   const total = local.length + files.length;
 
-  sel.replaceChildren(new Option(total ? '— pick a scene —' : '— none saved —', ''));
-  const group = (label, entries) => {
-    if (!entries.length) return;
-    const g = document.createElement('optgroup');
-    g.label = label;
-    // new Option() sets text, not HTML: a name cannot inject markup here.
-    entries.forEach(([text, value]) => g.append(new Option(text, value)));
-    sel.append(g);
+  list.replaceChildren();
+  const group = (label, entries, showEmpty = false) => {
+    if (!entries.length && !showEmpty) return;
+    const h = document.createElement('div');
+    h.className = 'scenegroup';
+    h.textContent = label;
+    list.append(h);
+    for (const [text, value] of entries) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'scenerow';
+      b.dataset.scene = value;
+      b.title = text;
+      // textContent, not innerHTML: a scene names itself and a name cannot be
+      // allowed to bring markup with it.
+      b.textContent = text;
+      b.setAttribute('aria-pressed', String(value === picked));
+      list.append(b);
+    }
+    if (!entries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'scene-empty';
+      empty.textContent = 'empty';
+      list.append(empty);
+    }
   };
-  group('this browser', local.map(n => [n, 'local:' + n]));
-  group(SCENES_DIR, files.map(s => [s.name, 'file:' + s.file]));
+  // This browser first: it is where the one you saved a minute ago is.
+  group('this browser · local storage', local.map(n => [n, 'local:' + n]));
+  // Then a heading per folder under scenes/, in name order, with whatever sits
+  // loose in scenes/ itself first — a folder is how a set of covers is kept
+  // together, so it is how they are listed. Folders come from the listing
+  // rather than from the scenes in them, so an empty one is still on screen
+  // saying it is empty: a folder that quietly disappears looks like a folder
+  // that was never read.
+  const groups = [...new Set([...files.map(s => s.group), ...folders])]
+    .sort((a, b) => a === '' ? -1 : b === '' ? 1 : a.localeCompare(b));
+  groups.forEach(folder => {
+    const inside = files.filter(s => s.group === folder);
+    if (!inside.length && !folder) return;            // nothing loose in scenes/ itself
+    group(SCENES_DIR + folder, inside.map(s => [s.name, 'file:' + s.file]), !inside.length);
+  });
 
-  sel.disabled = !total;
-  if (selectValue) sel.value = selectValue;
+  if (!total) {
+    const empty = document.createElement('p');
+    empty.className = 'scene-empty';
+    empty.textContent = 'Nothing saved yet — ★ keeps one in this browser.';
+    list.append(empty);
+  }
+  if (selectValue) picked = selectValue;
+  markScene();
+  return { local: local.length, files: files.length, folders: folders.length, total, source };
+}
+
+function markScene() {
+  const list = $('sceneList');
+  let row = null;
+  list.querySelectorAll('[data-scene]').forEach(b => {
+    const on = b.dataset.scene === picked;
+    b.setAttribute('aria-pressed', String(on));
+    if (on) row = b;
+  });
+  // The list scrolls itself to what is loaded rather than scrollIntoView, which
+  // would drag the panel along with it.
+  if (row && (row.offsetTop < list.scrollTop ||
+      row.offsetTop + row.offsetHeight > list.scrollTop + list.clientHeight))
+    list.scrollTop = row.offsetTop - (list.clientHeight - row.offsetHeight) / 2;
   syncSceneButtons();
-  return { local: local.length, files: files.length, total };
 }
 
 // Only a browser scene can be deleted from here; a file in scenes/ is not ours
 // to remove, and nothing in a web page should pretend otherwise.
 function syncSceneButtons() {
-  $('sceneDelete').disabled = !$('sceneList').value.startsWith('local:');
+  $('sceneDelete').disabled = !picked.startsWith('local:');
 }
 
-$('sceneList').addEventListener('change', async e => {
-  const v = e.target.value;
-  syncSceneButtons();
-  if (!v) return;
-  const id = v.slice(v.indexOf(':') + 1);
+async function loadScene(value) {
+  picked = value;
+  markScene();
+  const id = value.slice(value.indexOf(':') + 1);
   try {
-    if (v.startsWith('local:')) {
+    if (value.startsWith('local:')) {
       const scene = readStore()[id];
       if (!scene) throw new Error('it is no longer in this browser');
       applyScene(scene);
       sceneNote(`Loaded "${id}" from this browser.`);
     } else {
-      applyScene(await getJSON(SCENES_DIR + encodeURIComponent(id)));
+      // Per segment, so a scene inside a folder keeps its slash: encoding the
+      // whole path would turn scenes/dark/a.json into one long filename.
+      applyScene(await getJSON(SCENES_DIR + id.split('/').map(encodeURIComponent).join('/')));
       sceneNote(`Loaded ${id}.`);
     }
   } catch (err) {
     sceneNote(`Could not load: ${err.message}`);
   }
+}
+
+$('sceneList').addEventListener('click', e => {
+  const row = e.target.closest('[data-scene]');
+  if (row) loadScene(row.dataset.scene);
+});
+
+/* Up and down walk the list, headings and all, and load as they go: flicking
+   through saved covers is the point of having them in one place. The rows are
+   buttons, so the focus ring, Enter and Space are already the browser's. */
+$('sceneList').addEventListener('keydown', async e => {
+  const STEP = { ArrowDown: 1, ArrowUp: -1, Home: 0, End: 0 };
+  if (!(e.key in STEP)) return;
+  const rows = [...$('sceneList').querySelectorAll('[data-scene]')];
+  if (!rows.length) return;
+  e.preventDefault();
+  const at = rows.findIndex(r => r.dataset.scene === picked);
+  const next = e.key === 'Home' ? rows[0]
+             : e.key === 'End' ? rows[rows.length - 1]
+             // From nothing picked, down starts at the top and up at the bottom.
+             : at < 0 ? (STEP[e.key] > 0 ? rows[0] : rows[rows.length - 1])
+             : rows[(at + STEP[e.key] + rows.length) % rows.length];
+  // Focus after the load, not before: applying a scene rebuilds enough of the
+  // panel that the focus would be handed back to the document on the way.
+  await loadScene(next.dataset.scene);
+  next.focus();
 });
 
 $('sceneStore').addEventListener('click', () => {
@@ -346,9 +484,9 @@ $('sceneStore').addEventListener('click', () => {
 });
 
 $('sceneDelete').addEventListener('click', () => {
-  const v = $('sceneList').value;
-  if (!v.startsWith('local:')) return;
-  const name = v.slice(6);
+  if (!picked.startsWith('local:')) return;
+  const name = picked.slice(6);
+  picked = '';
   const map = readStore();
   delete map[name];
   if (!writeStore(map)) return;
@@ -357,9 +495,19 @@ $('sceneDelete').addEventListener('click', () => {
 });
 
 $('sceneRefresh').addEventListener('click', async () => {
-  const { local, files, total } = await refreshScenes();
-  sceneNote(total ? `${local} in this browser, ${files} in ${SCENES_DIR}`
-                  : `Nothing saved yet — Save here keeps one in this browser.`);
+  const { local, files, folders, total, source } = await refreshScenes();
+  // A rescan that finds nothing has two very different reasons — the folder is
+  // empty, or nothing could read it — and only one of them is yours to fix.
+  if (source === 'none')
+    sceneNote(`Cannot read ${SCENES_DIR}: this page is served without directory listings. ` +
+              `Run "node tools/build-scenes-index.js" to write ${SCENES_DIR}index.json, then rescan.`);
+  else
+    sceneNote(`${local} in this browser, ${files} in ${SCENES_DIR}` +
+              (folders ? ` across ${folders} folder${folders > 1 ? 's' : ''}` : '') +
+              // The manifest is a snapshot, so a scene added since it was
+              // written is not in it — which looks exactly like a scene that
+              // is not being read.
+              (source === 'manifest' ? ' — from index.json, so re-run tools/build-scenes-index.js after adding one' : ''));
 });
 refreshScenes();
 
