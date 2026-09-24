@@ -1,0 +1,98 @@
+/* svg-background — the controls for the Dynamic SVG layer.
+   Ported from the svg-backgrounds playground, which is built on the same
+   tokens, so nothing here redefines a colour or a measure: it is the three
+   widgets that panel has and this one did not. */
+
+/* ---- the library: every background as a live tile ----
+   The tile is its own background, so the shared button hover fill is switched
+   off here and the border does the talking instead. */
+.tiles {
+  position: relative;      /* the offset parent the scroll maths measures against */
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px;
+  margin-bottom: 4px; padding: 4px; max-height: 232px; overflow: auto;
+  border: 1px solid var(--ink);
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+}
+.tiles::-webkit-scrollbar { width: 6px; }
+.tiles::-webkit-scrollbar-thumb { background: var(--faint); }
+.tiles button {
+  height: auto; aspect-ratio: 1; padding: 0;
+  border: 1px solid var(--faint); background-attachment: scroll !important;
+  transition: border-color .12s ease, transform .12s ease;
+}
+.tiles button:hover { border-color: var(--ink); transform: scale(1.06); }
+.tiles button[aria-pressed="true"] {
+  border: 1px solid var(--bg);
+  outline: 2px solid var(--ink); outline-offset: -3px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+/* The tag filter reads as a row of chips above the grid, not as a control with
+   a label of its own. */
+.chips.tags { margin-bottom: 6px; }
+
+/* ---- palette: one swatch per colour found in the SVG ---- */
+.swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 2px 0 4px; }
+.swatch { position: relative; display: block; aspect-ratio: 1; border: 1px solid var(--ink); cursor: pointer; }
+.swatch input { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; opacity: 0; border: 0; cursor: pointer; }
+/* The base colour is the one under the drawing, which is worth saying. */
+.swatch.is-base::after {
+  content: "bg"; position: absolute; left: 0; right: 0; bottom: -1px;
+  font-family: var(--ui-mono); font-size: 8px; font-weight: 700; line-height: 10px;
+  letter-spacing: .08em; text-align: center;
+  background: var(--ink); color: var(--bg);
+}
+/* A corner pip on a colour you have changed by hand. */
+.swatch.is-edited::before {
+  content: ""; position: absolute; top: 2px; right: 2px; width: 5px; height: 5px;
+  background: var(--bg); box-shadow: 0 0 0 1px var(--ink);
+}
+
+/* ---- the palette from the set ----
+   300 palettes, each one five colours: a list where every row draws them, since
+   the colours ARE the choice and the name is only a label on them. Same shape
+   as the tile grid — a bordered scroll box that scrolls itself. */
+/* Strips of colour, several to a line: the name is the tooltip, so a cell spends
+   none of its width on words.
+
+   Wrapping flex rather than a grid of equal columns, so a palette is only as
+   wide as its colours — packed tight inside the group, with room around it.
+   The air between groups is what makes five colours read as ONE palette rather
+   than as a row of loose swatches. */
+.pallist {
+  position: relative;      /* the offset parent the scroll maths measures against */
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 9px 12px;
+  padding: 8px; margin: 2px 0 4px; max-height: 176px; overflow: auto;
+  border: 1px solid var(--ink);
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+}
+.pallist::-webkit-scrollbar { width: 6px; }
+.pallist::-webkit-scrollbar-thumb { background: var(--faint); }
+.pallist button {
+  height: 16px; padding: 0; display: flex;
+  /* Both inherited from the shared button rule and both wrong here: the colour
+     cells are empty elements, so centring collapses them to no height, and the
+     6px gap meant for an icon and its label would unpack the palette. */
+  align-items: stretch; gap: 0;
+  border: 1px solid var(--faint); background: var(--bg);
+  transition: border-color .12s ease, transform .12s ease;
+}
+/* A fixed measure per colour, so every palette is the same width whatever it
+   holds and the lines stay even. */
+.pallist button i { flex: 0 0 12px; }
+.pallist button.is-none { width: 62px; }
+.pallist button:hover { border-color: var(--ink); transform: scale(1.06); }
+/* Marked the way a tile is, since there is no text left to invert. */
+.pallist button[aria-pressed="true"] {
+  border-color: var(--bg);
+  outline: 2px solid var(--ink); outline-offset: -3px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+/* No palette: hatching rather than five colours, because "none" is the absence
+   of them. */
+.pallist button.is-none { background: repeating-linear-gradient(45deg, var(--bg) 0 3px, var(--faint) 3px 4px); }
+.palstrip i { flex: 1 1 0; }
+
+/* A control with nothing to act on — scale, on a background that covers the
+   page instead of tiling. Dimmed rather than removed: the row is part of the
+   shape of the section. */
+.row.is-disabled { opacity: .35; pointer-events: none; }

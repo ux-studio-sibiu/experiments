@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Color Palettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button id="panelShow" title="Show the panel">+ Show panel</button>
+
+  <!-- The palette under test, as bands, a gradient or a sample composition. -->
+  <main id="stage" class="is-stripes">
+    <div id="bands"></div>
+    <div id="sample" aria-hidden="true">
+      <div class="sheet">
+        <span class="kicker">Issue 07 &middot; <span id="sampleTopic"></span></span>
+        <h1 id="sampleName"></h1>
+        <p>A quick composition to see how the palette behaves with type on it: background, surface, ink and two accents, picked by lightness.</p>
+        <div class="actions"><span class="pill solid">Primary</span><span class="pill">Secondary</span></div>
+        <i class="disc"></i><i class="bar"></i>
+      </div>
+    </div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <div class="phead" id="phead">
+      <b>Palettes</b>
+      <button id="helpToggle" class="infobtn" type="button" aria-expanded="false" aria-controls="help" title="Shortcuts">info</button>
+      <span class="spacer"></span>
+      <button id="randomize" class="primary" title="Random palette (R)">&#10536; Random</button>
+      <button id="panelToggle" class="iconbtn" title="Minimize (H)">&#8722;</button>
+    </div>
+
+    <div class="help" id="help" hidden>
+      <ul>
+        <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> previous / next palette, <kbd>R</kbd> random, <kbd>H</kbd> hides the panel</li>
+        <li><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> stripes, gradient, sample</li>
+        <li>Click a band on the stage to copy its hex</li>
+        <li><b>Colours</b>: click a swatch to edit it; the arrows move it, &times; removes it</li>
+        <li>Drag the black titlebar to move the panel</li>
+      </ul>
+    </div>
+
+    <div class="pbody">
+      <div class="grp">
+        <h3>Library <span class="count" id="count"></span></h3>
+        <input id="search" type="text" placeholder="search names, tags, creators" spellcheck="false">
+        <div class="chips" id="topics"></div>
+        <div class="tiles" id="tiles"></div>
+      </div>
+
+      <div class="grp">
+        <h3>Current
+          <button class="iconbtn" id="prev" title="Previous (&larr;)">&larr;</button>
+          <button class="iconbtn" id="next" title="Next (&rarr;)">&rarr;</button></h3>
+        <div class="row"><label>name</label><output id="curName" class="grow"></output></div>
+        <div class="row"><label>by</label><output id="curBy" class="grow"></output></div>
+        <div class="row"><label>tags</label><output id="curTags" class="grow"></output></div>
+      </div>
+
+      <div class="grp">
+        <h3>Colours
+          <button class="iconbtn" id="addColor" title="Add a colour">+</button>
+          <button class="iconbtn" id="reverse" title="Reverse order">&#8646;</button>
+          <button class="iconbtn" id="shuffle" title="Shuffle order">&#10536;</button>
+          <button class="iconbtn" id="sortLight" title="Sort by lightness">&#9680;</button>
+          <button class="iconbtn" id="resetColors" title="Reset to the original">&#10227;</button></h3>
+        <div class="editor" id="editor"></div>
+      </div>
+
+      <div class="grp">
+        <h3>Adjust <button class="iconbtn" id="resetAdjust" title="Reset adjustments">&#10227;</button></h3>
+        <div class="row"><label>hue</label><input id="hue" type="range" min="-180" max="180" step="1"><output id="hueV"></output></div>
+        <div class="row"><label>saturation</label><input id="sat" type="range" min="-100" max="100" step="1"><output id="satV"></output></div>
+        <div class="row"><label>lightness</label><input id="light" type="range" min="-50" max="50" step="1"><output id="lightV"></output></div>
+      </div>
+
+      <div class="grp">
+        <h3>View</h3>
+        <div class="row"><label>layout</label>
+          <div class="radios" id="layout">
+            <label><input type="radio" name="layout" value="stripes" checked>stripes</label>
+            <label><input type="radio" name="layout" value="gradient">gradient</label>
+            <label><input type="radio" name="layout" value="sample">sample</label>
+          </div></div>
+        <div class="row"><label>direction</label>
+          <div class="radios" id="direction">
+            <label><input type="radio" name="direction" value="columns" checked>columns</label>
+            <label><input type="radio" name="direction" value="rows">rows</label>
+          </div></div>
+        <div class="row"><label>labels</label><span></span><input id="showLabels" type="checkbox" checked></div>
+      </div>
+
+      <div class="grp">
+        <h3>Export</h3>
+        <div class="radios" id="format">
+          <label><input type="radio" name="format" value="css" checked>css vars</label>
+          <label><input type="radio" name="format" value="hex">hex</label>
+          <label><input type="radio" name="format" value="json">json</label>
+          <label><input type="radio" name="format" value="gradient">gradient</label>
+        </div>
+        <pre class="code" id="code"></pre>
+        <div class="btnrow"><button id="copyCode">&#10697; Copy</button></div>
+        <p class="hint">Community palettes from <a href="https://color.adobe.com/explore" target="_blank" rel="noopener">Adobe Color</a>. Each one belongs to the creator named above.</p>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+<script src="palettes.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

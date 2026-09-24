@@ -1,0 +1,235 @@
+/* controls — rows, fields and the pattern picker.
+   One label measure down the whole panel, one set of field styles, and the
+   grid that picks a texture. */
+
+/* ---- rows: fixed label measure, everything else takes the rest ----
+   Flex rather than grid so the per-row column widths written inline in the
+   markup no longer apply: one measure down the whole panel is what makes a
+   dense inspector scannable. */
+.row { display: flex; align-items: center; gap: 10px; min-height: var(--ctl); margin: 5px 0; }
+.row > label { flex: 0 0 var(--lbl); color: var(--muted); letter-spacing: .01em; }
+.row > input[type=range], .row > input[type=text], .row > select, .row > .chips, .row > div, .row > span {
+  flex: 1 1 auto; min-width: 0;
+}
+/* A segmented control is as wide as its segments — stretching it would put air
+   between the choices, which is the one thing that stops it reading as one
+   control. */
+.row > .radios { flex: 0 1 auto; }
+.row > input[type=color], .row > input[type=checkbox] { flex: 0 0 auto; }
+/* An inline label further into a row (the italic toggle) is a caption on the
+   control beside it, not a row label — it takes no measure of its own. */
+.row > span > label { color: var(--muted); cursor: pointer; }
+.row > span > label:hover { color: var(--ink); }
+/* A checkbox and its caption riding along at the end of a row. */
+.row > span.inline-check { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.row > output {
+  flex: 0 0 auto; min-width: 44px; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 500; color: var(--ink);
+}
+
+/* ---- fields ---- */
+select, input[type=text], input[type=number] {
+  width: 100%; height: var(--ctl); padding: 0 22px 0 7px;
+  background: var(--bg); color: var(--ink);
+  font: inherit; font-family: var(--ui-mono); font-size: 11px;
+  border: 1px solid var(--ink); border-radius: 0;
+}
+select {
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0h10L5 6z' fill='%23000'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 7px center; background-size: 8px 5px;
+}
+select:hover { background-color: var(--wash); }
+input[type=text], input[type=number] { padding-right: 7px; }
+/* A select sharing its row with a slider: as wide as its longest option and no
+   wider, so the slider keeps the room. */
+.row > select.narrow { flex: 0 0 70px; }
+
+input[type=color] {
+  width: 30px; height: var(--ctl); padding: 0;
+  background: var(--bg); border: 1px solid var(--ink); border-radius: 0; cursor: pointer;
+}
+input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
+input[type=color]::-webkit-color-swatch { border: none; }
+
+/* A master swatch whose layers disagree: the colour it shows is only the
+   heading's, so it is marked rather than passed off as the shared value. */
+input[type=color].is-mixed { border-style: dashed; border-color: var(--muted); }
+
+input[type=checkbox] { width: 14px; height: 14px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+
+/* ---- sliders: a drawn line with a solid block riding it ---- */
+input[type=range] { -webkit-appearance: none; appearance: none; height: 18px; background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--ink); border: none; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 8px; height: 14px; margin-top: -6.5px;
+  background: var(--ink); border: none; border-radius: 0; cursor: grab;
+}
+input[type=range]:hover::-webkit-slider-thumb { width: 10px; height: 16px; margin-top: -7.5px; }
+input[type=range]:active::-webkit-slider-thumb { cursor: grabbing; }
+input[type=range]::-moz-range-track { height: 1px; background: var(--ink); border: none; }
+input[type=range]::-moz-range-thumb { width: 8px; height: 14px; background: var(--ink); border: none; border-radius: 0; cursor: grab; }
+input[type=range]:hover::-moz-range-thumb { width: 10px; height: 16px; }
+input[type=range]:active::-moz-range-thumb { cursor: grabbing; }
+
+/* ---- buttons: outlined at rest, inverted under the pointer ---- */
+button, .uploadbtn {
+  height: var(--ctl); padding: 0 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--ink); border-radius: 0; cursor: pointer;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+  transition: background-color .12s ease, color .12s ease;
+}
+button:hover, .uploadbtn:hover { background: var(--ink); color: var(--bg); }
+button:active, .uploadbtn:active { background: var(--muted); border-color: var(--muted); color: var(--bg); }
+.uploadbtn { width: 100%; margin-top: 8px; }
+/* The import control is a <label> wrapping a hidden file input, so inside a row
+   it would otherwise take the label measure and the label colour. As an icon it
+   is one of the buttons beside it. */
+.row > label.uploadbtn { flex: 0 0 auto; width: auto; margin-top: 0; color: var(--ink); }
+button.primary { background: var(--ink); color: var(--bg); }
+button.primary:hover { background: var(--bg); color: var(--ink); }
+.btnrow { display: flex; gap: 6px; flex-wrap: wrap; }
+/* A button row that follows fields rather than opening a section needs the gap
+   the rows do not give it. */
+.btnrow.spaced { margin-top: 8px; }
+.btnrow button { flex: 1; }
+
+/* ---- the visibility eye ----
+   Photoshop's layer eye: shown is an open eye, hidden is the same lens struck
+   through and dimmed. Drawn rather than set in a glyph, for the same reason the
+   padlock is — the emoji is coloured, and this panel has no colour in it. */
+.eyebtn {
+  position: relative; width: 22px; height: 18px; padding: 0; font-size: 0;
+  background: transparent; border: 1px solid transparent; cursor: pointer;
+}
+.eyebtn:hover { border-color: var(--faint); }
+.eyebtn::before {                        /* the lens */
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 15px; height: 9px; margin: -5px 0 0 -7.5px;
+  border: 1px solid currentColor; border-radius: 50%;
+}
+.eyebtn::after {                         /* the pupil */
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 5px; height: 5px; margin: -3px 0 0 -2.5px;
+  background: currentColor; border-radius: 50%;
+}
+/* Hidden: no pupil, a slash across the lens, and the whole thing goes quiet so
+   a glance down the panel shows which sections are off. */
+.eyebtn[aria-pressed="false"] { color: var(--faint); }
+.eyebtn[aria-pressed="false"]::after {
+  width: 17px; height: 1px; margin: -1px 0 0 -8.5px;
+  border-radius: 0; transform: rotate(-24deg);
+}
+
+/* small square controls — per-section randomize, panel toggle, lock */
+.iconbtn, .lockbtn {
+  height: 18px; min-width: 20px; padding: 0 4px;
+  font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none;
+}
+/* The padlock the script writes is a colour emoji, and this panel has no colour
+   in it. Draw the lock instead — a shackle and a body in currentColor, so it
+   inverts with the button when the section is locked and stays crisp at 18px,
+   which a scaled-down emoji does not. The glyph itself is kept in the DOM (the
+   script still swaps it) but set to nothing, so no markup has to change. */
+.lockbtn { position: relative; width: 20px; padding: 0; font-size: 0; }
+.lockbtn::before {                 /* shackle */
+  content: ""; position: absolute; left: 50%; top: 3px; margin-left: -3px;
+  width: 6px; height: 5px;
+  border: 1px solid currentColor; border-bottom: none; border-radius: 3px 3px 0 0;
+  transform-origin: right bottom; transition: transform .12s ease;
+}
+.lockbtn::after {                  /* body */
+  content: ""; position: absolute; left: 50%; bottom: 3px; margin-left: -5px;
+  width: 10px; height: 7px; background: currentColor;
+}
+/* Open: the shackle swings clear of the body. */
+.lockbtn[aria-pressed="false"]::before { transform: translateX(2px) rotate(20deg); }
+.lockbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+/* ---- segmented toggles: shared hairlines, solid black for the choice ---- */
+.radios { display: flex; }
+.radios input { display: none; }
+.radios label {
+  flex: 0 0 auto; height: var(--ctl); padding: 0 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--ui-mono); font-size: 10px; letter-spacing: .06em; cursor: pointer;
+  color: var(--muted); background: var(--bg);
+  border: 1px solid var(--ink); border-left: none;
+  transition: background-color .12s ease, color .12s ease;
+}
+.radios label:first-of-type { border-left: 1px solid var(--ink); }
+.radios label:hover { background: var(--wash); color: var(--ink); }
+.radios label:has(input:checked) { color: var(--bg); background: var(--ink); }
+
+/* ---- pattern picker ----
+   Previews, so a grid rather than a <select>: an <option> cannot draw a tile.
+   It sits open in the panel's flow rather than in a floating popup — the panel
+   body is a scroll container and would clip one. */
+.pat-grid {
+  position: relative;      /* the offset parent the scroll maths measures against */
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 3px;
+  margin: 6px 0; padding: 4px; max-height: 190px; overflow: auto;
+  border: 1px solid var(--ink);
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+}
+.pat-grid::-webkit-scrollbar { width: 6px; }
+.pat-grid::-webkit-scrollbar-thumb { background: var(--faint); }
+/* The tile itself is an inline background-image, which is why the shared
+   button:hover fill cannot wipe it — only the colour under it is overridden. */
+.pat-grid button {
+  height: auto; aspect-ratio: 1; padding: 0; border: 1px solid var(--faint);
+  background-color: var(--bg); background-repeat: repeat;
+}
+.pat-grid button:hover { background-color: var(--wash); border-color: var(--ink); }
+/* The current tile, in a grid of 87 near-identical squares: a black frame set
+   off by a white gap, so it reads as picked from across the panel instead of
+   as one more hairline. The name below spells it out. */
+.pat-grid button[aria-pressed="true"] {
+  border: 1px solid var(--bg);
+  outline: 2px solid var(--ink); outline-offset: -3px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.pat-current {
+  margin: -2px 0 2px; padding-left: 1px;
+  font-family: var(--ui-mono); font-size: 10px; letter-spacing: .04em; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* weight chips — wrap, because a font can expose up to nine weights */
+.chips { display: flex; flex-wrap: wrap; gap: 3px; }
+.chips input { display: none; }
+.chips label {
+  height: 18px; padding: 0 6px;
+  display: inline-flex; align-items: center;
+  font-family: var(--ui-mono); font-size: 10px; letter-spacing: .04em; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--faint);
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+.chips label:hover { border-color: var(--ink); color: var(--ink); }
+.chips label:has(input:checked) { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+
+/* ---- running text: the one place the sans face is used ---- */
+.hint {
+  margin: 8px 0 0;
+  font-family: var(--ui-sans); font-size: 11px; line-height: 1.6; color: var(--muted);
+}
+.hint b { color: var(--ink); font-weight: 600; }
+/* Nothing to say, nothing to take up room: a note with no message left in it
+   would still hold its margin open. */
+.hint:empty { display: none; }
+.hint a { color: var(--ink); }
+
+@media (max-width: 760px) { .panel { width: min(88vw, 360px); } }
+@media (prefers-reduced-motion: reduce) {
+  .panel, button, .uploadbtn, .radios label, .chips label, .chev { transition: none; }
+}
+
+/* Ensure elements like `nsc-project-*` use the ink color for their background */
+[class^="nsc-project-"], [class*=" nsc-project-"] {
+  background-color: var(--color-ink) !important;
+  color: inherit;
+}

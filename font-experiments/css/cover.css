@@ -1,0 +1,192 @@
+/* cover — the stage, the artboard and everything on it.
+   The design surface and its blocks: the scaled scene, the pattern overlay,
+   the plate and the type, the safe-area guide and the selection frame. */
+
+/* ---- stage: the viewport, and the artboard that covers it ----
+   The stage is the window and does nothing but clip. #scene is the design
+   surface: a fixed --ref-w by --ref-h box, laid out at its full size and then
+   scaled about its centre by --scene-scale, which script.js keeps at
+   max(vw/ref-w, vh/ref-h) — the same number `background-size: cover` computes,
+   so the box always covers the window exactly.
+
+   Centred by translate rather than by a grid or flex box: the artboard is
+   usually WIDER than the window it sits in, and a grid track sizes itself to
+   the item, so the overflow lands entirely on one side instead of splitting
+   evenly. translate(-50%,-50%) off a 50%/50% origin is exact at any size.
+
+   Everything inside is therefore in artboard units, including every px in the
+   panel: they are design pixels, not device ones. That is the whole reason a
+   saved scene can be trusted to come back the same. */
+.stage { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
+
+/* A layer in artboard space. More than one thing needs this transform — the
+   scene itself and the safe-area guide, which has to sit in the space it
+   measures while drawing over everything in it — so it is a named concept
+   rather than a rule repeated twice. */
+.artboard {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--ref-w); height: var(--ref-h);
+  transform: translate(-50%, -50%) scale(var(--scene-scale, 1));
+}
+/* The picture always fills the artboard from its centre — the only thing the
+   script sets here is which picture. */
+#bgLayer {
+  position: absolute; inset: 0; background-color: #15151a;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+}
+/* The Dynamic SVG layer. No fit of its own: each background brings its own
+   background-size, which is the whole point of them. */
+#svgLayer { position: absolute; inset: 0; display: none; }
+#scrim  { position: absolute; inset: 0; pointer-events: none; }
+
+/* ---- the pattern overlay ----
+   An SVG tile used as a MASK, so only its alpha counts and the colour comes
+   from `background-color` — which is why any tile works whatever it was drawn
+   in. It sits with the scrim and the grain: over the photograph, under the
+   type. #scene carries a transform and is therefore a stacking context, so the
+   blend modes blend against the picture rather than escaping to the page.
+
+   Two boxes, because the inner one rotates: oversized so turning it cannot drag
+   the tile's edges into view, and clipped by the outer so the overspill is not
+   the artboard's problem. */
+#patternLayer { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+#patternLayer i { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; display: block; }
+
+#fxLayer { position: absolute; inset: 0; z-index: 1; pointer-events: none; }  /* static grain: over the pattern, under the type */
+/* ---- the blocks ----
+   Free-standing siblings on the artboard, each placed by its own left/top in
+   artboard pixels. There is no shared container and no flow, so moving one
+   cannot shift another — which is the whole point of giving them their own
+   boxes. The plate sits under the type; both sit under the menu, which is
+   outside the scene. */
+#plate { position: absolute; z-index: 2; }
+#heading, #subheading, #body { position: absolute; z-index: 3; }
+
+/* ---- safe area: the part of the artboard this window actually shows ----
+   Cover-scaling means the window only ever shows the middle of the artboard in
+   whichever direction it is proportionally shorter. This box is that region —
+   the same fraction a `contain` fit would have shown, which is the roomiest
+   bound there is. Two offset dashed rules rather than one, for the same reason
+   the selection marks use two: the backdrop is an arbitrary photograph. */
+#safeArea {
+  --safe-x: 0%; --safe-y: 0%;      /* written by fitSafeArea() */
+  z-index: 6; display: none; pointer-events: none;
+}
+body.show-safe #safeArea { display: block; }
+#safeArea::before, #safeArea::after {
+  content: ""; position: absolute; inset: var(--safe-y) var(--safe-x); border: 1px dashed;
+}
+#safeArea::before { border-color: rgba(0,0,0,.65); transform: translate(1px, 1px); }
+#safeArea::after { border-color: rgba(255,255,255,.85); }
+/* Inside the box, not above it: tracking the window puts the top edge at 0 on a
+   16:9 screen, and a label hung above that one would be off the top. */
+#safeArea span {
+  position: absolute; left: var(--safe-x); top: var(--safe-y);
+  padding: 3px 7px 4px; background: #000; color: #fff; box-shadow: 0 0 0 1px #fff;
+  font-family: var(--ui-mono); font-size: 11px; font-weight: 700; line-height: 1;
+  letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+}
+/* ---- resize frame ----
+   Four corner handles over the selection's bounding box. No frame line: each
+   selected block already draws its own, and another dashed rectangle here would
+   compete with the safe-area guide. Above the guide (6) and the menu (4) so a
+   handle is always the thing under the pointer.
+
+   Position is written by placeFrame() in client pixels, which is why this sits
+   in the stage rather than in the artboard — it has to frame the menu too, and
+   that lives in screen space. */
+#selFrame { position: absolute; z-index: 7; display: none; pointer-events: none; }
+body.has-selection #selFrame { display: block; }
+
+.handle {
+  position: absolute; width: 9px; height: 9px; pointer-events: auto;
+  background: #fff; box-shadow: 0 0 0 1px #000;
+}
+.handle[data-corner="nw"] { left: -5px;  top: -5px;    cursor: nwse-resize; }
+.handle[data-corner="ne"] { right: -5px; top: -5px;    cursor: nesw-resize; }
+.handle[data-corner="se"] { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.handle[data-corner="sw"] { left: -5px;  bottom: -5px; cursor: nesw-resize; }
+/* A bigger target than it looks, because 9px is a hard thing to hit. */
+.handle::before { content: ""; position: absolute; inset: -6px; }
+
+/* Margins would be dead weight now that each block carries its own y. */
+#heading, #subheading, #body { margin: 0; display: block; outline: none; }
+
+/* ---- editable regions: what the pointer can pick up ----
+   Each of these is a block on a canvas: click to select it (which brings its
+   controls up in the panel), drag to place it, double-click to type in it.
+   Until you have hovered one there is nothing to say so, so on hover it draws
+   its own bounding box and names itself.
+
+   Both marks are a white line under a black one rather than a single stroke in
+   either colour: the backdrop here is an arbitrary photograph or gradient, so
+   whichever of the two the picture swallows, the other one still reads. */
+.editable { position: relative; cursor: pointer; touch-action: none; }
+
+/* Nothing here is text until you ask for it to be. Without this a drag across
+   a block sweeps a text selection instead of moving it, and the caret lands
+   wherever the pointer went down. */
+.editable:not(.is-editing) { -webkit-user-select: none; user-select: none; }
+
+/* Selected: the box stays up, and the pointer says the block can be moved.
+   Ctrl/cmd/shift-click adds blocks, and they all move together — so the box
+   means "this moves with the drag", while the NAME TAG is reserved for the
+   primary, the one clicked last. The tag answers "which block is the panel
+   editing?", and that has exactly one answer however many are selected. */
+.editable.is-selected { cursor: move; }
+.editable.is-selected::before { opacity: 1; }
+.editable.is-primary::after { opacity: 1; }
+/* Dragging one block passes the pointer over the others; without this they
+   each light up in turn behind whatever is being placed. */
+.editable.is-moving::before, .editable.is-moving::after { transition: none; }
+body.is-moving .editable:not(.is-moving)::before,
+body.is-moving .editable:not(.is-moving)::after { opacity: 0; }
+body.is-moving .editable { cursor: move; }
+.editable::before,
+.editable::after {
+  opacity: 0; pointer-events: none;
+  transition: opacity .12s ease;
+}
+.editable::before {
+  content: "";
+  position: absolute; inset: -10px -12px;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 2px #000;
+}
+/* data-move is written only while a block is being dragged, and carries its
+   offset — the tag doubles as the read-out, so nothing else has to appear. */
+.editable::after {
+  content: attr(data-edit) attr(data-move);
+  position: absolute; left: -12px; top: -10px; transform: translateY(-100%);
+  padding: 2px 6px 3px;
+  background: #000; color: #fff; box-shadow: 0 0 0 1px #fff;
+  font-family: var(--ui-mono); font-size: 9px; font-weight: 700; line-height: 1;
+  letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+}
+.editable:hover::before, .editable:hover::after,
+.editable:focus::before, .editable:focus::after { opacity: 1; }
+
+/* The menu is a full-width band hard against the top of the stage, so it gets
+   no inset (there is nothing to hold the box off) and hangs its tag below
+   itself rather than above, where the stage would clip it. */
+#topmenu.editable::before {
+  inset: 0;
+  /* Drawn inwards. An outward stroke on a box flush with y=0 lands above the
+     top of the window, so the band would lose its top edge. */
+  box-shadow: inset 0 0 0 1px #fff, inset 0 0 0 2px #000;
+}
+#topmenu.editable::after { top: auto; bottom: 0; left: 0; transform: translateY(100%); }
+
+/* While you are actually typing the box stays up, in the inverse of the hover
+   mark, so editing does not look the same as selecting. */
+.editable.is-editing { cursor: text; }
+.editable.is-editing::before { opacity: 1; box-shadow: 0 0 0 1px #000, 0 0 0 2px #fff; }
+.editable.is-editing::after { opacity: 1; background: #fff; color: #000; box-shadow: 0 0 0 1px #000; }
+
+/* Top menu: site chrome, so it is anchored to the SCREEN and not to the
+   artboard — a sibling of the scene rather than a child of it. The bar spans
+   the window and sits on its top edge whatever the crop does, which is how real
+   navigation behaves; the trade is that its type no longer scales with the
+   cover, so its size and padding are screen pixels. */
+#topmenu { position: absolute; top: 0; left: 0; right: 0; z-index: 4; display: flex; align-items: center; }
+#topmenu a { text-decoration: none; white-space: nowrap; }
+#topmenu .tm-links { display: flex; align-items: center; }

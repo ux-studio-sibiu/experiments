@@ -1,0 +1,202 @@
+/* panel — the editing window and its sections.
+   The floating window, its titlebar and help band, and the section and
+   sub-layer headers that structure the body. */
+
+/* ============================ control panel ============================
+   A floating window over the stage, dragged by its titlebar and never taller
+   than --panel-max, so it always clears the top and bottom edges of whatever
+   it is sitting on. A 2px black edge holds the white chrome off the preview —
+   including a white photograph.
+   ===================================================================== */
+.panel {
+  position: fixed; top: var(--panel-gap); right: var(--panel-gap); z-index: 20;
+  display: flex; flex-direction: column;
+  width: var(--panel); max-height: var(--panel-max);
+  background: var(--bg); color: var(--ink);
+  border: 2px solid var(--ink);
+  /* Matched to the minimize transition, so restoring grows back out of the
+     button on the same curve rather than snapping. */
+  transition: opacity .2s ease, transform .24s cubic-bezier(.33, 0, .2, 1);
+  font-family: var(--ui-mono); font-size: 11px; line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The lift, drawn the way an elevation drawing throws a shadow: an offset
+   block of hatch rather than a blur, so the window stays flat and printed.
+   Only the L of it that clears the window is drawn, as two strips OUTSIDE the
+   border box — the usual trick of one offset box behind the face does not work
+   here, because a panel with a z-index of its own is a stacking context, and a
+   negative-z child of one paints above that element's background, not below it.
+   The strips overlap in the bottom-right corner; it is the same hatch twice, so
+   nothing shows for it. */
+.panel::before, .panel::after {
+  content: "";
+  position: absolute; pointer-events: none;
+  background-image: url("../patterns/diagonal.svg");   /* relative to this sheet, in css/ */
+  background-size: 5px 5px; background-repeat: repeat;
+}
+.panel::before { top: 10px; bottom: -10px; right: -10px; width: 10px; }   /* down the right edge */
+.panel::after { left: 10px; right: -10px; bottom: -10px; height: 10px; }  /* along the bottom */
+body.panel-hidden .panel::before, body.panel-hidden .panel::after { display: none; }
+
+/* ---- minimizing: the window goes to the button that brings it back ----
+   Not a fade in place. It shrinks along a vector to the maximize button, so the
+   two read as the same object and you can see where it went — which matters
+   because the window can be dragged anywhere, and "it collapsed to over there"
+   is the only thing that says where "there" is.
+
+   --dock-x/y are written by the script at the moment of minimizing, measured
+   from wherever the window happens to be sitting. Restoring plays the same
+   journey backwards, so it grows back out of the button.
+
+   `visibility` on a delay as well as opacity, so a hidden window leaves the tab
+   order rather than merely going invisible. */
+.panel { --dock-x: 0px; --dock-y: 0px; }
+body.panel-hidden .panel {
+  opacity: 0;
+  /* translate after scale in the list, so the distance is in screen pixels and
+     not multiplied by the 0.12. */
+  transform: translate(var(--dock-x), var(--dock-y)) scale(.12);
+  pointer-events: none; visibility: hidden;
+  transition: opacity .2s ease, transform .24s cubic-bezier(.33, 0, .2, 1), visibility 0s linear .24s;
+}
+
+.panel ::selection { background: var(--ink); color: var(--bg); }
+.panel :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* ---- the scrolling half: the titlebar above it stays put ---- */
+.pbody {
+  flex: 1 1 auto; min-height: 0; overflow: hidden auto;
+  scrollbar-width: thin; scrollbar-color: var(--faint) transparent;
+  overscroll-behavior: contain;
+}
+.pbody::-webkit-scrollbar { width: 6px; }
+.pbody::-webkit-scrollbar-track { background: transparent; }
+.pbody::-webkit-scrollbar-thumb { background: var(--faint); }
+.pbody::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
+/* ---- titlebar: the one solid black band, echoing the portfolio rail,
+        and the handle the whole window is dragged by ---- */
+.phead {
+  flex: 0 0 auto;
+  display: flex; gap: 8px; align-items: center; padding: 0 10px; height: 38px;
+  background: var(--ink); color: var(--bg);
+  cursor: grab; user-select: none; touch-action: none;
+}
+.panel.is-dragging { transition: none; }
+.panel.is-dragging .phead { cursor: grabbing; }
+/* The buttons riding in the handle are not part of it. */
+.phead button { cursor: pointer; }
+.phead b {
+  font-family: var(--ui-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; white-space: nowrap;
+}
+.phead .spacer { flex: 1; }
+
+/* ---- the info button and its band ----
+   A circled "i" drawn from a border rather than set in a glyph, so it cannot
+   depend on a font having one — the same reason the padlock and the eye are
+   drawn. The band it opens sits BETWEEN the fixed titlebar and the scrolling
+   body, so the reference is reachable wherever the panel is scrolled to. */
+.infobtn { position: relative; width: 20px; height: 18px; padding: 0; font-size: 0; }
+.infobtn::before {
+  content: "i";
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 14px; height: 14px; border: 1px solid currentColor; border-radius: 50%;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700; line-height: 12px;
+  text-align: center; letter-spacing: 0;
+}
+/* Scoped under .phead so it plainly outranks the `.phead button` reset above,
+   rather than relying on an attribute selector edging out a type one. */
+.phead .infobtn[aria-expanded="true"] { background: var(--bg); color: var(--ink); }
+
+.help {
+  flex: 0 0 auto;
+  padding: 10px 14px 12px;
+  background: var(--wash);
+  border-bottom: 1px solid var(--ink);
+  font-family: var(--ui-sans); font-size: 11px; line-height: 1.6; color: var(--muted);
+}
+.help b { color: var(--ink); font-weight: 600; }
+.help ul { margin: 0; padding: 0; list-style: none; }
+.help li { position: relative; padding-left: 13px; margin-bottom: 5px; }
+.help li:last-child { margin-bottom: 0; }
+/* A dash rather than a dot: the panel is drawn in hairlines. */
+.help li::before {
+  content: ""; position: absolute; left: 1px; top: .6em;
+  width: 5px; height: 1px; background: var(--muted);
+}
+/* A key looks like a key. Mono because every other literal value in the panel
+   is, and boxed so a lone R reads as a keystroke rather than a stray letter. */
+.help kbd {
+  padding: 0 4px;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  background: var(--bg); color: var(--ink); border: 1px solid var(--faint);
+  white-space: nowrap;
+}
+
+/* the controls that live in the black band invert the usual button */
+.phead button { background: transparent; color: var(--bg); border-color: var(--bg); }
+.phead button:hover { background: var(--bg); color: var(--ink); }
+.phead button:active { background: var(--faint); border-color: var(--faint); color: var(--ink); }
+.phead button.primary { background: var(--bg); color: var(--ink); }
+.phead button.primary:hover { background: transparent; color: var(--bg); }
+.phead :focus-visible { outline-color: var(--bg); }
+
+/* ---- floating button to bring the panel back ----
+   Bottom right, where the panel is not: minimized, the whole top of the cover
+   is what you want to look at, and a control sitting over the heading is the
+   one place it should not be. */
+#panelShow {
+  position: fixed; bottom: 14px; right: 14px; z-index: 50; display: none;
+  height: 26px; padding: 0 12px;
+  background: var(--ink); color: var(--bg); border: 1px solid var(--ink); cursor: pointer;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+#panelShow:hover { background: var(--bg); color: var(--ink); }
+body.panel-hidden #panelShow { display: block; }
+
+/* ---- sections: hairline-ruled, no boxes, no fills ---- */
+.grp { border-bottom: 1px solid var(--ink); padding: 10px 14px 14px; }
+/* A section header and a layer header are one control at two levels, so they
+   are one rule. What tells them apart is the 20px indent and the weight of the
+   line above them — ink for a section, faint for a layer — never the type. */
+.grp h3, .sub h4 {
+  margin: 0; display: flex; align-items: center; gap: 8px; min-height: 20px;
+  cursor: pointer; user-select: none;
+  font-family: var(--ui-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--ink);
+}
+.grp h3:hover, .sub h4:hover { color: var(--muted); }
+/* Push the cluster of controls right, off whichever comes first — the eye where
+   there is one, the dice where there is not. */
+.grp h3 button:first-of-type, .sub h4 button:first-of-type { margin-left: auto; }
+.grp h3 { margin-bottom: 10px; }
+/* Not scoped to a section: sub-layers open and shut the same way, so they use
+   the same mark. Child combinators below, so a section's own chevron and the
+   chevrons of the layers inside it cannot be mistaken for one another. */
+.chev {
+  width: 0; height: 0; flex: none;
+  border-left: 5px solid currentColor; border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent;
+  transform: rotate(90deg); transition: transform .12s ease;
+}
+.grp.collapsed > h3 > .chev, .sub.collapsed > h4 > .chev { transform: rotate(0deg); }
+.grp.collapsed h3 { margin-bottom: 0; }
+.grp.collapsed .grp-body { display: none; }
+/* The window has its own bottom edge; the last section does not need a second. */
+.pbody > .grp:last-child { border-bottom: none; }
+
+/* ---- sub-layers ----
+   A section can be several independent layers stacked inside it — the
+   background is a picture with a scrim, a pattern and grain over it — and each
+   carries the same three controls a section header does.
+
+   Indented rather than washed: the 20px step is the whole signal, and it holds
+   whether the layer is open or shut, where a fill only shows where there is
+   something to fill. Separated by hairlines, the way the sections above them
+   are, so a layer reads as a smaller version of the same thing — which is what
+   it is, down to the chevron and the three buttons. */
+.sub { margin-left: 20px; padding: 6px 0 7px; border-top: 1px solid var(--faint); }
+.sub-body { margin-top: 3px; }
+.sub.collapsed .sub-body { display: none; }

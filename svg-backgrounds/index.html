@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SVG Backgrounds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <button id="panelShow" title="Show the panel">+ Show panel</button>
+
+  <!-- The background under test: the whole window, nothing else. -->
+  <main id="stage">
+    <div id="caption">
+      <span id="capTags"></span>
+      <h1 id="capName"></h1>
+      <p id="capAlt"></p>
+    </div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <div class="phead" id="phead">
+      <b>Backgrounds</b>
+      <button id="helpToggle" class="infobtn" type="button" aria-expanded="false" aria-controls="help" title="Shortcuts">info</button>
+      <span class="spacer"></span>
+      <button id="randomize" class="primary" title="Random background (R)">&#10536; Random</button>
+      <button id="panelToggle" class="iconbtn" title="Minimize (H)">&#8722;</button>
+    </div>
+
+    <div class="help" id="help" hidden>
+      <ul>
+        <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> previous / next background</li>
+        <li><kbd>R</kbd> random background, <kbd>P</kbd> random palette, <kbd>H</kbd> hides the panel</li>
+        <li><b>From set</b> recolours with one of the 300 palettes; it stays on as you browse</li>
+        <li><b>Palette</b> swaps any colour inside the SVG; <b>hue / saturation / lightness</b> shift all of them at once</li>
+        <li><b>Copy CSS</b> gives you the edited background, ready to paste</li>
+        <li>Drag the black titlebar to move the panel</li>
+      </ul>
+    </div>
+
+    <div class="pbody">
+      <div class="grp">
+        <h3>Library <span class="count" id="count"></span></h3>
+        <div class="chips" id="tags"></div>
+        <div class="tiles" id="tiles"></div>
+      </div>
+
+      <div class="grp">
+        <h3>Current
+          <button class="iconbtn" id="prev" title="Previous (&larr;)">&larr;</button>
+          <button class="iconbtn" id="next" title="Next (&rarr;)">&rarr;</button></h3>
+        <div class="row"><label>name</label><output id="curName" class="grow"></output></div>
+        <div class="row"><label>fit</label><output id="curFit" class="grow"></output></div>
+      </div>
+
+      <div class="grp">
+        <h3>Palette <button class="iconbtn" id="resetColors" title="Reset colours">&#10227;</button></h3>
+        <div class="swatches" id="swatches"></div>
+        <p class="hint" id="swatchNote" hidden></p>
+
+        <!-- Recolour with a palette from palettes.js. Colours are matched
+             by lightness, darkest to darkest, so the pattern keeps its form. -->
+        <div class="subgrp" id="setPalette">
+          <div class="row"><label>from set</label>
+            <select id="palPick"></select>
+            <button class="iconbtn" id="palRandom" title="Random palette (P)">&#10536;</button>
+            <button class="iconbtn" id="palRotate" title="Rotate which colour goes where">&#8635;</button></div>
+          <div class="palstrip" id="palStrip" hidden></div>
+          <p class="hint" id="palNote" hidden></p>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h3>Adjust <button class="iconbtn" id="resetAdjust" title="Reset adjustments">&#10227;</button></h3>
+        <div class="row"><label>hue</label><input id="hue" type="range" min="-180" max="180" step="1"><output id="hueV"></output></div>
+        <div class="row"><label>saturation</label><input id="sat" type="range" min="-100" max="100" step="1"><output id="satV"></output></div>
+        <div class="row"><label>lightness</label><input id="light" type="range" min="-50" max="50" step="1"><output id="lightV"></output></div>
+        <div class="row"><label>scale</label><input id="scale" type="range" min="0.1" max="4" step="0.05"><output id="scaleV"></output></div>
+        <p class="hint" id="scaleNote" hidden>This one is sized to <b>cover</b> the page, so it has no tile to scale.</p>
+      </div>
+
+      <div class="grp">
+        <h3>Preview</h3>
+        <div class="row"><label>caption</label><span></span><input id="showCaption" type="checkbox" checked></div>
+        <div class="row"><label>caption ink</label>
+          <div class="radios" id="ink">
+            <label><input type="radio" name="ink" value="light" checked>light</label>
+            <label><input type="radio" name="ink" value="dark">dark</label>
+          </div></div>
+      </div>
+
+      <div class="grp">
+        <h3>Export</h3>
+        <div class="btnrow">
+          <button id="copyCss">&#10697; Copy CSS</button>
+          <button id="downloadSvg">&#10515; SVG</button>
+        </div>
+        <pre class="code" id="code"></pre>
+        <p class="hint">Free set from <a href="https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/" target="_blank" rel="noopener">SVGBackgrounds.com</a> &mdash; attribution required when you use one.</p>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+<script src="palettes.js"></script>
+<script src="backgrounds.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

@@ -7,7 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<!-- Four sheets in cascade order: tokens, then the cover, then the panel that
+     edits it, then the controls inside the panel. -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/cover.css">
+<link rel="stylesheet" href="css/panel.css">
+<link rel="stylesheet" href="css/controls.css">
+<link rel="stylesheet" href="css/svg-background.css">
+<link rel="stylesheet" href="css/cta.css">
 </head>
 <body>
   <button id="panelShow" title="Maximize the edit panel">+ Maximize edit panel</button>
@@ -20,6 +27,10 @@
          scene reloads identically on any screen. -->
     <div id="scene" class="artboard">
       <div id="bgLayer"></div>
+      <!-- A drawn background from the svgbackgrounds.com set: its own layer over
+           the photograph, because it is opaque and replaces it rather than
+           tinting it. Under the scrim, so the same dimmer works on both. -->
+      <div id="svgLayer"></div>
       <div id="scrim"></div>
       <!-- A texture over the photograph, part of the background treatment like
            the scrim and the grain. Two boxes: the outer clips, the inner is
@@ -37,6 +48,10 @@
            they are siblings on a canvas. -->
       <h1 id="heading" class="editable" data-edit="heading" contenteditable="false" spellcheck="false">Randomize Studio</h1>
       <span id="subheading" class="editable" data-edit="subheading" contenteditable="false" spellcheck="false">A playground for exploring typography</span>
+      <!-- The CTA: a block like the rest, so it is placed, resized and typed
+           into the same way. Its look is a class from js/cta.js; everything
+           inside it is the label, which is what makes it editable. -->
+      <div id="cta" class="editable" data-edit="cta" contenteditable="false" spellcheck="false"><span class="label">Get started</span></div>
       <div id="body" class="editable" data-edit="body / columns" contenteditable="false" spellcheck="false">The green room where type tries on outfits before the big show. Pick a face for the title, a quieter one for the body, and let the dice handle the awkward first dates. Built for portfolio covers, case-study headers, album sleeves, and the hero section you'll secretly redesign at midnight. Every font streams live from Google Fonts, so you can flirt with Playfair, commit to Inter, and install nothing. When a pairing finally clicks — and it will — copy the CSS and walk away as though you planned the whole performance.</div>
     </div>
 
@@ -93,75 +108,166 @@
          stay put, and the window's hatch shadow has to escape the scroll box. -->
     <div class="pbody" id="panelBody">
 
-    <div class="grp" id="grp-bg">
+    <div class="grp" id="grp-bg" data-section="background">
+      <!-- A section that is nothing but a stack of layers needs no eye of its
+           own: every layer inside carries one. It keeps the dice and the lock,
+           which act on the whole stack. -->
       <h3>Background
-        <button class="eyebtn" data-vis="bg" aria-pressed="true" title="Hide the photograph">eye</button>
-        <button class="iconbtn dice" data-rand="bg" title="Randomize background">⤨</button>
-        <button class="lockbtn lock" data-lock="bg" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
-      <div class="btnrow">
-        <button id="bgPhoto">⤨ Random photo</button>
-        <button id="bgGradient">⤨ Random gradient</button>
+        <button class="iconbtn dice" data-rand="background" title="Randomize every layer">⤨</button>
+        <button class="lockbtn lock" data-lock="background" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <div class="sub" data-section="bg">
+        <h4>Image
+          <button class="eyebtn" data-vis="bg" aria-pressed="true" title="Hide the picture">eye</button>
+          <button class="iconbtn dice" data-rand="bg" title="Randomize this layer">⤨</button>
+          <button class="lockbtn lock" data-lock="bg" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
+          <div class="btnrow">
+            <button id="bgPhoto">⤨ Random photo</button>
+            <button id="bgGradient">⤨ Random gradient</button>
+          </div>
+          <label class="uploadbtn">⇪ Upload image<input id="bgUpload" type="file" accept="image/*" hidden></label>
+        </div>
       </div>
-      <label class="uploadbtn">⇪ Upload image<input id="bgUpload" type="file" accept="image/*" hidden></label>
-      <div class="row" style="margin-top:8px"><label>scrim</label>
-        <select id="scrimColor" class="narrow"><option value="dark">dark</option><option value="light">light</option></select>
-        <input id="scrimAmt" type="range" min="0" max="0.85" step="0.01"><output id="scrimAmtV"></output>
+      <!-- A drawn background instead of a photograph: the free svgbackgrounds.com
+           set, recoloured here rather than downloaded. Three widgets — the
+           library, the colours in the one you picked, and a shift applied to all
+           of them — wired in js/svg-background.js. -->
+      <div class="sub" data-section="svgbg">
+        <h4>Dynamic SVG
+          <button class="eyebtn" data-vis="svgbg" aria-pressed="false" title="Show this on the cover">eye</button>
+          <button class="iconbtn dice" data-rand="svgbg" title="Randomize this layer">⤨</button>
+          <button class="lockbtn lock" data-lock="svgbg" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
+          <div class="row"><label>library</label><span></span><output id="sv-count"></output></div>
+          <div class="chips tags" id="sv-tags"></div>
+          <div class="tiles" id="sv-tiles"></div>
+
+          <div class="row"><label>colours</label><span></span>
+            <button class="iconbtn" id="sv-resetColors" title="Back to the original colours">↺</button></div>
+          <div class="swatches" id="sv-swatches"></div>
+          <p class="hint" id="sv-swatchNote" hidden></p>
+
+          <!-- Recolour from one of the 300 palettes. Colours are matched by
+               lightness, darkest to darkest, so the drawing keeps its form. -->
+          <div class="row"><label>from set</label>
+            <span></span>
+            <button class="iconbtn" id="sv-palRandom" title="Random palette">⤨</button>
+            <button class="iconbtn" id="sv-palRotate" title="Rotate which colour goes where">↻</button></div>
+          <!-- A list rather than a <select>, for the same reason the pattern
+               picker is a grid: an option element cannot draw, and a palette
+               you cannot see is a name you have to guess at. Filtered by topic
+               the way the library is filtered by tag. -->
+          <div class="chips tags" id="sv-palTags"></div>
+          <div class="pallist" id="sv-palList"></div>
+          <p class="hint" id="sv-palNote" hidden></p>
+
+          <div class="row"><label>adjust</label><span></span>
+            <button class="iconbtn" id="sv-resetAdjust" title="Reset hue, saturation, lightness and scale">↺</button></div>
+          <div class="row"><label>hue</label><input id="sv-hue" type="range" min="-180" max="180" step="1"><output id="sv-hueV"></output></div>
+          <div class="row"><label>saturation</label><input id="sv-sat" type="range" min="-100" max="100" step="1"><output id="sv-satV"></output></div>
+          <div class="row"><label>lightness</label><input id="sv-light" type="range" min="-50" max="50" step="1"><output id="sv-lightV"></output></div>
+          <div class="row"><label>scale</label><input id="sv-scale" type="range" min="0.1" max="4" step="0.05"><output id="sv-scaleV"></output></div>
+          <p class="hint" id="sv-scaleNote" hidden>This one is sized to <b>cover</b> the artboard, so it has no tile to scale.</p>
+          <!-- The free set is free with an attribution link, which is easy to
+               forget once a background is three recolours deep. -->
+          <p class="hint">Free set from <a href="https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/" target="_blank" rel="noopener">SVGBackgrounds.com</a> &mdash; attribution required wherever you use one.</p>
+        </div>
       </div>
-      <div class="row"><label>overlay</label><span></span><input id="pat-enabled" type="checkbox"></div>
-      <div id="pat-config" class="subgrp" style="display:none">
-        <!-- A trigger that expands the grid below it rather than a <select>: an
-             option element cannot draw, and the whole point of picking a
-             texture is seeing it. It opens in the panel's own flow, because the
-             panel body is a scroll container and a floating popup would be
-             clipped by it. -->
-        <div class="row"><label>pattern</label>
-          <button id="pat-trigger" class="pat-trigger" type="button" aria-expanded="false">
-            <span class="pat-swatch" id="pat-swatch"></span><span id="pat-name"></span></button></div>
-        <div class="pat-grid" id="pat-grid" hidden></div>
-        <div class="row"><label>scale</label><input id="pat-scale" type="range" min="0.1" max="8" step="0.1"><output id="pat-scaleV"></output></div>
-        <div class="row"><label>opacity</label><input id="pat-opacity" type="range" min="0" max="1" step="0.05"><output id="pat-opacityV"></output></div>
-        <div class="row"><label>colour</label><input id="pat-color" type="color"><span></span></div>
-        <div class="row"><label>blend</label>
-          <select id="pat-blend">
-            <option value="normal">normal</option>
-            <option value="multiply">multiply</option>
-            <option value="screen">screen</option>
-            <option value="overlay">overlay</option>
-            <option value="color-dodge">color-dodge</option>
-            <option value="color-burn">color-burn</option>
-            <option value="lighten">lighten</option>
-            <option value="darken">darken</option>
-          </select></div>
-        <div class="row"><label>rotation</label><input id="pat-rotate" type="range" min="0" max="360" step="15"><output id="pat-rotateV"></output></div>
+      <div class="sub" data-section="scrim">
+        <h4>Scrim
+          <button class="eyebtn" data-vis="scrim" aria-pressed="true" title="Hide the scrim">eye</button>
+          <button class="iconbtn dice" data-rand="scrim" title="Randomize this layer">⤨</button>
+          <button class="lockbtn lock" data-lock="scrim" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
+          <div class="row"><label>tone</label>
+            <select id="scrimColor" class="narrow"><option value="dark">dark</option><option value="light">light</option></select>
+            <input id="scrimAmt" type="range" min="0" max="0.85" step="0.01"><output id="scrimAmtV"></output>
+          </div>
+        </div>
       </div>
-      <div class="row"><label>static fx</label><span></span><input id="fx-enabled" type="checkbox"></div>
-      <div id="fx-config" class="subgrp" style="display:none">
-        <div class="row"><label>fx amount</label><input id="fx-opacity" type="range" min="0" max="0.5" step="0.01"><output id="fx-opacityV"></output></div>
-        <div class="row"><label>fx fps</label><input id="fx-fps" type="range" min="6" max="60" step="1"><output id="fx-fpsV"></output></div>
-        <div class="row"><label>fx cell</label><input id="fx-cell" type="range" min="1" max="6" step="0.5"><output id="fx-cellV"></output></div>
+      <div class="sub" data-section="pattern">
+        <h4>Pattern
+          <button class="eyebtn" data-vis="pattern" aria-pressed="true" title="Hide the pattern">eye</button>
+          <button class="iconbtn dice" data-rand="pattern" title="Randomize this layer">⤨</button>
+          <button class="lockbtn lock" data-lock="pattern" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
+          <!-- A grid rather than a <select>: an option element cannot draw, and
+               the whole point of picking a texture is seeing it. It sits open in
+               the panel's own flow — the panel body is a scroll container and a
+               floating popup would be clipped by it — with the current tile
+               marked in the grid and named underneath. -->
+          <div class="pat-grid" id="pat-grid"></div>
+          <div class="pat-current" id="pat-name"></div>
+          <div class="row"><label>scale</label><input id="pat-scale" type="range" min="0.1" max="8" step="0.1"><output id="pat-scaleV"></output></div>
+          <div class="row"><label>opacity</label><input id="pat-opacity" type="range" min="0" max="1" step="0.05"><output id="pat-opacityV"></output></div>
+          <div class="row"><label>colour</label><input id="pat-color" type="color"><span></span></div>
+          <div class="row"><label>blend</label>
+            <select id="pat-blend">
+              <option value="normal">normal</option>
+              <option value="multiply">multiply</option>
+              <option value="screen">screen</option>
+              <option value="overlay">overlay</option>
+              <option value="color-dodge">color-dodge</option>
+              <option value="color-burn">color-burn</option>
+              <option value="lighten">lighten</option>
+              <option value="darken">darken</option>
+            </select></div>
+          <div class="row"><label>rotation</label><input id="pat-rotate" type="range" min="0" max="360" step="15"><output id="pat-rotateV"></output></div>
+        </div>
+      </div>
+      <div class="sub" data-section="fx">
+        <h4>Static fx
+          <button class="eyebtn" data-vis="fx" aria-pressed="true" title="Hide the grain">eye</button>
+          <button class="iconbtn dice" data-rand="fx" title="Randomize this layer">⤨</button>
+          <button class="lockbtn lock" data-lock="fx" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
+          <div class="row"><label>amount</label><input id="fx-opacity" type="range" min="0" max="0.5" step="0.01"><output id="fx-opacityV"></output></div>
+          <div class="row"><label>fps</label><input id="fx-fps" type="range" min="6" max="60" step="1"><output id="fx-fpsV"></output></div>
+          <div class="row"><label>cell</label><input id="fx-cell" type="range" min="1" max="6" step="0.5"><output id="fx-cellV"></output></div>
+        </div>
       </div>
     </div>
 
-    <!-- role groups injected here -->
-    <div id="roles"></div>
-
-    <div class="grp">
-      <h3>Plate
-        <button class="eyebtn" data-vis="plate" aria-pressed="true" title="Hide this on the cover">eye</button>
-        <button class="iconbtn dice" data-rand="plate" title="Fit the plate to the text">⤢</button>
-        <button class="lockbtn lock" data-lock="plate" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
-      <div class="row"><label>colour</label><input id="plate-color" type="color"><span></span></div>
-      <div class="row"><label>opacity</label><input id="plate-alpha" type="range" min="0" max="1" step="0.02"><output id="plate-alphaV"></output></div>
-      <div class="row"><label>inset</label><input id="plate-pad" type="range" min="0" max="160" step="2"><output id="plate-padV"></output></div>
-      <div class="btnrow" style="margin-top:8px"><button id="plateFit">⤢ Fit to text</button></div>
-      <p class="hint" style="margin:8px 0 0">A flat rectangle behind the type — the old card, now a block you can place and resize like the rest. <b>Inset</b> is how far it spreads past the text when fitted.</p>
+    <div class="grp" data-section="typography">
+      <h3>Typography
+        <button class="iconbtn dice" data-rand="typography" title="Randomize every layer">⤨</button>
+        <button class="lockbtn lock" data-lock="typography" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <!-- Master face and colour: it writes through to every layer below rather
+           than being a value they inherit, so each layer keeps its own and this
+           is simply the way to set all three at once. When the layers disagree
+           it says "mixed" instead of picking a winner. -->
+      <div class="row"><label>font</label><select id="type-font"></select><input id="type-color" type="color" title="Colour for every layer"></div>
+      <!-- heading, subheading and body are injected here as sub-layers -->
+      <div id="roles"></div>
+      <!-- The plate last: it is the one layer here that carries no type, so it
+           reads as a footnote to the three that do rather than as the first
+           thing to set. Its dice fits it around the text rather than rolling
+           anything. -->
+      <div class="sub" data-section="plate">
+        <h4>Plate
+          <button class="eyebtn" data-vis="plate" aria-pressed="true" title="Hide this on the cover">eye</button>
+          <button class="iconbtn dice" data-rand="plate" title="Fit the plate to the text">⤢</button>
+          <button class="lockbtn lock" data-lock="plate" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
+          <div class="row"><label>colour</label><input id="plate-color" type="color"><span></span></div>
+          <div class="row"><label>opacity</label><input id="plate-alpha" type="range" min="0" max="1" step="0.02"><output id="plate-alphaV"></output></div>
+        </div>
+      </div>
     </div>
 
-    <div class="grp">
-      <h3>Top menu
-        <button class="eyebtn" data-vis="topmenu" aria-pressed="true" title="Hide this on the cover">eye</button>
-        <button class="iconbtn dice" data-rand="topmenu" title="Randomize this section">⤨</button>
-        <button class="lockbtn lock" data-lock="topmenu" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+    <!-- The furniture of a page rather than the cover itself: the bar across the
+         top and the button you are meant to press. Both are chrome, so both sit
+         here rather than with the type. -->
+    <div class="grp" data-section="webelements">
+      <h3>Web elements
+        <button class="iconbtn dice" data-rand="webelements" title="Randomize every layer">⤨</button>
+        <button class="lockbtn lock" data-lock="webelements" aria-pressed="false" title="Lock during randomize">🔓</button></h3>
+      <div class="sub" data-section="topmenu">
+        <h4>Top menu
+          <button class="eyebtn" data-vis="topmenu" aria-pressed="true" title="Hide this on the cover">eye</button>
+          <button class="iconbtn dice" data-rand="topmenu" title="Randomize this layer">⤨</button>
+          <button class="lockbtn lock" data-lock="topmenu" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
       <div class="row"><label>font-size</label><input id="tm-size" type="range" min="10" max="32" step="1"><output id="tm-sizeV"></output></div>
       <div class="row"><label>font/color</label><select id="tm-font"></select><input id="tm-color" type="color"></div>
       <div class="row"><label>weight</label><div class="chips" id="tm-weight"></div></div>
@@ -184,26 +290,67 @@
       <div class="row"><label>padding</label><input id="tm-pad" type="range" min="6" max="72" step="1"><output id="tm-padV"></output></div>
       <div class="row"><label>brand</label><span></span><input id="tm-brand" type="checkbox"></div>
       <div class="row"><label>shadow</label><span></span><input id="tm-shadow" type="checkbox"></div>
-      <div class="row"><label>bar</label><input id="tm-bg" type="color"><span></span></div>
-      <div class="row"><label>bar α</label><input id="tm-bgA" type="range" min="0" max="1" step="0.02"><output id="tm-bgAV"></output></div>
+      <!-- The bar behind the links: a colour and how much of it there is. One
+           reading, so one row — the colour on its own said nothing until you
+           found the opacity two lines down. -->
+        <div class="row"><label>plate</label><input id="tm-bg" type="color"><input id="tm-bgA" type="range" min="0" max="1" step="0.02"><output id="tm-bgAV"></output></div>
+        </div>
+      </div>
+
+      <!-- A button, as a block you place: ten ready-made shapes rather than a
+           pile of knobs, because a button is a look you recognise, not a set of
+           borders you assemble. The knobs left over are the ones that change
+           what it says and how loud it is. -->
+      <div class="sub" data-section="cta">
+        <h4>CTA
+          <button class="eyebtn" data-vis="cta" aria-pressed="false" title="Show this on the cover">eye</button>
+          <button class="iconbtn dice" data-rand="cta" title="Randomize this layer">⤨</button>
+          <button class="lockbtn lock" data-lock="cta" aria-pressed="false" title="Lock during randomize">🔓</button></h4>
+        <div class="sub-body">
+          <!-- Ten things a button says, rather than a field to think of one in.
+               Double-clicking the button on the cover still types your own, and
+               the dropdown then reads "custom". -->
+          <div class="row"><label>label</label><select id="cta-text"></select></div>
+          <div class="row"><label>style</label><select id="cta-style"></select></div>
+          <div class="row"><label>font-size</label><input id="cta-size" type="range" min="10" max="48" step="1"><output id="cta-sizeV"></output></div>
+          <div class="row"><label>font/color</label><select id="cta-font"></select><input id="cta-color" type="color"></div>
+          <div class="row"><label>weight</label><div class="chips" id="cta-weight"></div></div>
+          <div class="row"><label>fill</label><input id="cta-bg" type="color"><input id="cta-bgA" type="range" min="0" max="1" step="0.02"><output id="cta-bgAV"></output></div>
+          <div class="row"><label>radius</label><input id="cta-radius" type="range" min="0" max="40" step="1"><output id="cta-radiusV"></output></div>
+          <div class="row"><label>tracking</label><input id="cta-ls" type="range" min="-0.02" max="0.4" step="0.005"><output id="cta-lsV"></output></div>
+          <div class="row"><label>case</label>
+            <div class="radios" id="cta-transform">
+              <label title="None"><input type="radio" name="cta-tf" value="none">Aa</label>
+              <label title="UPPERCASE"><input type="radio" name="cta-tf" value="uppercase">AA</label>
+              <label title="lowercase"><input type="radio" name="cta-tf" value="lowercase">aa</label>
+            </div></div>
+          <div class="row"><label>shadow</label><span></span><input id="cta-shadow" type="checkbox"></div>
+        </div>
+      </div>
     </div>
 
     <div class="grp">
       <h3>Scene</h3>
-      <div class="row"><label>artboard</label><span></span><output id="sceneFit"></output></div>
       <div class="row"><label>safe area</label><span></span><input id="safeToggle" type="checkbox"></div>
       <div class="row"><label>saved</label>
         <select id="sceneList"></select>
         <button id="sceneRefresh" class="iconbtn" title="Rescan">⟳</button>
+        <button id="sceneDumpAll" class="iconbtn" title="Download every scene stored in this browser, one file each">⇊</button>
         <button id="sceneDelete" class="iconbtn" title="Delete the selected browser scene">✕</button>
       </div>
-      <div class="row"><label>name</label><input id="sceneName" type="text" placeholder="untitled" spellcheck="false"></div>
-      <div class="btnrow" style="margin-top:8px">
-        <button id="sceneStore">★ Save here</button>
-        <button id="sceneSave">⤓ Export</button>
+      <!-- What you do with a name, next to where you type it: keep it here,
+           write it out, or read one in. Icons, because the row has one label and
+           it is the field's. -->
+      <div class="row"><label>save</label>
+        <input id="sceneName" type="text" placeholder="name" spellcheck="false">
+        <button id="sceneStore" class="iconbtn" title="Save in this browser">★</button>
+        <button id="sceneSave" class="iconbtn" title="Export a .json file for scenes/">⤓</button>
+        <label class="uploadbtn iconbtn" title="Import a scene file">⤒<input id="sceneLoad" type="file" accept=".json,application/json" hidden></label>
       </div>
-      <label class="uploadbtn">⤒ Import file<input id="sceneLoad" type="file" accept=".json,application/json" hidden></label>
-      <p class="hint" id="sceneNote" style="margin:8px 0 0">Every parameter is in artboard units, so a scene reloads the same at any window size. <b>Save here</b> keeps it in this browser; <b>Export</b> writes a file for <b>scenes/</b>.</p>
+      <!-- Empty at rest and collapsed with it: the section says what it does by
+           what it offers, and this is only for what happened after you pressed
+           something — what loaded, what could not, what is stored where. -->
+      <p class="hint" id="sceneNote"></p>
     </div>
 
     <div class="grp">
@@ -216,9 +363,29 @@
     </div><!-- /.pbody -->
   </aside>
 
-<script src="static-background.js"></script>
-<script src="overlay-patterns.js"></script>
-<script src="fonts.js"></script>
-<script src="script.js"></script>
+<!-- Plain scripts, no build step, so THE ORDER IS THE DEPENDENCY GRAPH. A
+     function is hoisted inside its own file but not across files, so a file may
+     only call into the ones above it while it is loading. Catalogues first,
+     then the model, then everything that reads it, and init last — it is the
+     only file that runs the app rather than defining part of it. -->
+<script src="js/static-background.js"></script>
+<script src="js/overlay-patterns.js"></script>
+<script src="js/fonts.js"></script>
+<script src="js/svg-backgrounds-data.js"></script>
+<script src="js/palettes.js"></script>
+
+<script src="js/state.js"></script>
+<script src="js/artboard.js"></script>
+<script src="js/text.js"></script>
+<script src="js/render.js"></script>
+<script src="js/panel.js"></script>
+<script src="js/interact.js"></script>
+<script src="js/background.js"></script>
+<script src="js/randomize.js"></script>
+<script src="js/svg-background.js"></script>
+<script src="js/cta.js"></script>
+<script src="js/panel-window.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/init.js"></script>
 </body>
 </html>

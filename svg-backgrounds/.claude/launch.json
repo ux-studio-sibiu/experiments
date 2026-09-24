@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "svg-backgrounds",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", ".", "-p", "8129", "-c-1"],
+      "port": 8129
+    },
+    {
+      "name": "color-palletes",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "http-server", "../color-palletes", "-p", "8130", "-c-1"],
+      "port": 8130
+    }
+  ]
+}

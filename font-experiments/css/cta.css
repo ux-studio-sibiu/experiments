@@ -1,0 +1,116 @@
+/* cta — eleven button shapes.
+
+   One base and eleven variants, each a plain second class (never a `--` modifier),
+   drawn from four custom properties js/cta.js sets: --cta-fill, --cta-ink,
+   --cta-radius and the padding pair. A style may use them or ignore them; the
+   script only says which style is on.
+
+   Everything a style adds beyond the label — an arrow, a trailing block, a rule
+   under the words, the panel that wipes up — is a pseudo-element of the INNER
+   `.label`, never of the button itself. The button is an `.editable`, and
+   `.editable::before` and `::after` are already spoken for: they are the hover
+   outline and the name tag every block on the cover carries. Hanging a
+   decoration on those two inherits their `opacity: 0` and their position
+   (absolute, above and to the left), which is why a style drawn that way was
+   invisible until hover and then landed in the wrong place. */
+
+.cta {
+  position: absolute; z-index: 3;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: var(--cta-pad-y, 12px) var(--cta-pad-x, 22px);
+  width: max-content; max-width: 100%;
+  line-height: 1.1; white-space: nowrap;
+  border: 0; border-radius: var(--cta-radius, 0px);
+  background: transparent;
+  /* Through the token, not set inline by the script: an inline colour cannot be
+     overridden on hover, and the wipe needs to flip it. */
+  color: var(--cta-ink);
+  cursor: move;                      /* a block to place, not a link to follow */
+}
+/* The words, and the only thing a style may decorate. Left static, so a
+   decoration positioned against it resolves against the button instead. */
+.cta > .label { display: inline-block; }
+/* 1 — solid: the fill, and the label out of the way of it. */
+.cta.solid { background: var(--cta-fill); }
+
+/* 2 — studio wipe, after the contact button on indevelopment.studio: the top
+   corners rounded and the bottom left square, a hairline on three sides in the
+   fill's own colour — invisible against it until the panel wipes up from below
+   on hover and the label flips to the fill. The panel is a negative-z
+   pseudo-element, which paints above the element's background but below its
+   text as long as the element is a stacking context; `isolation` guarantees
+   that whatever the z-index does. */
+.cta.wipe {
+  background: var(--cta-fill);
+  border: 1px solid var(--cta-fill); border-bottom: 0;
+  border-radius: var(--cta-radius, 6px) var(--cta-radius, 6px) 0 0;
+  padding-bottom: calc(var(--cta-pad-y, 12px) * 1.15);   /* their asymmetry: a touch more below */
+  isolation: isolate; overflow: hidden;
+  transition: color .3s ease;
+}
+.cta.wipe .label::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--cta-ink);
+  transform: translateY(101%);
+  transition: transform .45s cubic-bezier(.65, 0, .35, 1);
+}
+.cta.wipe:hover .label::before { transform: translateY(0); }
+.cta.wipe:hover { color: var(--cta-fill); }
+
+/* 3 — outline: the fill drawn as the line instead of the field. */
+.cta.outline { box-shadow: inset 0 0 0 2px var(--cta-fill); background: transparent; }
+
+/* 4 — pill: solid, fully rounded, whatever the radius says. */
+.cta.pill { background: var(--cta-fill); border-radius: 999px; }
+
+/* 5 — ghost: a wash of the fill with its own edge — the one style where the
+   fill's opacity is the point, so it is set low when the dice picks it. */
+.cta.ghost {
+  background: var(--cta-fill);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cta-ink) 45%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+/* 6 — hard shadow: a filled box sitting on its own offset copy. No blur: the
+   shadow is a second rectangle, which is the whole joke. */
+.cta.brutal {
+  background: var(--cta-fill);
+  box-shadow: 4px 4px 0 0 var(--cta-ink), inset 0 0 0 2px var(--cta-ink);
+}
+
+/* 7 — split block: the label, then a square of ink at the end of it. */
+.cta.split { background: var(--cta-fill); padding-right: calc(var(--cta-pad-x, 22px) * 2.2); }
+.cta.split .label::after {
+  content: ""; position: absolute; top: 0; right: 0; bottom: 0;
+  width: calc(var(--cta-pad-x, 22px) * 1.4);
+  background: var(--cta-ink);
+  border-radius: 0 var(--cta-radius, 0px) var(--cta-radius, 0px) 0;
+}
+
+/* 8 — tag: small, tight and tracked, the way a label on a card is set. */
+.cta.tag {
+  padding: calc(var(--cta-pad-y, 12px) * .45) calc(var(--cta-pad-x, 22px) * .6);
+  background: var(--cta-fill);
+  letter-spacing: .18em; text-transform: uppercase; font-size: .8em;
+}
+
+/* 9 — full bar: as wide as its box rather than as its words, so it is the one
+   style that wants a box — js/cta.js gives it one the moment it is picked, and
+   the resize handles take it from there. */
+.cta.block { width: 100%; min-width: 220px; background: var(--cta-fill); }
+
+/* 10 — underline: no box at all, a rule under the words instead. */
+.cta.link { padding-left: 0; padding-right: 0; background: none; }
+.cta.link .label::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: calc(var(--cta-pad-y, 12px) * .35);
+  height: 2px; background: currentColor;
+}
+
+/* 11 — arrow link: the same, with somewhere to go. */
+.cta.arrow { padding-left: 0; background: none; }
+.cta.arrow .label::after {
+  content: "→"; display: inline-block;   /* inline-block, or the nudge on hover has nothing to move */
+  margin-left: .5em; font-size: 1.05em; line-height: 1;
+  transition: transform .12s ease;
+}
+.cta.arrow:hover .label::after { transform: translateX(3px); }

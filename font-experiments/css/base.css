@@ -1,0 +1,40 @@
+/* base — tokens and the page itself.
+   Black ink on white paper, one grey, no accent colour: the same palette and
+   typographic devices as the web-portfolio. Small type throughout, the way a
+   professional editing app sets its inspector — legibility comes from
+   contrast, tracking and row rhythm rather than from size. */
+
+:root {
+  /* The artboard. Overwritten from a scene file on load, so changing the
+     default here never invalidates a scene saved against the old one. */
+  --ref-w: 1600px;
+  --ref-h: 900px;
+  --scene-scale: 1;
+
+  --panel: 356px;
+  --panel-max: 90vh;
+  --panel-gap: 20px;
+
+  /* paper / ink / one grey — nothing else */
+  --bg: #ffffff;
+  --ink: #000000;
+  --muted: #6b6b6b;
+  --faint: #d4d4d4;
+  --wash: #f4f4f2;
+
+  /* compatibility alias used by project elements */
+  --color-ink: var(--ink);
+
+  --ui-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ui-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* one row measure, so every label lines up down the whole panel */
+  --lbl: 76px;
+  --ctl: 22px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: #0a0a0b; color: var(--ink); overflow: hidden;
+  font-family: var(--ui-sans);
+}
