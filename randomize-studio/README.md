@@ -50,8 +50,26 @@ cover: it is anchored to the screen, so its numbers are screen pixels.
   re-roll; "Randomize fonts only" keeps your sizing.
 - **Scenes** — save the whole composition. **Save here** keeps it in this
   browser, **Export** writes a `.json` file for [`scenes/`](scenes), and both
-  sources appear in one dropdown. `?curated` loads a hand-picked cover instead
-  of a random one (`?curated=2` for a specific one).
+  sources appear in one dropdown.
+- **Opening on a cover** — a refresh opens on a random scene from
+  [`scenes/initial-load/`](scenes/initial-load), and the URL can name one instead:
+  `?scene=lemon-lines` (a name, wherever it lives), `?scene=currated/lemon-lines.json`
+  (a path), `?scene=2026-09-21-0915` (a timestamp without the `scene-` prefix),
+  `?scene=currated` (a folder, one of its covers at random) or `?scene=random`.
+  Case, a leading slash, the `.json` and the `scene-` prefix are all optional, and
+  a name that matches nothing opens a default cover and says so rather than
+  showing an empty artboard. `?curated` loads a hand-picked cover built into the
+  app instead (`?curated=2` for a specific one), which needs no `scenes/` folder
+  at all. This is what lets one page embed the studio several times, each frame
+  on a different cover.
+- **How much interface** — `?ui=hide` opens with no edit panel and nothing to
+  bring it back, for a frame inside another page; `?ui=minimize` folds it to
+  the maximize button; `?ui=full` keeps it up. With no `?ui`, a URL that names
+  a cover minimizes, since it is asking for the cover to be looked at rather
+  than edited, and a plain URL opens the panel. A page embedding the
+  studio can also post `{ type: "scene", name }` into the frame to change the
+  cover without reloading it — see [`intro/`](intro), which cycles through
+  `scenes/currated/` a cover every three seconds.
 
 ## Use
 

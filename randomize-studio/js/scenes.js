@@ -437,19 +437,111 @@ const sceneUrl = (file) => SCENES_DIR + file.split('/').map(encodeURIComponent).
    it — and init.js falls back to the random first paint. Nothing is painted on
    the way out of here, so the fallback is never racing a half-applied scene. */
 const INITIAL_DIR = 'initial-load';
+
+// One file, applied and marked in the list. The two openers below differ only
+// in how they choose it.
+//
+// A name in the URL that matched nothing is reported from here rather than
+// where it was noticed: the fallback opens a cover a moment later and its own
+// note would land on top of the complaint, leaving a silently wrong page.
+let sceneMiss = '';
+async function openSceneFile(file) {
+  applyScene(await getJSON(sceneUrl(file)));
+  picked = 'file:' + file;            // so the list opens with it marked
+  markScene();
+  sceneNote(`${sceneMiss}Opened with ${file}.`);
+  sceneMiss = '';
+  return true;
+}
+
 async function loadInitialScene() {
   try {
     const { scenes } = await listScenes();
     const pool = scenes.filter(s => s.group === INITIAL_DIR);
     if (!pool.length) return false;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    applyScene(await getJSON(sceneUrl(pick.file)));
-    picked = 'file:' + pick.file;       // so the list opens with it marked
-    markScene();
-    sceneNote(`Opened with ${pick.file}.`);
-    return true;
+    return openSceneFile(pool[Math.floor(Math.random() * pool.length)].file);
   } catch { return false; }
 }
+
+/* ---- ?scene=... : the cover named in the URL ----
+   So one page can embed the studio several times and each frame open on a
+   different cover, without a copy of the app per cover.
+
+   What it takes, in the order it is tried:
+
+     ?scene=currated/lemon-lines.json   a path under scenes/, .json optional
+     ?scene=lemon-lines                 just the name, wherever it lives
+     ?scene=2026-09-21-0915             the timestamp, without the scene- prefix
+     ?scene=currated                    a folder: one of the covers in it, at random
+     ?scene=random                      any scene at all
+
+   Forgiving on purpose: the name in the URL is written by hand, and a URL that
+   half-works is worse than one that takes what you meant. Case is ignored, as
+   is a leading slash, a trailing .json and the scene- prefix that a timestamped
+   file carries. Ambiguity resolves to the first match in list order rather than
+   failing, which keeps a link working when a second scene of the same name
+   turns up in another folder.
+
+   Resolves false when nothing matches or the folder cannot be read, and the
+   caller falls back to the ordinary first paint — a mistyped name shows a
+   cover rather than an empty artboard. */
+const sceneKey = (s) => {
+  let t = String(s).trim().toLowerCase();
+  while (t.startsWith('/')) t = t.slice(1);
+  if (t.endsWith('.json')) t = t.slice(0, -5);
+  if (t.startsWith('scene-')) t = t.slice(6);
+  return t;
+};
+
+async function loadNamedScene(spec) {
+  if (!spec) return false;
+  // A full path needs no listing: fetch it and see. That is the cycling
+  // embed's case — a cover a second, each one named exactly — and a directory
+  // listing per swap is a round trip nobody reads. A miss just falls through
+  // to the search below, which is where a hand-written name belongs anyway.
+  let raw = String(spec).trim();
+  while (raw.startsWith('/')) raw = raw.slice(1);
+  if (raw.includes('/') && raw.toLowerCase().endsWith('.json')) {
+    try { return await openSceneFile(raw); } catch {}
+  }
+  try {
+    const { scenes } = await listScenes();
+    if (!scenes.length) return false;
+    const want = sceneKey(spec);
+    const any = () => scenes[Math.floor(Math.random() * scenes.length)];
+    if (want === 'random' || want === 'any') return openSceneFile(any().file);
+
+    // Whole path first, then the bare name, so currated/x and x both land.
+    const base = (f) => sceneKey(f.slice(f.lastIndexOf('/') + 1));
+    const hit = scenes.find(s => sceneKey(s.file) === want)
+             || scenes.find(s => base(s.file) === want);
+    if (hit) return openSceneFile(hit.file);
+
+    // A folder name: any cover in it. Useful for an embed that should look
+    // different on every reload but stay inside one set.
+    const inFolder = scenes.filter(s => sceneKey(s.group) === want);
+    if (inFolder.length) return openSceneFile(inFolder[Math.floor(Math.random() * inFolder.length)].file);
+
+    sceneMiss = `No scene called "${spec}" — `;
+    return false;
+  } catch { return false; }
+}
+
+/* ---- a page that embeds this one can ask for a cover ----
+   postMessage({ type: 'scene', name }) from the frame around us, where name is
+   anything ?scene= takes. The intro page uses it to cycle through a folder: a
+   new src would re-boot the whole app every few seconds - scripts, fonts, a
+   fresh photo - where this swaps the cover the same way clicking the list does.
+
+   Only from our own parent, and only same-origin: postMessage is open to
+   anything that can reach this window. */
+addEventListener('message', (e) => {
+  if (window.parent === window || e.source !== window.parent) return;
+  if (e.origin !== location.origin) return;
+  const msg = e.data;
+  if (!msg || msg.type !== 'scene' || typeof msg.name !== 'string') return;
+  loadNamedScene(msg.name);
+});
 
 async function loadScene(value) {
   picked = value;

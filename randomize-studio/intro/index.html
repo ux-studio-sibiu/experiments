@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Randomize Studio</title>
+<meta name="description" content="A cover playground: photograph, plate and editable type on a fixed artboard, with live Google Fonts and a dice for when nothing is working.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="intro.css">
+</head>
+<body>
+<div class="nsc-studio-intro">
+<div class="columns">
+
+
+  <div class="copy">
+
+    <section class="intro">
+      <h1 class="title">Randomize Studio</h1>
+      <p class="role">design concepts : rapid prototyping : for designer-devs</p>
+      <!-- <hr class="intro-rule"> -->
+      <!-- <ul class="intro-list">
+        <li>Playground for approaching design from the dev angle</li>
+      </ul> -->
+      <!-- <p class="actions"><a class="button" href="../index.html">Open studio</a></p> -->
+    </section>
+
+
+        <section>
+        <ul>
+          <li>editable design elements: layout, type, colour, image and texture</li>
+
+
+          <li>adobe-like ui for fast edits, layer based composition</li>
+          <li>output is assets is directly usable in web projects</li>
+          <li> can be used as .skills on existing projects to enable design previews in-browser.</li>
+        </ul>
+    </section>
+
+
+
+    <section>
+      <h2 class="section-title">Adobe-like UI</h2>
+
+
+      <ul>
+        <li>layer based composition - show/hide each layer</li>
+        <li>floating inspector to adjust elements</li>
+        <li>drag, resize, edit text, directly on the artboard</li>
+        <!-- <li>ui to adjust params</li> -->
+
+        <li>randomize each layer - or randomize all</li>
+        
+
+        <!-- <li><strong>Drag</strong> to place it, <strong>double-click</strong> to edit its text</li>
+        <li><strong>Corner handles</strong> resize the box the text flows in</li>
+        <li><kbd>Ctrl</kbd>-click adds to the selection; they move together</li>
+        <li><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> nudge by one, with
+          <kbd>Shift</kbd> by ten</li>
+        <li><kbd>R</kbd> randomizes, <kbd>Esc</kbd> deselects</li> -->
+      </ul>
+      <figure class="shot">
+        <img src="../assets/randomize-panel.jpg" width="357" height="557" loading="lazy"
+             alt="The edit panel: Background, Typography, Web elements and Scene as collapsible layer
+                  sections, each row with an eye, a dice and a lock.">
+        <figcaption>Four sections, and the same three controls on every layer.</figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <h2 class="section-title">Sources</h2>
+      <ul>
+        <li>fonts: <a href="https://fonts.google.com">google fonts</a></li>
+        <li>images: <a href="https://picsum.photos">lorem picsum</a></li>
+        <li>svg backgrounds: <a href="https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/">svgbackgrounds.com</a></li>
+        <li>svg patterns: <a href="https://heropatterns.com">hero patterns</a></li>
+        <li>icons: <a href="https://github.com/WordPress/dashicons">dashicons</a></li>
+      </ul>
+    </section>
+
+    <section class="stack-section">
+      <strong><code>Stack</code> : </strong>
+      <code>html</code>
+      <code>css</code>
+      <code>javascript</code>
+      <code>svg</code>
+      <code>google fonts</code>
+      <code>no build</code>
+    </section>
+
+    <section class="colophon">
+    </section>
+
+  </div>
+
+  <!-- Column 2: the studio itself, held still while the copy goes by. -->
+  <div class="showcase">
+
+    <!-- The word doubles as the cycle clock: a ghost copy underneath, an ink one
+         on top revealed left to right over exactly one turn of the rotation.
+         SVG rather than a heading because textLength makes it span its box at
+         any width, and lengthAdjust="spacing" buys that by adjusting the
+         tracking rather than stretching the letters out of shape.
+
+         RANDOMIZE sets 625 units wide per 100 of font-size, so 160 is the size
+         at which it fills the 1000 of the viewBox on its own. Set past that, at
+         168, textLength has to pull the letters IN - about -0.04em - which is
+         the tight setting the word wants. At 100 it was being tracked out by
+         nearly half an em to reach the same width.
+
+         The reveal is a MASK, not a clip. A clip edge is a hard line, and a
+         hard line crossing letterforms this small pops from stem to stem; a
+         mask can carry a short ramp at its edge, so the same motion reads as
+         shading. The band is wider than the word and translated across rather
+         than scaled, which keeps that ramp a constant width instead of
+         stretching it open as the fill grows. It ends opaque over the whole
+         word: 96.4% of 1100 is 1060, comfortably past the 1000 it has to
+         cover. -->
+    <div class="stagehead">
+      <!-- Shown by intro.js, and only once there is a rotation to control. It
+           sits beside the clock rather than under the frame, which is the one
+           place it reads as belonging to the thing it stops. -->
+      <button type="button" class="cyclebtn" hidden></button>
+      <h2 class="cycletitle">
+        <svg viewBox="0 0 1000 122" role="img" aria-label="Randomize">
+          <defs>
+            <linearGradient id="cycleEdge" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#fff"/>
+              <stop offset=".964" stop-color="#fff"/>
+              <stop offset="1" stop-color="#000"/>
+            </linearGradient>
+            <mask id="cycleFill" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="122">
+              <rect class="fill" x="-1100" y="0" width="1100" height="122" fill="url(#cycleEdge)"/>
+            </mask>
+          </defs>
+          <text class="ghost" x="0" y="118" textLength="1000" lengthAdjust="spacing">RANDOMIZE</text>
+          <text class="ink" x="0" y="118" textLength="1000" lengthAdjust="spacing" mask="url(#cycleFill)">RANDOMIZE</text>
+        </svg>
+      </h2>
+    </div>
+
+    <!-- 16:9 because the artboard is 1600x900 and the cover scales by
+         max(vw/w, vh/h): at exactly that ratio the visible region is the whole
+         artboard, so everything sits where it was placed. Any other shape crops
+         the middle out of one axis. -->
+    <div class="frame">
+      <iframe src="../index.html?scene=currated&amp;ui=hide" title="Randomize Studio, live" loading="lazy" tabindex="-1"></iframe>
+      <!-- The whole frame is the link. The studio inside is a preview here -
+           pointer-events are off it, so a stray drag cannot leave a cover
+           half-edited - and this is what a click on it should do instead. An
+           anchor rather than a div, so it is reachable by keyboard and opens
+           the way any other link does. -->
+      <a class="cover" href="../index.html"><span class="label">Open studio</span></a>
+    </div>
+
+    <ol class="steps">
+      <li>1. Randomize design elements</li>
+      <li>2. Get inspired</li>
+      <li>3. Keep what works</li>
+      <li>4. Randomize the rest</li>
+      <li>5. Refine manually at any step</li>
+    </ol>
+
+
+  </div>
+
+</div>
+</div>
+<script src="intro.js"></script>
+</body>
+</html>

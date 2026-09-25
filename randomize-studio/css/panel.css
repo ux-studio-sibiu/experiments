@@ -166,6 +166,17 @@ body.panel-hidden .panel {
 #panelShow:hover { background: var(--bg); color: var(--ink); }
 body.panel-hidden #panelShow { display: block; }
 
+/* ---- ?ui=hide: no interface at all ----
+   Not the same as minimized. Minimized keeps the way back, which is right when
+   someone is looking at their own cover; this is for a frame inside another
+   page, where the editor is not the point and a button offering it is one more
+   thing to explain. The cover, and nothing else.
+
+   After the rule above, because that one would otherwise put the maximize
+   button back: the two selectors weigh the same and the last one wins. */
+body.panel-gone .panel,
+body.panel-gone #panelShow { display: none; }
+
 /* ---- sections: hairline-ruled, no boxes, no fills ---- */
 .grp { border-bottom: 1px solid var(--ink); padding: 10px 14px 14px; }
 /* A section header and a layer header are one control at two levels, so they

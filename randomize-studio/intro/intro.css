@@ -1,0 +1,513 @@
+/* intro — the page that presents the studio.
+
+   Laid out the way the project details in the portfolio are: a column of copy
+   that scrolls as ordinary page content, and beside it the thing itself, held
+   still with position: sticky. One scroller, not two - the wheel then works
+   from anywhere over the page with the browser's own scrolling, inertia and
+   rubber-band and all, and nothing has to be forwarded by hand.
+
+   Paper and ink from the app itself: white, black, one grey, two typefaces,
+   and the offset shadow every button and frame in the studio wears. Nothing
+   here is shared with the app's stylesheets on purpose - this page must keep
+   working whatever the panel's CSS does next. */
+
+:root {
+  --bg: #ffffff;
+  --ink: #000000;
+  --muted: #6b6b6b;
+  --faint: #d4d4d4;
+  --wash: #f4f4f2;
+
+  --ui-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ui-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --gutter: clamp(20px, 3vw, 40px);
+
+  /* The two marks on the cycle control, inlined as masks so they take
+     currentColor the way every button mark in the studio does. Dashicons
+     controls-pause and controls-play (GPL-2.0-or-later, see the colophon). */
+  --icon-pause: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 16V4h3v12H5zm7-12h3v12h-3V4z'/%3E%3C/svg%3E");
+  --icon-play: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 4l10 6-10 6V4z'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ui-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================ the two columns ============================ */
+.columns { display: grid; grid-template-columns: 1fr; }
+
+@media (min-width: 1000px) {
+  .columns {
+    /* The proportion the project details use: a panel of copy against the work
+       filling everything left over. */
+    grid-template-columns: 1fr minmax(20rem, 34%);
+    /* Not stretched: a grid item that fills its row cannot stick inside it. */
+    align-items: start;
+  }
+
+  /* The studio on the left, the copy on the right. Placed rather than
+     reordered in the markup, so on a phone the copy still comes first. */
+  .copy { grid-column: 2; grid-row: 1; }
+  .showcase { grid-column: 1; grid-row: 1; }
+}
+
+/* ---- column 1: the copy ----
+   A deep head and foot. The column scrolls, so the text starts below the fold
+   of its own box and ends well before the bottom of it, which is what keeps it
+   off the edges of a panel that has no other chrome. */
+/* A query container, so the title can be sized as a share of THIS column
+   rather than of the window. The column is a percentage of the viewport with a
+   floor, so vw never described it properly. */
+.copy {
+  container-type: inline-size;
+  padding: clamp(48px, 7vw, 120px) var(--gutter) clamp(64px, 8vw, 128px);
+}
+
+.copy section { margin: 0 0 2rem; }
+
+/* A rule between one section and the next, the same weight as the one under
+   the head: the panel is a long column of lists and they run together without
+   something to say where one subject ends. */
+.copy section + section {
+  padding-top: 1.75rem;
+  border-top: 2px solid var(--ink);
+}
+
+/* Except the first after the head, which already has a rule of its own a
+   paragraph above it - two lines that close together read as a mistake rather
+   than as structure. */
+.intro + section { padding-top: 0; border-top: 0; }
+
+.copy p { margin: 0 0 .9rem; font-size: .9375rem; line-height: 1.6; }
+/* The portfolio's entry-points list (web-portfolio/app/styles/_devices.scss):
+   small mono copy, square markers hung out of the text block so a wrapped line
+   returns to the words and not under the square. */
+.copy ul {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  margin: .6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.copy li {
+  position: relative;
+  padding-left: 1.5rem;
+  font-family: var(--ui-mono);
+  font-size: .8rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.copy li::before {
+  content: "";
+  position: absolute;
+  top: .55em;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--ink);
+}
+
+/* The five steps: the one list on the page meant to be read at a glance, so
+   it drops the markers (the numbers are in the text) and is set display-size
+   in the page face, the way the portfolio sets its band titles. Sits under the
+   frame in the showcase column: the block is as wide as its longest step and
+   centred under the frame, the steps inside it ranged left. */
+.steps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: center;
+  gap: .35em;
+  width: fit-content;
+  margin: 2.5rem auto 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.steps li {
+  font-family: var(--ui-sans);
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -.035em;
+  /* The heaviest Archivo index.html loads. */
+  font-weight: 700;
+}
+/* Not the buttons: a bare .button rule loses to this one on specificity - a
+   class plus a type beats a class - and the primary button came out black on
+   black. */
+.copy a:not(.button) { color: var(--ink); }
+
+/* A section that earns a title rather than a label. The others name themselves
+   inline, in the code chip the whole column is written in, which is right for
+   a line of detail; this one is the section someone is actually looking for,
+   so it says so above the text rather than at the head of it. */
+.section-title {
+  margin: 0 0 .7rem;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -.025em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* The device the whole panel is written in: a name, a tool or a term set apart
+   from the sentence around it. Quiet - a tint and a little air, not a border -
+   because a line here can hold four of them. */
+code {
+  font-family: var(--ui-mono);
+  font-size: .8125em;
+  background: var(--wash);
+  border-radius: 2px;
+  padding: .15em .4em;
+  white-space: nowrap;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  font-family: var(--ui-mono);
+  font-size: .8em;
+  text-align: center;
+}
+
+/* ---- the head of the panel ---- */
+.intro { margin-bottom: 2.25rem; }
+/* Set to the measure rather than to a taste, and to the WHOLE name on one
+   line. Randomize Studio sets 8.67em wide in this face at this weight, and the
+   -0.04em tracking takes 0.6em back off its fifteen gaps, so it comes to
+   8.07em: 100/8.07 = 12.4% of the column is the size at which it fills the
+   line exactly.
+
+   12.2 rather than 12.4, because the fallback stack is the wider one - 8.12em
+   against Archivo 8.07 - and the title is on screen in it for the moment
+   before the webfont lands. Sizing to the widest of the two means the line
+   never has to reflow.
+
+   nowrap on top of that: a measurement is a prediction, and this one is made
+   against fonts that a browser is free to substitute. The size keeps it from
+   needing to wrap; this keeps it from wrapping anyway.
+
+   The clamp above is what a browser without container units gets, and the cap
+   keeps it from running away on a very wide screen. */
+.title {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  font-size: clamp(1.5rem, 12.2cqw, 5rem);
+  line-height: 1.02;
+  letter-spacing: -.04em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.role {
+  margin: .65rem 0 0;
+  font-family: var(--ui-mono);
+  font-size: .75rem;
+  letter-spacing: .1em;
+  text-transform: lowercase;
+  color: var(--ink);
+}
+
+/* `.copy p` outranks a bare `.role` (class + type beats class), so the type
+   has to be set at the same weight to take. */
+.copy p.role {
+  margin: 0 0 .9rem;
+  font-size: .85rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
+/* How big the thing is, in figures. Bold rather than set out in a table of
+   their own: the panel is a column of prose and this is the one line in it
+   that should be readable at a glance. */
+.scale {
+  margin: 1rem 0 0;
+  font-size: .9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.scale strong { font-weight: 700; color: var(--ink); }
+
+/* The line that separates what the thing IS from what is in it. */
+.intro-rule { margin: 1.25rem 0; border: 0; border-top: 2px solid var(--ink); }
+
+/* A screenshot in the column, wearing the same rule and shadow as the frame
+   beside it, so the two read as the same kind of object. */
+.shot { margin: 1.25rem 0 0; }
+
+/* Capped at 260: it is a screenshot of a 356px panel, and past its own size it
+   is only a bigger blur. */
+.shot img {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 5px #00000033;
+}
+
+.shot figcaption {
+  margin: .7rem 0 0;
+  font-family: var(--ui-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+/* The stack is a row of chips rather than a sentence, so it wraps as one. */
+.stack-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+}
+
+.colophon p { font-size: .8125rem; line-height: 1.7; color: var(--muted); }
+
+/* ---- buttons ----
+   The studio's own: ink on paper, two-pixel border, the shadow offset down and
+   to the right, and it moves into that shadow when pressed. */
+.actions { margin: 1.5rem 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
+
+.button {
+  display: inline-block;
+  padding: 11px 20px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--ui-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 3px 5px #00000033;
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+
+.button:hover { transform: translate(1px, 2px); box-shadow: 2px 3px #00000033; }
+.button:active { transform: translate(3px, 5px); box-shadow: 0 0 #00000033; }
+.button.quiet { background: var(--bg); color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .button { transition: none; }
+}
+
+/* ============================ column 2: the studio ============================
+   Held still while the copy goes by: sticky against the page's own scroller, a
+   screen tall, with the frame centred in whatever room is left over rather
+   than hung from the top. */
+.showcase {
+  padding: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (min-width: 1000px) {
+  .showcase {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;   /* a frame taller than the screen is cropped, not scrolled to */
+  }
+}
+
+/* ---- the word above the frame, which is also the clock ----
+   Top right of the frame and small: it reads as the frame's own label and the
+   time until the next cover, not as a headline. The copy column owns the
+   headline.
+
+   The fill is a clipped copy rather than a gradient on the text, because a
+   clip has a hard edge - it reads as something filling up, not as a glow
+   crossing the word. Driven from intro.js so it is pinned to the swaps rather
+   than running alongside them and drifting.
+
+   The pause control rides with it. Bottom-aligned rather than centred, so the
+   two sit on one line above the frame instead of on two near-misses. */
+.stagehead {
+  /* A query container, so 26cqw means the same thing to the word and to the
+     mark beside it. As a plain 26% it would resolve against each of their own
+     boxes, and the mark would be sized from itself. */
+  container-type: inline-size;
+  --clock-w: clamp(150px, 26cqw, 230px);
+  width: min(100%, 900px);
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cycletitle { margin: 0; width: var(--clock-w); line-height: 0; }
+
+.cycletitle svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Past the 160 that would fill the box on its own, so textLength tightens the
+   word rather than tracking it out. See the note in index.html. */
+.cycletitle text {
+  font-family: var(--ui-sans);
+  font-size: 168px;
+  font-weight: 700;
+}
+
+.cycletitle .ghost { fill: var(--faint); }
+.cycletitle .ink { fill: var(--ink); }
+
+/* Parked at the end of its travel, so with no rotation to clock - no manifest,
+   one scene - the word is simply the solid label it looks like. intro.js takes
+   it over from here; will-change asks for the layer up front rather than on
+   the first frame of every turn. */
+.cycletitle .fill {
+  transform: translateX(1040px);
+  will-change: transform;
+}
+
+/* ---- the frame ----
+   The ratio belongs to the IFRAME, not to the frame around it. Put it on the
+   border box and the two-pixel rule eats into it, which is enough for the
+   cover scale to crop half a percent off the top and bottom. The frame is then
+   just a rule and a shadow, taking its height from what it holds. */
+.frame {
+  position: relative;   /* the overlay is laid over the cover */
+  width: min(100%, 900px);
+  margin: 0 auto;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 5px #00000033;
+  /* Black, not paper. Whatever the frame shows between one cover and the next
+     - a cover still painting, a lazy iframe before it loads - shows through as
+     an unlit screen rather than as a hole in the page. */
+  background: #000;
+  line-height: 0;
+}
+
+/* A preview, not a workspace. Without this a drag lands on a block and leaves
+   the cover half-moved, with no way to put it back and nothing saying the
+   studio proper is a click away. */
+.frame iframe {
+  display: block;
+  background: #000;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  pointer-events: none;
+  transition: opacity .22s ease;
+}
+
+/* The moment of a swap: the cover fades out and the frame it sits in does not,
+   so what is left behind is its black. The border can stay exactly as it is -
+   it was only ever a problem when the frame went pale underneath it, and a
+   black rule around a black picture is one shape, not two. */
+.frame.is-swapping iframe { opacity: 0; }
+
+/* The frame as a link: a wash of ink over the cover and the invitation in the
+   middle of it. */
+.cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #00000000;
+  text-decoration: none;
+  transition: background-color .18s ease;
+}
+
+.cover:hover,
+.cover:focus-visible { background: #00000061; }
+
+.cover .label {
+  padding: 11px 20px;
+  border: 2px solid var(--ink);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ui-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: 3px 5px #00000033;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.cover:hover .label,
+.cover:focus-visible .label { opacity: 1; transform: none; }
+
+/* No pointer, no hover: the invitation has to be standing there already. */
+@media (hover: none) {
+  .cover { background: #0000002e; }
+  .cover .label { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame iframe, .cover, .cover .label { transition: none; }
+}
+
+/* The cycle control. Auto-advancing content needs a way to stop it that does
+   not depend on holding a pointer still, and this is also the way back after
+   the rotation has been stopped.
+
+   A mark rather than a word: it sits beside a word already, and PAUSE next to
+   RANDOMIZE reads as two labels rather than as a label and its control. The
+   mark follows aria-pressed, so the state is said once and drawn from the
+   same place - pressed, meaning held, shows the way to start it again. */
+.cyclebtn {
+  display: grid;
+  place-items: center;
+  /* RANDOMIZE stands 117.6 of the 1000 units its box is wide, so that fraction
+     of the same measure is exactly its cap height. The mark is the word set in
+     another alphabet; it should be the same size and the same black. */
+  width: calc(var(--clock-w) * .1176);
+  height: calc(var(--clock-w) * .1176);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.cyclebtn::before {
+  content: "";
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  -webkit-mask: var(--icon-pause) center / contain no-repeat;
+  mask: var(--icon-pause) center / contain no-repeat;
+}
+
+.cyclebtn[aria-pressed="true"]::before {
+  -webkit-mask-image: var(--icon-play);
+  mask-image: var(--icon-play);
+}
+
+.cyclebtn:hover { opacity: .55; }
+
+/* The word is the clock, so it is also a switch for it. The button beside it
+   is what a keyboard reaches; this is what a pointer reaches for first. */
+.cycletitle { cursor: pointer; user-select: none; }
+
+/* ============================ narrow ============================
+   One column, the studio first: on a phone the frame is the fastest way to say
+   what this is, and the copy reads underneath it. */
+@media (max-width: 999px) {
+  .showcase { order: -1; padding-top: clamp(32px, 6vw, 56px); }
+  .copy { padding-top: clamp(32px, 5vw, 56px); }
+}
