@@ -425,6 +425,32 @@ function syncSceneButtons() {
   $('sceneDelete').disabled = !picked.startsWith('local:');
 }
 
+// Per segment, so a scene inside a folder keeps its slash: encoding the whole
+// path would turn scenes/dark/a.json into one long filename.
+const sceneUrl = (file) => SCENES_DIR + file.split('/').map(encodeURIComponent).join('/');
+
+/* ---- the cover a refresh opens on ----
+   scenes/initial-load/ holds finished covers meant to be seen cold, and one of
+   them at random is a better first impression than a random pairing of fonts.
+   Resolves false when there is nothing to open with — the folder is empty, or
+   unreadable because the page was opened off the disk with no manifest beside
+   it — and init.js falls back to the random first paint. Nothing is painted on
+   the way out of here, so the fallback is never racing a half-applied scene. */
+const INITIAL_DIR = 'initial-load';
+async function loadInitialScene() {
+  try {
+    const { scenes } = await listScenes();
+    const pool = scenes.filter(s => s.group === INITIAL_DIR);
+    if (!pool.length) return false;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    applyScene(await getJSON(sceneUrl(pick.file)));
+    picked = 'file:' + pick.file;       // so the list opens with it marked
+    markScene();
+    sceneNote(`Opened with ${pick.file}.`);
+    return true;
+  } catch { return false; }
+}
+
 async function loadScene(value) {
   picked = value;
   markScene();
@@ -436,9 +462,7 @@ async function loadScene(value) {
       applyScene(scene);
       sceneNote(`Loaded "${id}" from this browser.`);
     } else {
-      // Per segment, so a scene inside a folder keeps its slash: encoding the
-      // whole path would turn scenes/dark/a.json into one long filename.
-      applyScene(await getJSON(SCENES_DIR + id.split('/').map(encodeURIComponent).join('/')));
+      applyScene(await getJSON(sceneUrl(id)));
       sceneNote(`Loaded ${id}.`);
     }
   } catch (err) {

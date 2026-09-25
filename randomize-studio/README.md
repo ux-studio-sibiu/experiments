@@ -1,4 +1,4 @@
-# font-experiments
+# randomize-studio
 
 A cover playground: a photograph, a plate and editable **heading / subheading /
 body-columns** on a canvas you place them on by hand, with Google Fonts swapped

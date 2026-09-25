@@ -1,6 +1,6 @@
 /* Fill in what an old scene never knew about.
 
-   Run from the font-experiments folder:  node tools/upgrade-scenes.js
+   Run from the randomize-studio folder:  node tools/upgrade-scenes.js
    Add --dry to see what it would change without writing anything.
 
    A scene saved before a layer existed says nothing about it. The panel now

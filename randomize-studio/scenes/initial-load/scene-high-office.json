@@ -1,6 +1,6 @@
 {
   "v": 2,
-  "name": "",
+  "name": "high-office",
   "ref": {
     "w": 1600,
     "h": 900
@@ -8,22 +8,31 @@
   "bg": {
     "enabled": true,
     "kind": "photo",
-    "seed": "lk1gwri",
-    "preset": null,
-    "src": null,
     "sat": 1,
-    "blur": 0
+    "blur": 0,
+    "seed": "lk1gwri"
   },
   "scrim": {
+    "enabled": true,
     "amount": 0.35,
-    "color": "dark",
-    "enabled": true
+    "color": "dark"
   },
   "fx": {
     "enabled": true,
     "opacity": 0.12,
     "fps": 24,
     "cell": 2
+  },
+  "svgbg": {
+    "enabled": false,
+    "id": "liquid-cheese",
+    "overrides": {},
+    "hue": 0,
+    "sat": 0,
+    "light": 0,
+    "scale": 1,
+    "palette": null,
+    "palRot": 0
   },
   "layout": {
     "align": "right",
@@ -102,10 +111,11 @@
   },
   "topmenu": {
     "enabled": true,
+    "anchor": "tl",
     "links": 6,
-    "font": "Playfair Display",
+    "font": "Lexend",
     "weight": 700,
-    "size": 17,
+    "size": 19,
     "ls": 0.085,
     "transform": "uppercase",
     "align": "left",
@@ -119,29 +129,7 @@
     "x": 0,
     "y": 0,
     "boxW": null,
-    "boxH": null,
-    "anchor": "tl"
-  },
-  "plate": {
-    "enabled": false,
-    "x": 54,
-    "y": 240,
-    "boxW": 940,
-    "boxH": 380,
-    "color": "#000000",
-    "alpha": 0.36,
-    "pad": 14
-  },
-  "svgbg": {
-    "enabled": false,
-    "id": null,
-    "overrides": {},
-    "hue": 0,
-    "sat": 0,
-    "light": 0,
-    "scale": 1,
-    "palette": null,
-    "palRot": 0
+    "boxH": null
   },
   "cta": {
     "enabled": false,
@@ -161,5 +149,15 @@
     "y": 650,
     "boxW": null,
     "boxH": null
+  },
+  "plate": {
+    "enabled": false,
+    "x": 54,
+    "y": 240,
+    "boxW": 940,
+    "boxH": 380,
+    "color": "#000000",
+    "alpha": 0.36,
+    "pad": 14
   }
 }

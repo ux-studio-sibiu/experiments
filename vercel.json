@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/font-experiments", "destination": "/randomize-studio", "permanent": true },
+    { "source": "/font-experiments/:path*", "destination": "/randomize-studio/:path*", "permanent": true }
+  ]
+}

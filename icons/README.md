@@ -2,7 +2,7 @@
 
 A studio for trying an icon out before you commit to it: pick one, set its
 size, colour and the tile around it, and see the same icon at the sizes a real
-interface is built from. Same editing chrome as `font-experiments` and
+interface is built from. Same editing chrome as `randomize-studio` and
 `svg-backgrounds`. Plain HTML, CSS and JS: no build step, no dependencies.
 Serve the folder and open `index.html`.
 

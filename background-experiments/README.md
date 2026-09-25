@@ -1,10 +1,10 @@
 # Background Experiments - SVG Patterns
 
-A playground for exploring SVG background patterns with CSS effects, inspired by the font-experiments utility. Mix and match scalable vector patterns, adjust opacity and scale, apply color tints, and experiment with blend modes.
+A playground for exploring SVG background patterns with CSS effects, inspired by the randomize-studio utility. Mix and match scalable vector patterns, adjust opacity and scale, apply color tints, and experiment with blend modes.
 
 ## Structure
 
-Following the same pattern as **font-experiments**:
+Following the same pattern as **randomize-studio**:
 
 - **`index.html`** — Main page with stage (preview) and control panel
 - **`patterns.js`** — SVG pattern catalog and loader (similar to `fonts.js`)

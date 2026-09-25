@@ -2,7 +2,7 @@
 
 A playground for 44 of the 48 backgrounds in the
 [free SVGBackgrounds.com set](https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/),
-in the same editing chrome as `font-experiments`. Plain HTML, CSS and JS: no
+in the same editing chrome as `randomize-studio`. Plain HTML, CSS and JS: no
 build step, no dependencies. Serve the folder and open `index.html`.
 
 ## What it does

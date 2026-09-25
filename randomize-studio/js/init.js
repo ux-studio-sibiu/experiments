@@ -17,9 +17,16 @@ if (params.has('curated')) {
     : CURATED[Math.floor(Math.random() * CURATED.length)];
   applyPreset(preset);
 } else {
-  // default: a fresh random pairing + a random photo backdrop
-  randomizeRoles(false, true);  // randomize fonts & lengths (skip bg — avoids a double random)
-  loadRandomPhoto();             // single source for the first-load backdrop (a photo)
+  // default: one of the finished covers in scenes/initial-load/, picked at
+  // random, so a refresh opens on something composed. The random pairing is
+  // the fallback for when that folder cannot be read at all, and it runs only
+  // then: firing it first would leave loadRandomPhoto's fetch to land after
+  // the scene and paint over its background.
+  loadInitialScene().then(ok => {
+    if (ok) return;
+    randomizeRoles(false, true);  // randomize fonts & lengths (skip bg — avoids a double random)
+    loadRandomPhoto();             // single source for the first-load backdrop (a photo)
+  });
 }
 window.fontLab = { state, REF, render, randomizeRoles, loadRandomPhoto, setText, applyPreset, CURATED,
                    serializeScene, applyScene, fitScene, placeFrame, restack, plateToText }; // handy for console tinkering

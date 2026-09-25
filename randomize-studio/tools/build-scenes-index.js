@@ -1,6 +1,6 @@
 /* Write scenes/index.json — the manifest the panel falls back to.
 
-   Run from the font-experiments folder:  node tools/build-scenes-index.js
+   Run from the randomize-studio folder:  node tools/build-scenes-index.js
 
    The scene list normally reads the dev server's own directory listing, which
    needs no upkeep at all. Plenty of ways of serving this folder have no such
@@ -17,7 +17,7 @@ const DIR = 'scenes';
 const isScene = (f) => f.endsWith('.json') && f !== 'index.json';
 
 if (!fs.existsSync(DIR)) {
-  console.error(`No ${DIR}/ here — run this from the font-experiments folder.`);
+  console.error(`No ${DIR}/ here — run this from the randomize-studio folder.`);
   process.exit(1);
 }
 

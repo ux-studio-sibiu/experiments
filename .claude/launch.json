@@ -8,9 +8,9 @@
       "port": 8127
     },
     {
-      "name": "font-experiments",
+      "name": "randomize-studio",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "http-server", "font-experiments", "-p", "8128", "-c-1"],
+      "runtimeArgs": ["--yes", "http-server", "randomize-studio", "-p", "8128", "-c-1"],
       "port": 8128
     },
     {

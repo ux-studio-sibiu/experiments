@@ -2,7 +2,7 @@
 
 A playground for 300 community palettes from
 [Adobe Color › Explore](https://color.adobe.com/explore), in the same editing
-chrome as `font-experiments` and `svg-backgrounds`. Plain HTML, CSS and JS: no
+chrome as `randomize-studio` and `svg-backgrounds`. Plain HTML, CSS and JS: no
 build step, no dependencies. Open `index.html`.
 
 ## What it does

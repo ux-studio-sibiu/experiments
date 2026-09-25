@@ -1,0 +1,61 @@
+/* tooltip — the hover card, carried over from the portfolio's cursor-card.
+   Same box: paper, a two-pixel ink border, the offset shadow the buttons and
+   thumbnails wear, and a fade rather than a slide. Only the type is smaller,
+   because this panel sets its own copy at 11-12px and a 17px card would read
+   as a different application. */
+
+/* Placed by a transform on top/left 0 rather than by setting top and left: it
+   moves with every pointermove, and a transform is the one way to do that
+   without asking for layout each time.
+   Above the panel (20) and the restore button (50) both — it is never under
+   the thing it is describing. */
+.nsc-tipcard {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  left: 0;
+  /* It follows the pointer, so it must never be under it: a card that takes
+     events would put itself between the pointer and the control being hovered
+     and flicker itself in and out. */
+  pointer-events: none;
+  /* A cap, not a width. Fixed-position boxes shrink to fit when their width is
+     auto, so a two-word tip gets a two-word box and only a long one wraps. */
+  max-width: min(20rem, 74vw);
+  padding: 8px 11px 9px;
+  background: var(--bg);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 5px #00000033;
+  animation: tipcard-in .12s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nsc-tipcard { animation: none; }
+}
+
+.nsc-tipcard .card-title {
+  margin: 0;
+  font-family: var(--ui-sans);
+  font-size: 13px;
+  line-height: 1.35;
+  letter-spacing: normal;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* The second line and everything after it, when a tip has one: the what-it-is
+   on top, the why underneath. Read in the moment it is under the pointer with
+   no second pass, so it gets the air the sans does not carry on its own. */
+.nsc-tipcard .card-summary {
+  margin: 7px 0 0;
+  font-family: var(--ui-sans);
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: .012em;
+  word-spacing: .08em;
+  color: var(--muted);
+}
+
+@keyframes tipcard-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
