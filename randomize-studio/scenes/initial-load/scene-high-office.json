@@ -10,7 +10,9 @@
     "kind": "photo",
     "sat": 1,
     "blur": 0,
-    "seed": "lk1gwri"
+    "seed": "lk1gwri",
+    "preset": null,
+    "src": null
   },
   "scrim": {
     "enabled": true,
