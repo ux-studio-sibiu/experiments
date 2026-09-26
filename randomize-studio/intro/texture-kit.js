@@ -32,19 +32,23 @@
    kept. The grain is a canvas and has no CSS form; the export says so. */
 
 (() => {
-  const ROOT = '../';
+  // The studio folder, found from this script's own address rather than from
+  // the page's, so the kit works from any page that loads it - the intro
+  // page, or a page of your own with randomize-studio/ copied beside it.
+  const ROOT = new URL('../', document.currentScript?.src || location.href).href;
   const DATA = ['js/svg-backgrounds-data.js', 'js/palettes.js', 'js/overlay-patterns.js', 'js/static-background.js'];
   const SHEETS = ['css/panel.css', 'css/controls.css', 'css/svg-background.css'];
 
   // The page's main layout elements, by the names the panel shows, in the
-  // order they sit on a wide screen: the studio on the left, the copy on the
-  // right. Anything else can be reached with Pick.
+  // order they sit on a wide screen: the copy on the left, the studio on the
+  // right. The copy column's sections are listed under it (see SECTIONS).
+  // Anything else can be reached with Pick.
   const PRESETS = [
     ['page', 'body'],
-    ['left column', '.showcase'],
-    ['stage', '.stage'],
-    ['steps', '.steps'],
-    ['right column', '.copy'],
+    ['left column', '.copy'],
+    ['right column', '.showcase'],
+    ['\u00a0\u00a01. the studio', '.part-studio'],
+    ['\u00a0\u00a02. in any project', '.part-use'],
   ];
   // Every section of the copy column gets an entry of its own, listed under
   // the column. Read off the page each time, so a section added to index.html
@@ -231,9 +235,17 @@
 
   function entryFor(el) {
     if (entries.has(el)) return entries.get(el);
-    const entry = {
+    const entry = newEntry(el);
+    entries.set(el, entry);
+    return entry;
+  }
+  // A fresh set of settings. With no element (el null) it is what the panel
+  // shows while nothing is selected: defaults, belonging to nothing, never
+  // painted and never listed.
+  function newEntry(el) {
+    return {
       el,
-      style: el.getAttribute('style'),       // restored verbatim on the way out
+      style: el ? el.getAttribute('style') : null,   // restored verbatim on the way out
       movedPosition: false, onTop: false,
       host: null, grain: null,
       locks: { background: false, svgbg: false, pattern: false, fx: false },
@@ -241,9 +253,8 @@
       pattern: { enabled: false, name: 'polka-dots', scale: 1, opacity: 0.35, color: '#000000', blend: 'normal', rotate: 0 },
       fx:      { enabled: false, ...FX_DEF },
       color: null,   // a flat colour under the layers, set from the Background header; null for none
+      colorAlpha: 1, // its opacity, 0.1 to 1 in tenths
     };
-    entries.set(el, entry);
-    return entry;
   }
 
   // The host goes in only once there is something to show, so looking at an
@@ -339,8 +350,15 @@
   // the content even when they are set over it. The element's style attribute
   // is snapshotted, so closing the kit takes this back out with the rest.
   function paintColor(entry) {
-    if (entry.color) entry.el.style.backgroundColor = entry.color;
+    if (entry.color) entry.el.style.backgroundColor = colorCss(entry);
     else entry.el.style.removeProperty('background-color');
+  }
+  // The flat colour at its opacity: the hex itself when solid, rgba otherwise.
+  function colorCss(e) {
+    const a = e.colorAlpha ?? 1;
+    if (!e.color || a >= 1) return e.color;
+    const n = parseInt(e.color.slice(1), 16);
+    return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, ${+a.toFixed(1)})`;
   }
 
   /* ---- the dice, per layer (ported from randomize.js / svg-background.js) ---- */
@@ -401,11 +419,15 @@
     const out = [`${sel} {\n${decl({
       ...(entry.movedPosition ? { position: 'relative' } : {}),
       ...(entry.host ? { isolation: 'isolate' } : {}),
-      ...(entry.color ? { 'background-color': entry.color } : {}),
+      ...(entry.color ? { 'background-color': colorCss(entry) } : {}),
     })}\n}`];
     // Only the pseudo-elements the page is not already using - a section's
     // ::before is the rule above it.
-    const free = ['::before', '::after'].filter(p => getComputedStyle(entry.el, p).content === 'none');
+    // A divider's ::before counts as taken even while "no dividers" hides it:
+    // the exported no-dividers rule sets it to nothing, and would take a
+    // texture put there down with it.
+    const divider = entry.el.matches('.copy > section + section, .part + .part');
+    const free = ['::before', '::after'].filter(p => !(divider && p === '::before') && getComputedStyle(entry.el, p).content === 'none');
     const slot = (what) => free.shift() || (out.push(`/* ${sel}: no free ::before / ::after left for the ${what} - it needs a child element of its own */`), null);
     const svSlot = sv.enabled ? slot('dynamic svg') : null;
     const patSlot = pat.enabled ? slot('pattern') : null;
@@ -500,6 +522,22 @@ textarea[hidden] { display: none; }
 }
 .tabpane[hidden] { display: none; }
 
+/* The page button's first second (see open()): the page has just been
+   randomized and the panel, the selection frame and the maximize button are
+   held back. Taking the class off lets the panel fade up on its own opacity
+   transition from panel.css. */
+.kit.is-intro .panel,
+.kit.is-intro .outline,
+.kit.is-intro .hover,
+.kit.is-intro #panelShow { opacity: 0; visibility: hidden; }
+
+/* Nothing selected (Esc, or the list's first entry): what acts on one element
+   goes quiet until an element is chosen again. The list, Pick, Copy CSS, the
+   titlebar Randomize and the scenes all still work. */
+.kit.is-unselected .grp[data-section="background"],
+.kit.is-unselected .row:has(#kit-onTop),
+.kit.is-unselected #kit-clear { opacity: .35; pointer-events: none; }
+
 /* What a copy or a paste did: one line in the black band the titlebar is,
    top centre of the window, over everything, gone after a moment. */
 .toast {
@@ -523,16 +561,30 @@ textarea[hidden] { display: none; }
   border: 1px solid var(--ink); cursor: pointer;
   background: repeating-linear-gradient(45deg, var(--bg) 0 3px, var(--faint) 3px 4px);
 }
-.grp h3 .colorbtn.is-set { background: var(--swatch); }
+/* Set, the colour is laid over the hatching, so a see-through one shows it. */
+.grp h3 .colorbtn.is-set { background: linear-gradient(var(--swatch), var(--swatch)), repeating-linear-gradient(45deg, var(--bg) 0 3px, var(--faint) 3px 4px); }
 .grp h3 .colorbtn input { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; opacity: 0; cursor: pointer; }
 .grp h3 .colorbtn ~ button { margin-left: 0; }
-/* The element being edited: a dashed double rule, ink over paper, so it
-   reads over a white column and over a dark texture alike, and a faint wash
-   so it is picked out even where the rule runs along the window's edge. */
+/* Its opacity, just before it: a short slider in tenths and the figure. The
+   slider takes the header's push to the right now, so the swatch after it
+   must not. Quiet while there is no colour for it to act on. */
+.grp h3 .alpha { flex: 0 0 56px; width: 56px; margin-left: auto; }
+.grp h3 .alpha-v {
+  flex: 0 0 30px; text-align: right;
+  font-size: 9px; font-weight: 500; letter-spacing: 0; color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.grp h3 .alpha ~ .colorbtn { margin-left: 0; }
+.grp h3.no-color .alpha, .grp h3.no-color .alpha-v { opacity: .35; }
+/* The element being edited: a heavy dashed rule in ink, with a paper line
+   inside it, so it reads over a white column and over a dark texture alike.
+   No wash over the element - it tinted the colours being judged. Drawn just
+   inside the element's edge, so a band that meets the window still shows all
+   four sides. */
 .outline {
   position: fixed; pointer-events: none; display: none;
-  outline: 2px dashed var(--ink); outline-offset: -1px; box-shadow: 0 0 0 1px var(--bg) inset;
-  background: #0000000a;
+  /* The paper band sits under the dashes (paper in their gaps, so the rule is
+     ink-and-paper over any texture) and runs 2px past them on the inside. */
+  outline: 3px dashed var(--ink); outline-offset: -3px; box-shadow: inset 0 0 0 5px var(--bg);
 }
 /* The one under the pointer, offered rather than chosen: a single solid
    hairline, lighter than the selection so the two are never confused. */
@@ -587,11 +639,12 @@ textarea[hidden] { display: none; }
       <div class="btnrow spaced"><button id="kit-copy">Copy CSS</button><button id="kit-clear">Clear element</button></div>
       <textarea id="kit-css" readonly hidden aria-label="Exported CSS"></textarea>
       <p class="hint" id="kit-note"></p>
-      <p class="hint"><b>Alt</b>-click an element to copy its look, <b>Ctrl</b>-click (<b>Cmd</b> on a Mac) to paste it onto another, <b>Shift</b>-click to click the page itself.</p>
+      <p class="hint"><b>Alt</b>-click an element to copy its look, <b>Ctrl+Alt</b>-click (<b>Cmd+Option</b> on a Mac) to paste it onto another, <b>Esc</b> to deselect. <b>Shift</b>- or <b>Ctrl</b>-click clicks the page itself.</p>
     </div>
 
     <div class="grp" data-section="background">
       <h3>Background
+        <input type="range" class="alpha" id="bg-alpha" min="0.1" max="1" step="0.1" title="Opacity of the flat colour" aria-label="Flat colour opacity"><output class="alpha-v" id="bg-alphaV"></output>
         <label class="colorbtn" id="bg-colorbtn" title="Flat colour under the layers — right-click to clear"><input type="color" id="bg-color" aria-label="Flat background colour"></label>
         <button class="iconbtn dice" data-rand="background" title="Randomize every layer"></button>
         <button class="lockbtn lock" data-lock="background" aria-pressed="false" title="Lock during randomize"></button></h3>
@@ -669,6 +722,7 @@ textarea[hidden] { display: none; }
          file and read back in. -->
     <div class="grp" data-section="scene">
       <h3>Scene</h3>
+      <div class="row"><label>dividers</label><span class="inline-check"><input type="checkbox" id="scn-noDividers"><label for="scn-noDividers">no dividers</label></span></div>
       <div class="row"><label>saved</label>
         <span></span>
         <button id="scn-dumpAll" class="iconbtn" data-mark="db-export" title="Download every scene stored in this browser, one file each"></button>
@@ -692,7 +746,9 @@ textarea[hidden] { display: none; }
   let tag = 'All', palTag = 'All';   // browsing filters, not part of any element
 
   const $ = (id) => ui.root.getElementById(id);
-  const cur = () => entryFor(ui.current);
+  // The element being edited - or, with nothing selected (Esc), a blank set of
+  // settings the greyed-out panel can read from without touching the page.
+  const cur = () => ui.current ? entryFor(ui.current) : (ui.blank ||= newEntry(null));
   const note = (text) => { $('kit-note').textContent = text; };
 
   const tagsOf = (bg) => bg.tags.replace('Line Art', 'Line_Art').split(' ').filter(Boolean).map(t => t.replace('_',' '));
@@ -702,7 +758,7 @@ textarea[hidden] { display: none; }
 
   // Repaint the element, and keep the ● in the target list honest.
   function render() {
-    paint(cur());
+    if (ui.current) paint(cur());
     markTargets();
   }
 
@@ -715,21 +771,29 @@ textarea[hidden] { display: none; }
     if (ui.current && !list.some(([, e]) => e === ui.current)) list.push([selectorFor(ui.current), ui.current]);
     return list;
   }
+  // The list opens with "nothing selected" (value ""), so choosing it
+  // deselects the way Esc does, and the list says so when that is the state.
   function buildTargets() {
     ui.targets = targetsList();
-    $('kit-target').innerHTML = ui.targets.map(([name], i) => `<option value="${i}">${esc(name)}</option>`).join('');
-    $('kit-target').value = String(Math.max(0, ui.targets.findIndex(([, el]) => el === ui.current)));
+    $('kit-target').innerHTML = `<option value="">— nothing selected —</option>` +
+      ui.targets.map(([name], i) => `<option value="${i}">${esc(name)}</option>`).join('');
+    const at = ui.targets.findIndex(([, el]) => el === ui.current);
+    $('kit-target').value = at < 0 ? '' : String(at);
     markTargets();
   }
   function markTargets() {
-    [...$('kit-target').options].forEach((o, i) => {
-      const [name, el] = ui.targets[i];
+    [...$('kit-target').options].forEach(o => {
+      if (o.value === '') return;
+      const [name, el] = ui.targets[+o.value];
       const e = entries.get(el);
       o.textContent = (e && isTextured(e) ? '● ' : '') + name;
     });
   }
+  // null deselects: no outline, and the controls that act on an element go
+  // quiet until one is chosen again.
   function select(el) {
     ui.current = el;
+    ui.root.querySelector('.kit').classList.toggle('is-unselected', !el);
     buildTargets();
     syncAll();
   }
@@ -908,10 +972,13 @@ textarea[hidden] { display: none; }
     ui.root.querySelectorAll('[data-lock]').forEach(b => b.setAttribute('aria-pressed', String(e.locks[b.dataset.lock])));
   }
   function syncColor() {
-    const c = cur().color, btn = $('bg-colorbtn');
+    const e = cur(), c = e.color, btn = $('bg-colorbtn'), a = e.colorAlpha ?? 1;
     btn.classList.toggle('is-set', !!c);
-    btn.style.setProperty('--swatch', c || 'transparent');
+    btn.style.setProperty('--swatch', c ? colorCss(e) : 'transparent');
+    btn.closest('h3').classList.toggle('no-color', !c);
     $('bg-color').value = c || '#ffffff';
+    $('bg-alpha').value = a;
+    $('bg-alphaV').value = Math.round(a * 100) + '%';
   }
   function syncAll() {
     $('kit-onTop').checked = cur().onTop;
@@ -923,10 +990,11 @@ textarea[hidden] { display: none; }
   /* ---- wiring ---- */
   function wire() {
     const r = ui.root;
-    r.getElementById('kit-target').addEventListener('change', e => select(ui.targets[+e.target.value][1]));
+    r.getElementById('kit-target').addEventListener('change', e => select(e.target.value === '' ? null : ui.targets[+e.target.value][1]));
     $('kit-pick').addEventListener('click', () => togglePick());
     $('kit-onTop').addEventListener('change', e => { cur().onTop = e.target.checked; render(); });
     $('kit-clear').addEventListener('click', () => {
+      if (!ui.current) return;
       const e = cur();
       demount(e);
       entries.delete(e.el);
@@ -935,7 +1003,9 @@ textarea[hidden] { display: none; }
     });
     $('kit-copy').addEventListener('click', () => {
       const textured = [...entries.values()].filter(isTextured);
-      const css = textured.length ? '/* texture kit */\n' + textured.map(cssFor).join('\n\n') + '\n' : '';
+      const parts = textured.map(cssFor);
+      if (ui.noDividers) parts.unshift(`/* no dividers */\n${DIVIDERS} {\n  content: none;\n}`);
+      const css = parts.length ? '/* texture kit */\n' + parts.join('\n\n') + '\n' : '';
       const area = $('kit-css');
       area.value = css; area.hidden = !css;
       if (!css) return note('Nothing textured yet.');
@@ -947,6 +1017,7 @@ textarea[hidden] { display: none; }
     // The flat colour: picking one sets it, right-click takes it off again.
     // Randomize leaves it alone - it is a choice, not a texture.
     $('bg-color').addEventListener('input', e => { cur().color = e.target.value; syncColor(); render(); });
+    $('bg-alpha').addEventListener('input', e => { cur().colorAlpha = +e.target.value; syncColor(); render(); });
     $('bg-colorbtn').addEventListener('contextmenu', ev => {
       ev.preventDefault();
       cur().color = null; syncColor(); render();
@@ -1024,6 +1095,10 @@ textarea[hidden] { display: none; }
     $('randomize').addEventListener('click', () => {
       let held = 0;
       const rolled = [], cleared = [];
+      // A randomized page reads as bands of texture meeting edge to edge; the
+      // rules between them only cut across that. Untick it in Scene to bring
+      // them back.
+      setDividers(true);
       const pals = visiblePalettes();
       const palette = pals.length ? rand(pals) : null;
       for (const [, el] of ui.targets) {
@@ -1050,7 +1125,7 @@ textarea[hidden] { display: none; }
       for (let n = h.nextSibling; n; ) { const nx = n.nextSibling; body.appendChild(n); n = nx; }
       grp.appendChild(body);
       h.insertBefore(Object.assign(document.createElement('span'), { className: 'chev' }), h.firstChild);
-      h.addEventListener('click', ev => { if (!ev.target.closest('button, .colorbtn')) grp.classList.toggle('collapsed'); });
+      h.addEventListener('click', ev => { if (!ev.target.closest('button, .colorbtn, input, output')) grp.classList.toggle('collapsed'); });
     });
     r.querySelectorAll('.panel .sub').forEach(sub => {
       const h = sub.querySelector('h4');
@@ -1155,15 +1230,28 @@ textarea[hidden] { display: none; }
     const elements = {};
     for (const e of entries.values()) {
       if (!isTextured(e)) continue;          // nothing showing, nothing to keep
-      elements[selectorFor(e.el)] = { onTop: e.onTop, color: e.color, svgbg: clone(e.svgbg), pattern: clone(e.pattern), fx: clone(e.fx) };
+      elements[selectorFor(e.el)] = { onTop: e.onTop, color: e.color, colorAlpha: e.colorAlpha, svgbg: clone(e.svgbg), pattern: clone(e.pattern), fx: clone(e.fx) };
     }
-    return { kind: 'randomize-studio/texture-scene', version: 1, elements };
+    return { kind: 'randomize-studio/texture-scene', version: 1, noDividers: !!ui.noDividers, elements };
+  }
+
+  /* ---- no dividers ----
+     The rules drawn between the sections of the copy column and between the
+     two parts of the studio column. Taken off with one rule added to the
+     kit's page sheet, so closing the kit - which removes the sheet - puts
+     them back; kept with a scene, and written out by Copy CSS. */
+  const DIVIDERS = '.copy > section + section::before, .part + .part::before';
+  function setDividers(off) {
+    ui.noDividers = !!off;
+    ui.sheet.textContent = CURSOR_SHEET + (ui.noDividers ? `\n${DIVIDERS} { content: none !important; }` : '');
+    $('scn-noDividers').checked = ui.noDividers;
   }
   // Replaces what is on the page: every element is cleared first, so a scene
   // is the whole look rather than a layer on top of the last one. Locks are
   // the panel's, not the scene's, and survive.
   function applyScene(data) {
     if (!data || typeof data.elements !== 'object') throw new Error('not a texture scene');
+    setDividers(!!data.noDividers);
     for (const e of entries.values()) {
       demount(e);
       for (const l of LAYERS) e[l].enabled = false;
@@ -1178,6 +1266,7 @@ textarea[hidden] { display: none; }
       const e = entryFor(el);
       e.onTop = !!s.onTop;
       e.color = typeof s.color === 'string' ? s.color : null;
+      e.colorAlpha = typeof s.colorAlpha === 'number' ? s.colorAlpha : 1;
       for (const l of LAYERS) if (s[l]) Object.assign(e[l], clone(s[l]));
       paint(e);
     }
@@ -1228,6 +1317,7 @@ textarea[hidden] { display: none; }
   }
 
   function wireScenes() {
+    $('scn-noDividers').addEventListener('change', e => setDividers(e.target.checked));
     $('scn-list').addEventListener('click', e => { const row = e.target.closest('[data-scene]'); if (row) loadStored(row.dataset.scene); });
     // Up and down walk the list and load as they go, as in the studio.
     $('scn-list').addEventListener('keydown', e => {
@@ -1366,8 +1456,12 @@ textarea[hidden] { display: none; }
 
        click            select the element for editing       pointer
        Alt / Option     copy its look (the eyedropper)        eyedropper
-       Ctrl / Cmd       paste the copied look onto it         paint bucket
-       Shift            go through to the page as usual       the page's own
+       Ctrl+Alt         paste the copied look onto it         paint bucket
+         (Cmd+Option)
+       Shift, or        go through to the page as usual       the page's own
+         Ctrl / Cmd alone
+
+     Esc deselects: nothing selected, nothing outlined.
 
      The copied look stays until the next copy, so one Alt-click can be pasted
      onto element after element. */
@@ -1377,7 +1471,14 @@ textarea[hidden] { display: none; }
     for (const [, el] of ui.targets) if (el !== document.body && el.contains(t) && (!best || best.contains(el))) best = el;
     return best;
   }
-  const modeOf = (ev) => ev.shiftKey ? null : ev.altKey ? 'copy' : (ev.ctrlKey || ev.metaKey) ? 'paste' : 'select';
+  // Alt copies; Ctrl+Alt (Cmd+Option) pastes; Ctrl / Cmd or Shift alone is the
+  // page's own click (open a link in a new tab, and so on); nothing held selects.
+  const modeOf = (ev) => {
+    const ctrl = ev.ctrlKey || ev.metaKey;
+    if (ev.shiftKey) return null;
+    if (ev.altKey) return ctrl ? 'paste' : 'copy';
+    return ctrl ? null : 'select';
+  };
   function setHover(el, mode = 'select') {
     if (ui.hover === el && ui.hoverMode === mode) return;
     ui.hover?.removeAttribute('data-texture-kit-hover');
@@ -1406,18 +1507,34 @@ textarea[hidden] { display: none; }
     if (ui.picking) return;
     const mode = modeOf(ev);
     if (!mode) return;                  // Shift: the page's own click
+    // The page's Randomize button stays a Randomize button while the kit is
+    // open, rather than selecting the part it sits in: it rolls the whole
+    // page again, as the titlebar button does.
+    if (mode === 'select' && ev.target.closest?.('[data-texture-kit-open]')) {
+      ev.preventDefault(); ev.stopPropagation();
+      $('randomize').click();
+      return;
+    }
     const el = targetAt(ev.target);
     if (!el) return;
     ev.preventDefault(); ev.stopPropagation();
     if (mode === 'copy') { ui.altUsed = true; return copyLook(el); }
-    if (mode === 'paste') return pasteLook(el);
+    if (mode === 'paste') { ui.altUsed = true; return pasteLook(el); }
     select(el);
     placeBox(ui.hoverBox, null);   // the selection frame takes over from the hover one
   }
-  // Ctrl-click on a Mac is a right-click, which opens a menu instead of
-  // clicking - so there it pastes from the menu event.
+  // A double-click on an element brings a minimized panel back - the first
+  // click of the two has already selected it, so the panel opens on it.
+  function onEditDblClick(ev) {
+    if (ui.picking || modeOf(ev) !== 'select' || !targetAt(ev.target)) return;
+    ev.preventDefault();
+    ui.root.querySelector('.kit').classList.remove('panel-hidden');
+  }
+
+  // Ctrl+Option-click on a Mac is a right-click, which opens a menu instead
+  // of clicking - so there it pastes from the menu event.
   function onEditMenu(ev) {
-    if (ui.picking || !ev.ctrlKey || ev.shiftKey) return;
+    if (ui.picking || !ev.ctrlKey || !ev.altKey || ev.shiftKey) return;
     const el = targetAt(ev.target);
     if (!el) return;
     ev.preventDefault();
@@ -1428,7 +1545,7 @@ textarea[hidden] { display: none; }
   const nameOf = (el) => (ui.targets.find(([, x]) => x === el)?.[0] || selectorFor(el)).replace(/^[\s ]+/, '');
   function copyLook(el) {
     const e = entryFor(el);
-    ui.clip = clone({ color: e.color, onTop: e.onTop, svgbg: e.svgbg, pattern: e.pattern, fx: e.fx });
+    ui.clip = clone({ color: e.color, colorAlpha: e.colorAlpha, onTop: e.onTop, svgbg: e.svgbg, pattern: e.pattern, fx: e.fx });
     toast(isTextured(e) ? 'Copied' : 'Copied — nothing on it, so pasting clears');
   }
   function pasteLook(el) {
@@ -1439,6 +1556,7 @@ textarea[hidden] { display: none; }
     const held = LAYERS.filter(l => e.locks[l]);
     for (const l of LAYERS) if (!e.locks[l]) Object.assign(e[l], clone(ui.clip[l]));
     e.color = ui.clip.color;
+    e.colorAlpha = ui.clip.colorAlpha ?? 1;
     e.onTop = ui.clip.onTop;
     paint(e);
     markTargets();
@@ -1471,11 +1589,24 @@ textarea[hidden] { display: none; }
     placeBox(ui.hoverBox, ui.hover === ui.current ? null : ui.hover);
   };
   const onResize = () => ui?.onResize?.();
-  const onKey = (ev) => { if (ev.key === 'Escape' && ui?.picking) togglePick(false); };
+  // Esc backs out one step at a time: out of Pick if it is armed, then out of
+  // the selection - nothing selected, nothing outlined - and then, with
+  // nothing left to back out of, the panel minimizes, the way its titlebar
+  // button does. A double-click on an element brings it back.
+  const onKey = (ev) => {
+    if (ev.key !== 'Escape' || !ui || ui.loading) return;
+    if (ui.picking) togglePick(false);
+    else if (ui.current) { select(null); setHover(null); }
+    else if (!ui.root.querySelector('.kit').classList.contains('panel-hidden')) $('panelToggle').click();
+  };
 
   /* ============================ open / close ============================ */
 
-  async function open() {
+  // `randomizeFirst`: the page button's way in. The whole page is randomized
+  // straight away, with the panel held out of sight, and the panel comes up a
+  // second later - so the first thing you see is the page changing, and the
+  // tools arrive after it.
+  async function open({ randomizeFirst = false } = {}) {
     if (ui) return;
     ui = { loading: true };
     try { await loadLib(); }
@@ -1486,6 +1617,8 @@ textarea[hidden] { display: none; }
     const root = host.attachShadow({ mode: 'open' });
     root.innerHTML = SHEETS.map(s => `<link rel="stylesheet" href="${ROOT}${s}">`).join('') +
                      `<style>${TOKENS}</style>` + PANEL;
+    // Hidden before it is ever on the page, so it cannot flash up first.
+    if (randomizeFirst) root.querySelector('.kit').classList.add('is-intro');
     document.body.append(host);
 
     // The one thing the kit has to style on the page itself: the cursor over
@@ -1508,6 +1641,7 @@ textarea[hidden] { display: none; }
     document.addEventListener('pointermove', onEditMove, { capture: true, passive: true });
     document.addEventListener('pointerout', onEditOut, { capture: true, passive: true });
     document.addEventListener('click', onEditClick, { capture: true });
+    document.addEventListener('dblclick', onEditDblClick, { capture: true });
     document.addEventListener('contextmenu', onEditMenu, { capture: true });
 
     buildTargets();
@@ -1515,6 +1649,12 @@ textarea[hidden] { display: none; }
     // Tells the page it is being edited, so intro.js holds the cover rotation
     // still - a cover changing under you is a moving target.
     document.dispatchEvent(new CustomEvent('texture-kit:open'));
+
+    if (randomizeFirst) {
+      $('randomize').click();
+      const kit = root.querySelector('.kit');
+      ui.introTimer = setTimeout(() => kit.classList.remove('is-intro'), 1000);
+    }
   }
 
   function close() {
@@ -1531,8 +1671,10 @@ textarea[hidden] { display: none; }
     document.removeEventListener('pointermove', onEditMove, { capture: true });
     document.removeEventListener('pointerout', onEditOut, { capture: true });
     document.removeEventListener('click', onEditClick, { capture: true });
+    document.removeEventListener('dblclick', onEditDblClick, { capture: true });
     document.removeEventListener('contextmenu', onEditMenu, { capture: true });
     clearTimeout(ui.toastTimer);
+    clearTimeout(ui.introTimer);
     ui.sheet.remove();
     ui.host.remove();
     ui = null;
@@ -1543,7 +1685,7 @@ textarea[hidden] { display: none; }
   // data-texture-kit-open opens it - the button under the page title - and
   // Shift+T toggles it.
   document.addEventListener('click', (ev) => {
-    if (!ui && ev.target.closest?.('[data-texture-kit-open]')) open();
+    if (!ui && ev.target.closest?.('[data-texture-kit-open]')) open({ randomizeFirst: true });
   });
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'T' || !ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey) return;

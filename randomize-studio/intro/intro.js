@@ -5,6 +5,23 @@
 
 const frame = document.querySelector('.frame iframe');
 
+/* ============================ the frame's scale ============================
+   The studio is laid out at its artboard's size, 1600 x 900, and scaled down to
+   the frame as a whole (see .frame in intro.css), so the cover keeps the
+   proportions it was made at. The scale is the frame's inner width over 1600,
+   written as --frame-scale whenever the frame changes size - CSS cannot turn a
+   width into a plain number for scale() in every browser yet.
+
+   1600 x 900 is the studio's default artboard (--ref-w / --ref-h in
+   css/base.css), which is what the covers in scenes/currated/ are made at. */
+const ARTBOARD_W = 1600;
+if (frame) {
+  const box = frame.parentElement;
+  const fit = () => box.style.setProperty('--frame-scale', String(box.clientWidth / ARTBOARD_W));
+  new ResizeObserver(fit).observe(box);
+  fit();
+}
+
 /* ============================ the scroll bridge ============================
    The studio forwards its wheel events to the parent rather than handling
    them: embedded in a portfolio it must not swallow the scroll of the page
@@ -67,20 +84,15 @@ if (frame) {
   // cover is up for most of the turn. The two together are a fifth of it.
   const FADE_MS = 200;
 
-  // The title fills over exactly one turn. Infinite rather than restarted per
-  // swap so it never stutters, and pinned to zero on every swap so it cannot
-  // drift away from an interval that is not a metronome. Pausing leaves it
-  // part-filled, which is what a held rotation should look like.
-  //
-  // The numbers are the masking band in index.html, whose geometry decides
-  // them: it is 1100 wide and sits at x=-1100, and the 3.6% ramp at its right
-  // means the opaque edge runs 40 ahead of the band. So 40 puts that edge on
-  // the first letter and 1040 puts it past the last, and the word fills from
-  // nothing to whole across exactly those two.
-  const fill = document.querySelector(".cycletitle .fill");
-  const bar = fill && fill.animate(
-    [{ transform: "translateX(40px)" }, { transform: "translateX(1040px)" }],
-    { duration: CYCLE_MS, iterations: Infinity, easing: "linear", fill: "both" });
+  // The bar along the bottom of the cover grows over exactly one turn.
+  // Infinite rather than restarted per swap so it never stutters, and pinned
+  // to zero on every swap so it cannot drift away from an interval that is not
+  // a metronome. Pausing leaves it part-grown, which is what a held rotation
+  // should look like.
+  const barEl = document.querySelector('.cyclebar');
+  const bar = barEl && barEl.animate(
+    [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+    { duration: CYCLE_MS, iterations: Infinity, easing: 'linear', fill: 'both' });
 
   const send = () => frame.contentWindow.postMessage({ type: 'scene', name: files[at] }, location.origin);
 
@@ -142,13 +154,9 @@ if (frame) {
     label();
   };
 
-  button.addEventListener('click', toggle);
-
-  // The word IS the clock, so pressing it is the obvious way to stop the clock.
-  // Not a second button: the one beside it is what a keyboard reaches, and two
-  // focusable controls doing one thing is two things to tab past.
-  const clock = document.querySelector('.cycletitle');
-  if (clock) clock.addEventListener('click', toggle);
+  // The button sits over the cover link, so its click must not also open the
+  // studio underneath it.
+  button.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggle(); });
 
   // Hovering is reaching for it: the cover must not change out from under a
   // drag. The pointer leaving starts it again.
