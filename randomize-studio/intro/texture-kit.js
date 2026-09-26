@@ -48,7 +48,7 @@
     ['left column', '.copy'],
     ['right column', '.showcase'],
     ['\u00a0\u00a01. the studio', '.part-studio'],
-    ['\u00a0\u00a02. in any project', '.part-use'],
+    ['\u00a0\u00a02. any project', '.part-use'],
   ];
   // Every section of the copy column gets an entry of its own, listed under
   // the column. Read off the page each time, so a section added to index.html
@@ -489,6 +489,10 @@
 /* The one part of this panel the studio's does not have: which element it is
    editing, and the way out. */
 .phead #kitClose { font-size: 15px; line-height: 1; }
+/* Minimize and close stand as tall as Randomize beside them (the shared
+   --ctl), rather than the 18px the studio's icon buttons are - square, so the
+   titlebar reads as one row of controls. */
+.phead .iconbtn { height: var(--ctl); min-width: var(--ctl); }
 .row > button { flex: 0 0 auto; }
 textarea {
   display: block; width: 100%; height: 120px; margin-top: 8px; padding: 6px;
@@ -639,7 +643,7 @@ textarea[hidden] { display: none; }
       <div class="btnrow spaced"><button id="kit-copy">Copy CSS</button><button id="kit-clear">Clear element</button></div>
       <textarea id="kit-css" readonly hidden aria-label="Exported CSS"></textarea>
       <p class="hint" id="kit-note"></p>
-      <p class="hint"><b>Alt</b>-click an element to copy its look, <b>Ctrl+Alt</b>-click (<b>Cmd+Option</b> on a Mac) to paste it onto another, <b>Esc</b> to deselect. <b>Shift</b>- or <b>Ctrl</b>-click clicks the page itself.</p>
+      <p class="hint"><b>Alt</b>-click an element to copy its look, <b>Ctrl+Alt</b>-click (<b>Cmd+Option</b> on a Mac) to paste it onto another, <b>Q</b> to keep its look as a preset, <b>Esc</b> to deselect. <b>Shift</b>- or <b>Ctrl</b>-click clicks the page itself.</p>
     </div>
 
     <div class="grp" data-section="background">
@@ -720,6 +724,28 @@ textarea[hidden] { display: none; }
     <!-- The studio's Scene section, for the page instead of the artboard: the
          textures on every element, kept in this browser or written out as a
          file and read back in. -->
+    <!-- One element's look, kept under a name to put on any other: the flat
+         colour, the three layers and whether they sit over the content. Kept
+         in this browser, and written out all together as one file. -->
+    <div class="grp" data-section="presets">
+      <h3>Presets</h3>
+      <div class="row"><label>randomize</label><span class="inline-check"><input type="checkbox" id="pre-useInRandom"><label for="pre-useInRandom">prefer presets half the time</label></span></div>
+      <div class="row"><label></label><span class="inline-check"><input type="checkbox" id="pre-onlyPresets"><label for="pre-onlyPresets">only use presets</label></span></div>
+      <div class="row"><label>saved</label>
+        <span></span>
+        <button id="pre-dumpAll" class="iconbtn" data-mark="db-export" title="Download every preset in this browser as one file"></button>
+        <label class="uploadbtn iconbtn" data-mark="upload" title="Import a presets file"><input id="pre-load" type="file" accept=".json,application/json" hidden></label>
+        <button id="pre-delete" class="iconbtn" data-mark="trash" title="Delete the selected preset"></button>
+        <button id="pre-deleteAll" class="iconbtn" data-mark="trash" title="Delete every preset stored in this browser">all</button>
+      </div>
+      <div class="scenelist" id="pre-list"></div>
+      <div class="row"><label>save</label>
+        <input id="pre-name" type="text" placeholder="name" spellcheck="false">
+        <button id="pre-store" class="iconbtn" data-mark="star" title="Save the selected element's look as a preset"></button>
+      </div>
+      <p class="hint" id="pre-note"></p>
+    </div>
+
     <div class="grp" data-section="scene">
       <h3>Scene</h3>
       <div class="row"><label>dividers</label><span class="inline-check"><input type="checkbox" id="scn-noDividers"><label for="scn-noDividers">no dividers</label></span></div>
@@ -1043,16 +1069,50 @@ textarea[hidden] { display: none; }
     // is handed out afterwards by grainOnOne(), to one element at most. A
     // locked layer keeps what it is and whether it shows; an element whose
     // Background is locked is left alone (returns false).
-    function randomizeElement(e, palette) {
+    //
+    // Half the time, when there are presets saved, the element gets one of
+    // them instead of a fresh roll - a look you liked coming back round.
+    //
+    // `run` is the titlebar Randomize's page-wide palette, shared by every
+    // element it rolls: { candidate } going in, with `palette` set by the
+    // first element that settles one. That is either a preset whose Dynamic
+    // SVG carries a palette, or the first freshly rolled Dynamic SVG, which
+    // takes the candidate. Every Dynamic SVG after that - rolled, or from a
+    // preset with a palette of its own - is recoloured from it. A preset in
+    // its original colours keeps them. Without `run` (the Background dice),
+    // an element is its own page.
+    function randomizeElement(e, run) {
       if (e.locks.background) return false;
-      const bases = ['svgbg', 'pattern'].filter(l => !e.locks[l]);
-      // A locked base that is showing IS the base: the other goes off.
-      if (['svgbg', 'pattern'].some(l => e.locks[l] && e[l].enabled)) bases.forEach(l => { e[l].enabled = false; });
-      else if (bases.length) {
-        const pick = rand(bases);
-        for (const l of bases) e[l].enabled = l === pick;
-        ROLL[pick](e, palette);
+      const chance = presetChance();
+      const presets = chance ? Object.values(allPresets()) : [];
+      if (presets.length && Math.random() < chance) {
+        const look = clone(rand(presets));
+        const sv = look.svgbg;
+        const palettedSvg = run && !e.locks.svgbg && sv?.enabled && sv.palette != null && lib.PALETTES[sv.palette];
+        let recolor = false;
+        if (palettedSvg) {
+          if (run.palette === undefined) run.palette = sv.palette;          // this one sets the page's palette
+          else if (run.palette != null && sv.palette !== run.palette) {
+            sv.palette = run.palette;
+            sv.palRot = Math.floor(Math.random() * lib.PALETTES[run.palette].colors.length);
+            recolor = true;
+          }
+        }
+        setLook(e, look);
+        if (recolor) applyPalette(e.svgbg);
+      } else {
+        const bases = ['svgbg', 'pattern'].filter(l => !e.locks[l]);
+        // A locked base that is showing IS the base: the other goes off.
+        if (['svgbg', 'pattern'].some(l => e.locks[l] && e[l].enabled)) bases.forEach(l => { e[l].enabled = false; });
+        else if (bases.length) {
+          const pick = rand(bases);
+          for (const l of bases) e[l].enabled = l === pick;
+          if (pick === 'svgbg' && run) { if (run.palette === undefined) run.palette = run.candidate; ROLL.svgbg(e, run.palette); }
+          else ROLL[pick](e);
+        }
       }
+      // The grain is handed out afterwards, one element at most - even a
+      // preset that had it comes in without.
       if (!e.locks.fx) e.fx.enabled = false;
       return true;
     }
@@ -1100,7 +1160,7 @@ textarea[hidden] { display: none; }
       // them back.
       setDividers(true);
       const pals = visiblePalettes();
-      const palette = pals.length ? rand(pals) : null;
+      const run = { candidate: pals.length ? rand(pals) : null, palette: undefined };
       for (const [, el] of ui.targets) {
         const e = entryFor(el);
         if (CONTAINERS.some(sel => el.matches(sel))) {
@@ -1108,7 +1168,7 @@ textarea[hidden] { display: none; }
           LAYERS.filter(l => !e.locks[l]).forEach(l => { e[l].enabled = false; });
           cleared.push(e);
         }
-        else if (randomizeElement(e, palette)) rolled.push(e); else held++;
+        else if (randomizeElement(e, run)) rolled.push(e); else held++;
       }
       grainOnOne(rolled);
       [...cleared, ...rolled].forEach(e => paint(e));
@@ -1197,6 +1257,202 @@ textarea[hidden] { display: none; }
     buildTags(); buildTiles(); buildPaletteTags(); buildPaletteList();
     wireWindow();
     wireScenes();
+    wirePresets();
+  }
+
+  /* ---- presets ----
+     One element's look under a name, to put on any element later - where a
+     scene is the whole page, a preset is one band's worth of it. Kept in this
+     browser's localStorage beside the scenes, guarded the same way, and
+     downloaded all together as one file that Import reads back (merging, a
+     name already here being replaced). A preset is applied to the selected
+     element the way a paste is, locks and all. */
+  const PRESET_KEY = 'randomizeStudio.texturePresets';
+  // Whether Randomize reaches for a preset half the time (on) or never (off).
+  // Remembered in this browser with the presets themselves; on until switched
+  // off.
+  const PRESET_USE_KEY = 'randomizeStudio.presetsInRandomize';
+  function presetsInRandom() { try { return localStorage.getItem(PRESET_USE_KEY) !== 'off'; } catch { return true; } }
+  function setPresetsInRandom(on) { try { localStorage.setItem(PRESET_USE_KEY, on ? 'on' : 'off'); } catch { /* private window: this visit only */ } }
+  // "Only use presets": Randomize always takes a preset (when there are any)
+  // instead of half the time. Off until switched on; it outranks the
+  // half-time box and switches it on with it.
+  const PRESET_ONLY_KEY = 'randomizeStudio.presetsOnly';
+  function presetsOnly() { try { return localStorage.getItem(PRESET_ONLY_KEY) === 'on'; } catch { return false; } }
+  function setPresetsOnly(on) { try { localStorage.setItem(PRESET_ONLY_KEY, on ? 'on' : 'off'); } catch { /* this visit only */ } }
+  // The chance Randomize takes a preset for an element: always, half, never.
+  const presetChance = () => presetsOnly() ? 1 : presetsInRandom() ? 0.5 : 0;
+  function readPresets() { try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || {}; } catch { return {}; } }
+  function writePresets(map) {
+    try { localStorage.setItem(PRESET_KEY, JSON.stringify(map)); return true; }
+    catch (err) { presetNote(`This browser refused to store it (${err.name}).`); return false; }
+  }
+  let presetTimer = 0;
+  function presetNote(msg) {
+    $('pre-note').textContent = msg;
+    clearTimeout(presetTimer);
+    presetTimer = setTimeout(() => { if (ui) $('pre-note').textContent = ''; }, 6000);
+  }
+  /* Presets that ship with the page: intro/texture-presets.json, a file in the
+     same shape the Download button writes, so a set exported from a browser
+     can be committed beside the page and come up for everyone. Read once per
+     open, listed under a heading of their own after this browser's, applied
+     and rolled the same way - and never deleted from here, since a page
+     cannot write to its own files. A page opened from the disk cannot fetch,
+     so there they simply do not appear. */
+  const PRESET_FILE = 'intro/texture-presets.json';
+  let filePresets = {};
+  async function loadFilePresets() {
+    try {
+      const res = await fetch(ROOT + PRESET_FILE, { cache: 'no-store' });
+      const data = res.ok ? await res.json() : null;
+      filePresets = data && typeof data.presets === 'object' ? data.presets : {};
+    } catch { filePresets = {}; }
+  }
+  // Both sources as one pool, for Randomize: a name saved in this browser
+  // stands in for the same name in the file.
+  const allPresets = () => ({ ...filePresets, ...readPresets() });
+  // A row's value says where the preset lives, since the two can share names:
+  // 'local:<name>' or 'file:<name>'.
+  const presetFrom = (value) => {
+    const [src, ...rest] = value.split(':'), name = rest.join(':');
+    return { src, name, look: (src === 'file' ? filePresets : readPresets())[name] };
+  };
+
+  let pickedPreset = '';
+  function refreshPresets(select) {
+    if (select !== undefined) pickedPreset = select;
+    const list = $('pre-list');
+    const sorted = (map) => Object.keys(map).sort((a, b) => a.localeCompare(b));
+    const local = sorted(readPresets()), shipped = sorted(filePresets);
+    list.replaceChildren();
+    const group = (label, names, src, emptyText) => {
+      const h = document.createElement('div');
+      h.className = 'scenegroup';
+      h.textContent = label;
+      list.append(h);
+      for (const n of names) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'scenerow'; b.dataset.preset = `${src}:${n}`; b.title = n;
+        b.textContent = n;                     // a name cannot bring markup with it
+        b.setAttribute('aria-pressed', String(`${src}:${n}` === pickedPreset));
+        list.append(b);
+      }
+      if (!names.length && emptyText) {
+        const empty = document.createElement('p');
+        empty.className = 'scene-empty';
+        empty.textContent = emptyText;
+        list.append(empty);
+      }
+    };
+    group('this browser · local storage', local, 'local', 'No presets yet — select an element and ★ its look.');
+    if (shipped.length) group(PRESET_FILE, shipped, 'file');
+    // Only a browser preset is this page's to delete.
+    $('pre-delete').disabled = !(pickedPreset.startsWith('local:') && local.includes(pickedPreset.slice(6)));
+  }
+  function applyPreset(value) {
+    const { name, look } = presetFrom(value);
+    if (!look) return;
+    refreshPresets(value);
+    $('pre-name').value = name;
+    if (!ui.current) return presetNote('Select an element first, then pick the preset.');
+    applyLook(ui.current, look, `"${name}" on`);
+  }
+  // Save the selected element's look under `name` (or a time stamp). Shared
+  // by the ★ button and the Q key; says what it did in the panel and, for the
+  // key, in the toast too - the panel may be minimized.
+  function savePreset(name, viaKey = false) {
+    const say = (msg) => { presetNote(msg); if (viaKey) toast(msg); };
+    if (!ui.current) return say('Select an element first — a preset is its look.');
+    const e = cur();
+    if (!isTextured(e)) return say('Nothing on this element to keep yet.');
+    name = name || new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const map = readPresets(), replacing = name in map;
+    map[name] = lookOf(e);
+    if (!writePresets(map)) return;
+    $('pre-name').value = name;
+    refreshPresets('local:' + name);
+    say(`${replacing ? 'Replaced' : 'Saved'} preset "${name}"`);
+  }
+
+  function wirePresets() {
+    $('pre-list').addEventListener('click', e => { const row = e.target.closest('[data-preset]'); if (row) applyPreset(row.dataset.preset); });
+    $('pre-store').addEventListener('click', () => savePreset($('pre-name').value.trim()));
+    // The two boxes stay consistent: "only" needs presets in use at all, so
+    // ticking it ticks the half-time box, and unticking that unticks "only".
+    const syncUse = () => { $('pre-useInRandom').checked = presetsInRandom() || presetsOnly(); $('pre-onlyPresets').checked = presetsOnly(); };
+    syncUse();
+    $('pre-useInRandom').addEventListener('change', e => {
+      setPresetsInRandom(e.target.checked);
+      if (!e.target.checked) setPresetsOnly(false);
+      syncUse();
+      presetNote(e.target.checked ? 'Randomize will use a preset half the time.' : 'Randomize will not use presets.');
+    });
+    $('pre-onlyPresets').addEventListener('change', e => {
+      setPresetsOnly(e.target.checked);
+      if (e.target.checked) setPresetsInRandom(true);
+      syncUse();
+      presetNote(e.target.checked ? 'Randomize will only use presets (when there are any).' : 'Randomize will use a preset half the time.');
+    });
+    $('pre-delete').addEventListener('click', () => {
+      if (!pickedPreset.startsWith('local:')) return;
+      const map = readPresets(), name = pickedPreset.slice(6);
+      delete map[name];
+      if (!writePresets(map)) return;
+      refreshPresets('');
+      presetNote(`Deleted "${name}".`);
+    });
+    // Every preset in this browser, gone - there is no undo, so it asks twice:
+    // the first press arms it ("sure?") for three seconds, the second in that
+    // time deletes. The shipped file's presets are not this page's to delete
+    // and stay listed.
+    let armTimer = 0;
+    const disarm = () => { clearTimeout(armTimer); const b = $('pre-deleteAll'); b.textContent = 'all'; b.classList.remove('primary'); delete b.dataset.armed; };
+    $('pre-deleteAll').addEventListener('click', () => {
+      const b = $('pre-deleteAll'), n = Object.keys(readPresets()).length;
+      if (!n) return presetNote('No presets in this browser to delete.');
+      if (!b.dataset.armed) {
+        b.dataset.armed = '1'; b.textContent = 'sure?'; b.classList.add('primary');
+        presetNote(`Press again to delete all ${n} preset${n > 1 ? 's' : ''} in this browser.`);
+        armTimer = setTimeout(disarm, 3000);
+        return;
+      }
+      disarm();
+      if (!writePresets({})) return;
+      refreshPresets('');
+      presetNote(`Deleted ${n} preset${n > 1 ? 's' : ''} from this browser.`);
+    });
+
+    // Every preset, in one file.
+    $('pre-dumpAll').addEventListener('click', () => {
+      const presets = readPresets(), n = Object.keys(presets).length;
+      if (!n) return presetNote('No presets in this browser yet.');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify({ kind: 'randomize-studio/texture-presets', version: 1, presets }, null, 2)], { type: 'application/json' }));
+      a.download = `texture-presets-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      presetNote(`Downloaded ${n} preset${n > 1 ? 's' : ''} in one file.`);
+    });
+    $('pre-load').addEventListener('change', async e => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = '';                    // so re-picking the same file fires again
+      if (!f) return;
+      try {
+        const data = JSON.parse(await f.text());
+        if (!data || typeof data.presets !== 'object') throw new Error('not a presets file');
+        const map = readPresets(), names = Object.keys(data.presets);
+        for (const n of names) map[n] = data.presets[n];
+        if (!writePresets(map)) return;
+        refreshPresets();
+        presetNote(`Imported ${names.length} preset${names.length === 1 ? '' : 's'} from ${f.name}.`);
+      } catch (err) { presetNote(`Could not import: ${err.message}`); }
+    });
+    // Shut on open, like Scene.
+    ui.root.querySelector('.grp[data-section="presets"]').classList.add('collapsed');
+    refreshPresets();
+    // The shipped presets arrive a moment later; list them when they do.
+    loadFilePresets().then(() => { if (ui) refreshPresets(); });
   }
 
   /* ---- scenes (after scenes.js) ----
@@ -1543,25 +1799,39 @@ textarea[hidden] { display: none; }
 
   /* ---- copy and paste a look ---- */
   const nameOf = (el) => (ui.targets.find(([, x]) => x === el)?.[0] || selectorFor(el)).replace(/^[\s ]+/, '');
+  // An element's whole look, as one plain object: what copy takes, what paste
+  // and a preset put back.
+  const lookOf = (e) => clone({ color: e.color, colorAlpha: e.colorAlpha, onTop: e.onTop, svgbg: e.svgbg, pattern: e.pattern, fx: e.fx });
   function copyLook(el) {
     const e = entryFor(el);
-    ui.clip = clone({ color: e.color, colorAlpha: e.colorAlpha, onTop: e.onTop, svgbg: e.svgbg, pattern: e.pattern, fx: e.fx });
+    ui.clip = lookOf(e);
     toast(isTextured(e) ? 'Copied' : 'Copied — nothing on it, so pasting clears');
   }
   function pasteLook(el) {
     if (!ui.clip) return toast('Nothing copied yet — Alt-click an element first');
+    applyLook(el, ui.clip, 'Pasted onto');
+  }
+  // The look into the element's settings, without painting or saying so -
+  // shared by paste, presets and Randomize. A layer the target has locked
+  // keeps what it has; returns the layers that did.
+  function setLook(e, look) {
+    const held = LAYERS.filter(l => e.locks[l]);
+    for (const l of LAYERS) if (!e.locks[l] && look[l]) Object.assign(e[l], clone(look[l]));
+    e.color = typeof look.color === 'string' ? look.color : null;
+    e.colorAlpha = typeof look.colorAlpha === 'number' ? look.colorAlpha : 1;
+    e.onTop = !!look.onTop;
+    return held;
+  }
+  // Put a look on an element, painted and announced. A target whose
+  // Background is locked is left alone.
+  function applyLook(el, look, verb) {
     const e = entryFor(el);
     if (e.locks.background) return toast(`${nameOf(el)} is locked`);
-    // A layer the target has locked keeps what it has.
-    const held = LAYERS.filter(l => e.locks[l]);
-    for (const l of LAYERS) if (!e.locks[l]) Object.assign(e[l], clone(ui.clip[l]));
-    e.color = ui.clip.color;
-    e.colorAlpha = ui.clip.colorAlpha ?? 1;
-    e.onTop = ui.clip.onTop;
+    const held = setLook(e, look);
     paint(e);
     markTargets();
     if (el === ui.current) syncAll();
-    toast(`Pasted onto ${nameOf(el)}` + (held.length ? `, except ${held.length} locked layer${held.length > 1 ? 's' : ''}` : ''));
+    toast(`${verb} ${nameOf(el)}` + (held.length ? `, except ${held.length} locked layer${held.length > 1 ? 's' : ''}` : ''));
   }
 
   // One line at the top of the window, centred, then gone.
@@ -1594,7 +1864,15 @@ textarea[hidden] { display: none; }
   // nothing left to back out of, the panel minimizes, the way its titlebar
   // button does. A double-click on an element brings it back.
   const onKey = (ev) => {
-    if (ev.key !== 'Escape' || !ui || ui.loading) return;
+    if (!ui || ui.loading) return;
+    // Q keeps the selected element's look as a preset - not while typing, and
+    // not with a modifier held (those are the browser's).
+    if ((ev.key === 'q' || ev.key === 'Q') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      if (ev.composedPath()[0]?.closest?.('input, textarea, select, [contenteditable]')) return;
+      if (ui.current) { ev.preventDefault(); savePreset('', true); }
+      return;
+    }
+    if (ev.key !== 'Escape') return;
     if (ui.picking) togglePick(false);
     else if (ui.current) { select(null); setHover(null); }
     else if (!ui.root.querySelector('.kit').classList.contains('panel-hidden')) $('panelToggle').click();

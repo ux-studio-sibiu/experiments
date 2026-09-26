@@ -22,6 +22,9 @@
   --ui-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   --gutter: clamp(20px, 3vw, 40px);
+  /* The room above the page title: this on a narrow screen, and on a wide one
+     until intro.js has measured the frame's top (--frame-top) to match. */
+  --head-room: clamp(48px, 7vw, 120px);
 
   /* The two marks on the cycle control, inlined as masks so they take
      currentColor the way every button mark in the studio does. Dashicons
@@ -75,7 +78,7 @@ body {
   margin: 0;
   padding: 0 var(--gutter) 2rem;
 }
-.copy > section:first-child { padding-top: clamp(48px, 7vw, 120px); }
+.copy > section:first-child { padding-top: var(--head-room); }
 .copy > section:last-child { padding-bottom: calc(2rem + clamp(64px, 8vw, 128px)); }
 /* The 2rem between sections was a margin, and the last line's own margin
    collapsed into it; as padding it would add to it instead. Every such margin
@@ -301,7 +304,7 @@ kbd {
 
 /* ---- buttons ----
    The studio's own: ink on paper, two-pixel border, the shadow offset down and
-   to the right, and it moves into that shadow when pressed. */
+   to the right. They stay put under the pointer - no push into the shadow. */
 .actions { margin: 1.5rem 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
 
 .button {
@@ -317,16 +320,37 @@ kbd {
   text-transform: uppercase;
   text-decoration: none;
   box-shadow: 3px 5px #00000033;
-  transition: transform .1s ease, box-shadow .1s ease;
   cursor: pointer;   /* a <button> does not get this for free the way a link does */
 }
 
-.button:hover { transform: translate(1px, 2px); box-shadow: 2px 3px #00000033; }
-.button:active { transform: translate(3px, 5px); box-shadow: 0 0 #00000033; }
 .button.quiet { background: var(--bg); color: var(--ink); }
 
+/* Randomize this page: a paper rule inside the ink edge, so the button holds
+   its shape on a textured band as well as on paper - and on hover it rolls
+   through a run of dark colours, a few a second, the way the thing it starts
+   does. Dark ones only, so the white label stays readable on every step. */
+.button.randomize-page {
+  border-color: var(--bg);
+  box-shadow: 0 0 0 2px var(--ink), 3px 5px #00000033;
+}
+.button.randomize-page:hover { animation: randomize-roll 1.08s steps(1, end) infinite; }
+
+/* View the skill: the secondary to it - paper, ink edge, the same height
+   (same padding, type and border), a shade down under the pointer like Open
+   studio. */
+.button.skill-link { transition: background-color .12s ease; }
+.button.skill-link:hover { background: #e8e8e4; }
+@keyframes randomize-roll {
+  0%     { background-color: #1d2b53; }
+  16.66% { background-color: #7e1f2b; }
+  33.33% { background-color: #1f4d3a; }
+  50%    { background-color: #4b2366; }
+  66.66% { background-color: #0f4c5c; }
+  83.33% { background-color: #8a3b12; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .button { transition: none; }
+  .button.randomize-page:hover { animation: none; }
 }
 
 /* ============================ column 2: the studio ============================
@@ -357,6 +381,10 @@ kbd {
      beside the steps: the half, less its padding, at 16:9 - nothing sits
      above the frame any more. */
   .part-studio .stage { max-width: calc((50svh - 2 * var(--gutter)) * 16 / 9); }
+  /* The page title starts on the frame's line: the frame is centred in its
+     half, so where its top falls depends on the window, and intro.js measures
+     it into --frame-top. The clamp is only until it has. */
+  .copy > section:first-child { padding-top: var(--frame-top, var(--head-room)); }
   /* Sized by the height too, so both halves still fit a short window. */
   /* Under .showcase so they outrank the base rules further down the file. */
   .showcase .part-number { font-size: clamp(4rem, min(14vw, 24svh), 14rem); }
@@ -375,6 +403,10 @@ kbd {
   column-gap: clamp(16px, 2.5vw, 40px);
   padding: var(--gutter);
 }
+/* Numbers hidden (the `hidden` on them in index.html): their column is empty
+   and takes no width, so drop the gap after it too and the part's content
+   starts at the gutter. Take `hidden` off to bring them back. */
+.part:has(> .part-number[hidden]) { column-gap: 0; }
 /* The same rule the copy column draws between its sections. */
 .part + .part::before {
   content: "";
@@ -406,10 +438,16 @@ kbd {
   grid-column: 2;
   margin: 0 0 1.1rem;
   font-size: clamp(2.25rem, 3.4vw, 3.5rem);
-  line-height: 1;
-  letter-spacing: -.035em;
+  /* Inter rather than the page's Archivo: at this weight and in capitals its
+     open shapes and wider set read far more easily. index.html loads the one
+     weight used, 800. Looser letters, a real gap between words, and a little
+     more lead for a title that wraps. */
+  font-family: "Inter", var(--ui-sans);
+  line-height: 1.05;
+  letter-spacing: -.01em;
+  word-spacing: .18em;
   text-transform: uppercase;
-  font-weight: 900;
+  font-weight: 800;
 }
 .part-body { grid-column: 2; min-height: 0; }
 
@@ -420,7 +458,7 @@ kbd {
   grid-row: 1 / 3;
   display: flex;
   align-items: center;
-  gap: clamp(16px, 2.5vw, 40px);
+  gap: clamp(32px, 5vw, 80px);
 }
 .part-aside { flex: none; }
 .stage { flex: 1 1 0; min-width: 0; max-width: 900px; }
@@ -538,13 +576,14 @@ kbd {
 
 /* The cycle control. Auto-advancing content needs a way to stop it that does
    not depend on holding a pointer still, and this is also the way back after
-   the rotation has been stopped. In the frame's top right corner, over the
-   cover link (so its click is its own - see intro.js), a paper mark on a dark
-   chip so it holds on any cover. The mark follows aria-pressed: pressed,
-   meaning held, shows the way to start it again. */
+   the rotation has been stopped. In the frame's bottom right corner, just
+   clear of the clock bar and over the cover link (so its click is its own -
+   see intro.js), a paper mark on a dark chip so it holds on any cover. The
+   mark follows aria-pressed: pressed, meaning held, shows the way to start it
+   again. */
 .cyclebtn {
   position: absolute;
-  top: 8px;
+  bottom: 12px;         /* the 4px bar, and the same 8px of air as the side */
   right: 8px;
   z-index: 1;
   display: grid;
@@ -578,7 +617,17 @@ kbd {
 /* Open studio, under the steps: the quiet studio button, with an arrow that
    steps forward on hover - it leaves for a new tab. */
 .part-studio .actions { margin-top: 1.5rem; }
-.open-studio .arrow { display: inline-block; margin-left: .35em; transition: transform .15s ease; }
+/* Heavier and a size up from the other buttons, and the arrow larger still:
+   it is the way into the studio itself. */
+.button.open-studio { font-size: 14px; font-weight: 700; transition: background-color .12s ease; }
+/* A shade down from paper under the pointer - enough to answer it, not
+   enough to read as the black of the Randomize button. */
+.button.open-studio:hover { background: #e8e8e4; }
+.open-studio .arrow {
+  display: inline-block; margin-left: .4em;
+  font-size: 1.45em; line-height: 0; vertical-align: -.08em;
+  transition: transform .15s ease;
+}
 .open-studio:hover .arrow { transform: translateX(3px); }
 @media (prefers-reduced-motion: reduce) { .open-studio .arrow { transition: none; } }
 

@@ -7,7 +7,7 @@
 <meta name="description" content="A cover playground: photograph, plate and editable type on a fixed artboard, with live Google Fonts and a dice for when nothing is working.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="intro.css">
 </head>
@@ -35,8 +35,8 @@
 
 
           <li>adobe-like ui for fast edits, layer based composition</li>
-          <li>output is assets is directly usable in web projects</li>
-          <li> can be used as .skills on existing projects to enable design previews in-browser.</li>
+          <li>output is json directly usable by coding-agents</li>
+          <li>use skills.md on existing projects to enable design edits in-browser</li>
         </ul>
     </section>
 
@@ -103,7 +103,7 @@
     <!-- Part 1, the upper half of the column: what the studio is - the live
          cover, and beside it the five steps of using it. -->
     <section class="part part-studio">
-    <span class="part-number" aria-hidden="true">1</span>
+    <span class="part-number" aria-hidden="true" hidden>1</span>
     <div class="part-body">
     <div class="stage">
     <!-- 16:9 because the artboard is 1600x900 and the cover scales by
@@ -148,19 +148,25 @@
          plain HTML, CSS and JS with no build, so bringing it in is copying a
          folder and adding a script tag - and this page is the demo of it. -->
     <section class="part part-use">
-      <span class="part-number" aria-hidden="true">2</span>
-      <h2 class="part-title">In any project</h2>
+      <span class="part-number" aria-hidden="true" hidden>2</span>
+      <h2 class="part-title">Any project. AI-assisted.</h2>
       <div class="part-body">
         <!-- Said to a code agent, in any stack: the kit is one script and
              plain files, so there is nothing framework-shaped to wire up. -->
         <ol class="steps">
-          <li>1. Copy randomize-studio into the project</li>
-          <li>2. Ask your agent to load texture-kit.js on every page</li>
-          <li>3. Press Shift+T and texture anything</li>
-          <li>4. Paste the CSS you keep into your styles</li>
+          <li>1. Point coding agent to this page</li>
+          <li>2. "Inject texture kit"</li>
+          <li>3. Shift+T to open UI : Texture anything</li>
+          <li>4. generate json with changes</li>
+          <li>5. coding-agent implements json </li>
         </ol>
-        <!-- Opens the texture kit, the same as Shift+T (see texture-kit.js). -->
-        <p class="actions"><button type="button" class="button" data-texture-kit-open>Randomize this page</button></p>
+        <!-- Opens the texture kit, the same as Shift+T (see texture-kit.js).
+             Beside it, the skill a code agent follows to add the kit to a
+             project - on GitHub, which renders it, in a new tab. -->
+        <p class="actions">
+          <button type="button" class="button randomize-page" data-texture-kit-open>Randomize this page</button>
+          <a class="button quiet skill-link" href="https://github.com/ux-studio-sibiu/experiments/blob/main/.claude/skills/inject-texture-kit/SKILL.md" target="_blank" rel="noopener">View skill.md</a>
+        </p>
       </div>
     </section>
 

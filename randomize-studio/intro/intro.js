@@ -17,8 +17,29 @@ const frame = document.querySelector('.frame iframe');
 const ARTBOARD_W = 1600;
 if (frame) {
   const box = frame.parentElement;
-  const fit = () => box.style.setProperty('--frame-scale', String(box.clientWidth / ARTBOARD_W));
-  new ResizeObserver(fit).observe(box);
+  const column = box.closest('.showcase');
+  const wide = matchMedia('(min-width: 1000px)');
+  const root = document.documentElement;
+  const fit = () => {
+    box.style.setProperty('--frame-scale', String(box.clientWidth / ARTBOARD_W));
+    // Where the frame's top falls in its column - it is centred in its half,
+    // so that moves with the window - handed to the page title, which starts
+    // on the same line (--frame-top in intro.css). Only while the columns sit
+    // side by side; stacked, the title keeps its own room. On the root, which
+    // the texture kit never touches, so closing it cannot put back a stale
+    // value.
+    if (wide.matches && column) {
+      const top = box.getBoundingClientRect().top - column.getBoundingClientRect().top;
+      root.style.setProperty('--frame-top', Math.round(top) + 'px');
+    } else root.style.removeProperty('--frame-top');
+  };
+  const ro = new ResizeObserver(fit);
+  ro.observe(box);
+  if (column) ro.observe(column);
+  wide.addEventListener('change', fit);
+  // A window that only changes height can leave both boxes the same size
+  // while the frame's centring moves - nothing for the observer to see.
+  addEventListener('resize', fit, { passive: true });
   fit();
 }
 
