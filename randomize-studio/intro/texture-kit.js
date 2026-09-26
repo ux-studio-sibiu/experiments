@@ -86,7 +86,9 @@
       'js/overlay-patterns.js': typeof OVERLAY_PATTERNS !== 'undefined',
       'js/static-background.js': typeof createStaticBackground === 'function',
     };
-    for (const src of DATA) if (!have[src]) await loadScript(src);
+    // All at once: the four do not depend on one another, and one after the
+    // other was four round trips before the panel could open.
+    await Promise.all(DATA.filter(src => !have[src]).map(loadScript));
     lib = {
       BACKGROUNDS: window.BACKGROUNDS || [],
       PALETTES: window.PALETTES || [],
@@ -1304,7 +1306,10 @@ textarea[hidden] { display: none; }
   let filePresets = {};
   async function loadFilePresets() {
     try {
-      const res = await fetch(ROOT + PRESET_FILE, { cache: 'no-store' });
+      // A plain request, so it can take up a copy the page preloaded (a
+      // <link rel="preload"> only matches a request made the same way). The
+      // host serves it max-age=0, so it is still checked against the server.
+      const res = await fetch(ROOT + PRESET_FILE);
       const data = res.ok ? await res.json() : null;
       filePresets = data && typeof data.presets === 'object' ? data.presets : {};
     } catch { filePresets = {}; }
@@ -1452,7 +1457,7 @@ textarea[hidden] { display: none; }
     ui.root.querySelector('.grp[data-section="presets"]').classList.add('collapsed');
     refreshPresets();
     // The shipped presets arrive a moment later; list them when they do.
-    loadFilePresets().then(() => { if (ui) refreshPresets(); });
+    ui.presetsReady.then(() => { if (ui) refreshPresets(); });
   }
 
   /* ---- scenes (after scenes.js) ----
@@ -1887,6 +1892,9 @@ textarea[hidden] { display: none; }
   async function open({ randomizeFirst = false } = {}) {
     if (ui) return;
     ui = { loading: true };
+    // The shipped presets load alongside the catalogues rather than after the
+    // panel is up, so the page button's first randomize can use them.
+    const presetsReady = loadFilePresets();
     try { await loadLib(); }
     catch (err) { ui = null; console.warn('[texture-kit]', err); return; }
 
@@ -1906,7 +1914,7 @@ textarea[hidden] { display: none; }
     sheet.textContent = CURSOR_SHEET;
     document.head.append(sheet);
 
-    ui = { host, root, sheet, picking: false, hover: null, targets: [], current: document.querySelector('.copy') || document.body };
+    ui = { host, root, sheet, presetsReady, picking: false, hover: null, targets: [], current: document.querySelector('.copy') || document.body };
     ui.outline = root.querySelector('.outline');
     ui.hoverBox = root.querySelector('.hover');
     wire();
@@ -1929,6 +1937,10 @@ textarea[hidden] { display: none; }
     document.dispatchEvent(new CustomEvent('texture-kit:open'));
 
     if (randomizeFirst) {
+      // The shipped presets are part of what it rolls from - wait for them,
+      // briefly: a slow file is not worth holding the page up for.
+      await Promise.race([presetsReady, new Promise(r => setTimeout(r, 1200))]);
+      if (!ui || ui.host !== host) return;
       $('randomize').click();
       const kit = root.querySelector('.kit');
       ui.introTimer = setTimeout(() => kit.classList.remove('is-intro'), 1000);
@@ -1958,6 +1970,39 @@ textarea[hidden] { display: none; }
     ui = null;
     document.dispatchEvent(new CustomEvent('texture-kit:close'));
   }
+
+  /* ---- warming the cache ----
+     Opening the kit the first time fetches ~220 KB of catalogues, panel
+     styles and the shipped presets - over a slow link, or from a page framed
+     inside another site, that is a wait on the first "Randomize this page".
+     So once this page has loaded and gone quiet, the same files are fetched
+     ahead of time, at low priority, into the browser's cache; and at once if
+     the pointer or the keyboard reaches the button first. Nothing is run and
+     nothing is added to the page: the kit still only starts when opened, it
+     just finds its files already here (the host serves them with an ETag, so
+     the real request is a quick "not modified"). */
+  const WARM = [...DATA, ...SHEETS, PRESET_FILE, 'patterns/diagonal.svg'];
+  let warmed = false;
+  function warm() {
+    if (warmed) return;
+    warmed = true;
+    // A page that loads the catalogues itself (the intro page does, and
+    // preloads the rest) has already done this.
+    if (window.BACKGROUNDS) return;
+    for (const f of WARM) fetch(ROOT + f, { priority: 'low' }).catch(() => {});
+  }
+  // An idle moment, or three seconds in, whichever comes first - a browser
+  // can hold idle callbacks back for good (a background tab does), and warm()
+  // runs once however many times it is asked.
+  const whenIdle = (fn) => {
+    if ('requestIdleCallback' in window) requestIdleCallback(fn, { timeout: 3000 });
+    setTimeout(fn, 3000);
+  };
+  if (document.readyState === 'complete') whenIdle(warm);
+  else addEventListener('load', () => whenIdle(warm), { once: true });
+  const onIntent = (ev) => { if (ev.target.closest?.('[data-texture-kit-open]')) warm(); };
+  document.addEventListener('pointerover', onIntent, { passive: true });
+  document.addEventListener('focusin', onIntent);
 
   // What the kit leaves standing while closed: a way in. Any element marked
   // data-texture-kit-open opens it - the button under the page title - and

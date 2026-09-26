@@ -446,7 +446,8 @@ const INITIAL_DIR = 'initial-load';
 // note would land on top of the complaint, leaving a silently wrong page.
 let sceneMiss = '';
 async function openSceneFile(file) {
-  applyScene(await getJSON(sceneUrl(file)));
+  // A scene the embedding page asked for ahead of time is already here.
+  applyScene(await (prefetched.get(file) || getJSON(sceneUrl(file))));
   picked = 'file:' + file;            // so the list opens with it marked
   markScene();
   sceneNote(`${sceneMiss}Opened with ${file}.`);
@@ -539,9 +540,78 @@ addEventListener('message', (e) => {
   if (window.parent === window || e.source !== window.parent) return;
   if (e.origin !== location.origin) return;
   const msg = e.data;
+  // The next cover, asked for a turn early - see prefetchScene() below.
+  if (msg && msg.type === 'prefetch' && typeof msg.name === 'string') { prefetchScene(msg.name); return; }
   if (!msg || msg.type !== 'scene' || typeof msg.name !== 'string') return;
-  loadNamedScene(msg.name);
+  // Answer when the new cover is actually on screen, so the page around us can
+  // bring it back up then rather than on a guess - see sceneReady() below.
+  loadNamedScene(msg.name).then(sceneReady).then(() =>
+    window.parent.postMessage({ type: 'scene-ready', name: msg.name }, location.origin));
 });
+
+/* ---- the next cover, fetched a turn early ----
+   The cycling embed knows which cover comes next, so it says so as soon as the
+   current one is up: { type: 'prefetch', name } with the scene's path. The
+   file is fetched and kept here, its photograph starts downloading into the
+   cache, and its web fonts are asked for - so when the swap comes there is
+   nothing left to wait on, and the cover can come up at once instead of
+   arriving piece by piece. That is what made it flicker most in a frame inside
+   a frame, where every fetch is a beat slower.
+
+   Kept by path for the life of the page: the rotation comes back round, and a
+   scene is a few KB. A failed fetch is forgotten, so the swap tries again. */
+const prefetched = new Map();   // scene path -> Promise of its data
+function prefetchScene(spec) {
+  let file = String(spec).trim();
+  while (file.startsWith('/')) file = file.slice(1);
+  if (!file.includes('/') || !file.toLowerCase().endsWith('.json')) return;   // a full path only
+  if (prefetched.has(file)) return;
+  const p = getJSON(sceneUrl(file)).then(data => {
+    // The photograph, into the cache: applyBg's own preload then finds it.
+    const b = data.bg || {};
+    if (b.kind === 'photo' && b.seed) { const im = new Image(); im.src = photoURL(b.seed); }
+    // The type: each face's stylesheet, and then the face itself once the
+    // stylesheet has had a moment to describe it (a face is only fetched when
+    // something asks for it).
+    for (const k of TYPE_BLOCKS) {
+      const c = data[k];
+      if (!c || !c.font || c.enabled === false) continue;
+      loadFont(c.font);
+      const face = `${c.italic ? 'italic ' : ''}${c.weight || 400} 1em "${c.font}"`;
+      setTimeout(() => document.fonts.load(face).catch(() => {}), 500);
+    }
+    return data;
+  });
+  p.catch(() => prefetched.delete(file));
+  prefetched.set(file, p);
+}
+
+/* ---- "the cover is up" ----
+   Applying a scene is instant, but the cover is not drawn until its photograph
+   has loaded (applyBg preloads it and only then paints it), its web fonts have
+   arrived and a frame has been painted with them. An embed that fades the cover
+   back in before that shows the old picture, or the new type in a stand-in
+   face, snapping to the real thing - the flicker a frame inside a frame makes
+   plain, since everything there is a little slower.
+
+   Every wait is capped: a dead network or a window that is not being drawn
+   (requestAnimationFrame parks there) must not hold the cover back for ever. */
+const within = (p, ms) => Promise.race([p, new Promise(r => setTimeout(r, ms))]);
+async function sceneReady() {
+  // The photograph: bgUrl catches up with the descriptor once it has loaded,
+  // or falls back to a gradient if it cannot.
+  await within(new Promise(resolve => {
+    const done = () => state.bg.kind !== 'photo' || bgUrl === resolveBg() || bgUrl === bgByName(null);
+    const check = () => (done() ? resolve() : setTimeout(check, 30));
+    check();
+  }), 3000);
+  // The fonts: the <link> loadFont added has to be read before its faces are
+  // asked for, hence the beat before fonts.ready is worth waiting on.
+  await new Promise(r => setTimeout(r, 40));
+  await within(document.fonts.ready, 2000);
+  // Two frames: one where it is laid out, one where it has been painted.
+  await within(new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))), 120);
+}
 
 async function loadScene(value) {
   picked = value;

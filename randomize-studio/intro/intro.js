@@ -123,26 +123,48 @@ if (frame) {
   // a slow-loading iframe can leave a pale hole in the page.
   //
   // The swap has to happen at the bottom of the dip or the change shows
-  // through it, and the cover is only brought back after two frames: the
-  // first is when the new one is applied, the second is when it has been
-  // painted. Bringing it back on the same frame would put the OLD cover on
-  // screen for one tick of it.
+  // through it, and the cover is only brought back once the studio says the
+  // new one is on screen - photograph loaded, fonts in, a frame painted. It
+  // answers { type: 'scene-ready' } for that (see sceneReady() in
+  // js/scenes.js). Guessing with a couple of frames was not enough: the scene
+  // file and its photo arrive over the network, so the fade-in often came
+  // first and the cover snapped in under it - most visibly with this page in
+  // an iframe of its own, where everything is a beat slower.
   //
-  // A timer races those frames, because a window that is not being drawn parks
-  // requestAnimationFrame indefinitely. Normally show() is not called then at
-  // all - document.hidden says so - but the two are not the same thing, and a
-  // window that stops drawing without saying it is hidden would leave the
-  // frame black for good. Whichever arrives first wins; the second then takes
-  // off a class that is already off.
-  const lift = () => box.classList.remove('is-swapping');
+  // A timer backs the answer up, so a studio that never replies - an older
+  // build, a dead network - still cannot leave the frame black for good.
+  const READY_MAX_MS = 2500;
+  let swapping = false, lifted = null;
+  // The cover after this one, asked for a whole turn ahead: the studio fetches
+  // its scene, its photograph and its fonts while the current cover is up
+  // (prefetchScene() in js/scenes.js), so the swap has nothing left to wait on.
+  const prefetchNext = () => {
+    try { frame.contentWindow.postMessage({ type: 'prefetch', name: files[(at + 1) % files.length] }, location.origin); } catch {}
+  };
+  const lift = () => {
+    swapping = false;
+    lifted = null;
+    box.classList.remove('is-swapping');
+    prefetchNext();
+  };
+  // The first one, as soon as the studio is there to hear it - and again on
+  // any reload of the frame.
+  prefetchNext();
+  frame.addEventListener('load', prefetchNext);
+  addEventListener('message', (e) => {
+    if (e.source !== frame.contentWindow || e.origin !== location.origin) return;
+    if (e.data && e.data.type === 'scene-ready' && e.data.name === files[at] && lifted) lifted();
+  });
   const show = () => {
+    if (swapping) return;               // the last swap is still waiting on its cover
+    swapping = true;
     at = (at + 1) % files.length;
     if (bar) bar.currentTime = 0;
     box.classList.add('is-swapping');
     setTimeout(() => {
       send();
-      requestAnimationFrame(() => requestAnimationFrame(lift));
-      setTimeout(lift, FADE_MS);
+      const backstop = setTimeout(lift, READY_MAX_MS);
+      lifted = () => { clearTimeout(backstop); lift(); };
     }, FADE_MS);
   };
   // Nothing happens while the tab is in the background: a cover a second is

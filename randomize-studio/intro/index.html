@@ -10,6 +10,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="intro.css">
+<!-- Everything "Randomize this page" needs, asked for with the page rather
+     than on the first press: the texture panel's three stylesheets (it loads
+     them inside its own shadow root, by these same addresses, so they come
+     straight from the cache), the presets that ship with the page, and the
+     panel's hatched shadow. The four catalogues are loaded as scripts at the
+     foot of the page, and the 87 pattern tiles once the page is up. -->
+<link rel="preload" href="../css/panel.css" as="style">
+<link rel="preload" href="../css/controls.css" as="style">
+<link rel="preload" href="../css/svg-background.css" as="style">
+<link rel="preload" href="texture-presets.json" as="fetch" crossorigin="anonymous">
+<link rel="preload" href="../patterns/diagonal.svg" as="image">
 </head>
 <body>
 <div class="nsc-studio-intro">
@@ -176,8 +187,29 @@
 </div>
 </div>
 <script src="intro.js"></script>
+<!-- The texture kit's catalogues - backgrounds, palettes, pattern tiles, the
+     grain - loaded with the page, so the first "Randomize this page" has
+     nothing to wait for. The kit sees they are already here and does not ask
+     for them again. -->
+<script src="../js/svg-backgrounds-data.js" defer></script>
+<script src="../js/palettes.js" defer></script>
+<script src="../js/overlay-patterns.js" defer></script>
+<script src="../js/static-background.js" defer></script>
 <!-- Opt-in texture editor: Shift+T or ?texture. Idle until opened, and takes
      itself back out when closed - see the note at the top of the file. -->
 <script src="texture-kit.js" defer></script>
+<!-- The 87 pattern tiles Randomize can pick from, fetched into the cache once
+     the page has finished loading - at low priority, after everything the
+     page itself shows. -->
+<script>
+  addEventListener('load', () => {
+    if (typeof OVERLAY_PATTERNS === 'undefined') return;
+    for (const p of OVERLAY_PATTERNS) {
+      const img = new Image();
+      img.fetchPriority = 'low';
+      img.src = '../overlay-patterns/' + encodeURIComponent(p.n) + '.svg';
+    }
+  }, { once: true });
+</script>
 </body>
 </html>
