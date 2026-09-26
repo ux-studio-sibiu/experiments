@@ -21,6 +21,8 @@
     <section class="intro">
       <h1 class="title">Randomize Studio</h1>
       <p class="role">design concepts : rapid prototyping : for designer-devs</p>
+      <!-- Opens the texture kit, the same as Shift+T (see texture-kit.js). -->
+      <p class="actions"><button type="button" class="button" data-texture-kit-open>Randomize this page</button></p>
       <!-- <hr class="intro-rule"> -->
       <!-- <ul class="intro-list">
         <li>Playground for approaching design from the dev angle</li>
@@ -62,7 +64,8 @@
           <kbd>Shift</kbd> by ten</li>
         <li><kbd>R</kbd> randomizes, <kbd>Esc</kbd> deselects</li> -->
       </ul>
-      <figure class="shot">
+      <!-- Hidden for now: remove `hidden` to bring the screenshot back. -->
+      <figure class="shot" hidden>
         <img src="../assets/randomize-panel.jpg" width="357" height="557" loading="lazy"
              alt="The edit panel: Background, Typography, Web elements and Scene as collapsible layer
                   sections, each row with an eye, a dice and a lock.">
@@ -119,6 +122,9 @@
          stretching it open as the fill grows. It ends opaque over the whole
          word: 96.4% of 1100 is 1060, comfortably past the 1000 it has to
          cover. -->
+    <!-- The upper band of the column: the clock and the frame together, so a
+         texture on it runs from the column's top edge to under the frame. -->
+    <div class="stage">
     <div class="stagehead">
       <!-- Shown by intro.js, and only once there is a rotation to control. It
            sits beside the clock rather than under the frame, which is the one
@@ -155,6 +161,7 @@
            the way any other link does. -->
       <a class="cover" href="../index.html"><span class="label">Open studio</span></a>
     </div>
+    </div>
 
     <ol class="steps">
       <li>1. Randomize design elements</li>
@@ -170,5 +177,8 @@
 </div>
 </div>
 <script src="intro.js"></script>
+<!-- Opt-in texture editor: Shift+T or ?texture. Idle until opened, and takes
+     itself back out when closed - see the note at the top of the file. -->
+<script src="texture-kit.js" defer></script>
 </body>
 </html>

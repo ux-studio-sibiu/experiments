@@ -63,29 +63,44 @@ body {
 /* ---- column 1: the copy ----
    A deep head and foot. The column scrolls, so the text starts below the fold
    of its own box and ends well before the bottom of it, which is what keeps it
-   off the edges of a panel that has no other chrome. */
-/* A query container, so the title can be sized as a share of THIS column
-   rather than of the window. The column is a percentage of the viewport with a
-   floor, so vw never described it properly. */
-.copy {
-  container-type: inline-size;
-  padding: clamp(48px, 7vw, 120px) var(--gutter) clamp(64px, 8vw, 128px);
-}
+   off the edges of a panel that has no other chrome.
 
-.copy section { margin: 0 0 2rem; }
+   Edge to edge: the column carries no padding of its own. Every bit of space
+   in it belongs to one of its sections, and the sections abut, so each one is
+   a full-width band from its rule to the next - which is what lets a texture
+   on a section (see texture-kit.js) fill it cleanly instead of stopping at the
+   gutter or leaving the gap between two sections bare. */
+.copy > section {
+  position: relative;   /* the rule below is drawn from here */
+  margin: 0;
+  padding: 0 var(--gutter) 2rem;
+}
+.copy > section:first-child { padding-top: clamp(48px, 7vw, 120px); }
+.copy > section:last-child { padding-bottom: calc(2rem + clamp(64px, 8vw, 128px)); }
+/* The 2rem between sections was a margin, and the last line's own margin
+   collapsed into it; as padding it would add to it instead. Every such margin
+   here is smaller than the 2rem, so dropping it gives the same gap. */
+.copy > section > :last-child,
+.copy > .intro > .role:last-child { margin-bottom: 0; }   /* the second outranks `.copy p.role` */
 
 /* A rule between one section and the next, the same weight as the one under
    the head: the panel is a long column of lists and they run together without
-   something to say where one subject ends. */
-.copy section + section {
-  padding-top: 1.75rem;
-  border-top: 2px solid var(--ink);
-}
+   something to say where one subject ends.
 
-/* Except the first after the head, which already has a rule of its own a
-   paragraph above it - two lines that close together read as a mistake rather
-   than as structure. */
-.intro + section { padding-top: 0; border-top: 0; }
+   Drawn rather than a border, so it can keep to the gutters while the section
+   itself runs to the column's edges - and so it stays on top of a texture laid
+   under the section's content. */
+/* Plus the 2px the rule took up in the flow when it was a border. */
+.copy > section + section { padding-top: calc(1.75rem + 2px); }
+.copy > section + section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--gutter);
+  right: var(--gutter);
+  height: 2px;
+  background: var(--ink);
+}
 
 .copy p { margin: 0 0 .9rem; font-size: .9375rem; line-height: 1.6; }
 /* The portfolio's entry-points list (web-portfolio/app/styles/_devices.scss):
@@ -119,18 +134,21 @@ body {
 
 /* The five steps: the one list on the page meant to be read at a glance, so
    it drops the markers (the numbers are in the text) and is set display-size
-   in the page face, the way the portfolio sets its band titles. Sits under the
-   frame in the showcase column: the block is as wide as its longest step and
-   centred under the frame, the steps inside it ranged left. */
+   in the page face, the way the portfolio sets its band titles.
+
+   The lower band of the showcase column, from under the frame to the foot of
+   the column and the column's full width. The steps sit in it as one block as
+   wide as the longest of them, centred under the frame and ranged left: a
+   centred grid sizes its one column track to that longest step. */
 .steps {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  align-self: center;
+  flex: 1 0 auto;
+  display: grid;
+  justify-content: center;
+  justify-items: start;
+  align-content: start;
   gap: .35em;
-  width: fit-content;
-  margin: 2.5rem auto 0;
-  padding: 0;
+  margin: 0;
+  padding: 2.5rem var(--gutter) var(--gutter);
   list-style: none;
   text-align: left;
 }
@@ -183,8 +201,13 @@ kbd {
   text-align: center;
 }
 
-/* ---- the head of the panel ---- */
-.intro { margin-bottom: 2.25rem; }
+/* ---- the head of the panel ----
+   A query container, so the title can be sized as a share of the column
+   rather than of the window. The column is a percentage of the viewport with a
+   floor, so vw never described it properly. On the head rather than on the
+   column, because the head's content box is the column less its gutters -
+   the measure the title is fitted to. */
+.intro { container-type: inline-size; }
 /* Set to the measure rather than to a taste, and to the WHOLE name on one
    line. Randomize Studio sets 8.67em wide in this face at this weight, and the
    -0.04em tracking takes 0.6em back off its fifteen gaps, so it comes to
@@ -298,6 +321,7 @@ kbd {
   text-decoration: none;
   box-shadow: 3px 5px #00000033;
   transition: transform .1s ease, box-shadow .1s ease;
+  cursor: pointer;   /* a <button> does not get this for free the way a link does */
 }
 
 .button:hover { transform: translate(1px, 2px); box-shadow: 2px 3px #00000033; }
@@ -311,12 +335,24 @@ kbd {
 /* ============================ column 2: the studio ============================
    Held still while the copy goes by: sticky against the page's own scroller, a
    screen tall, with the frame centred in whatever room is left over rather
-   than hung from the top. */
+   than hung from the top.
+
+   Two bands and no padding of its own, the same way the copy column is built:
+   .stage (the clock and the frame) and .steps under it, each the column's full
+   width. They split the room left over between them equally - the stage's
+   content sits at its foot, the steps' at their head - which centres the
+   group exactly as centring it inside the column used to. */
 .showcase {
-  padding: var(--gutter);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+}
+
+.stage {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--gutter) var(--gutter) 0;
 }
 
 @media (min-width: 1000px) {
@@ -508,6 +544,7 @@ kbd {
    One column, the studio first: on a phone the frame is the fastest way to say
    what this is, and the copy reads underneath it. */
 @media (max-width: 999px) {
-  .showcase { order: -1; padding-top: clamp(32px, 6vw, 56px); }
-  .copy { padding-top: clamp(32px, 5vw, 56px); }
+  .showcase { order: -1; }
+  .stage { padding-top: clamp(32px, 6vw, 56px); }
+  .copy > section:first-child { padding-top: clamp(32px, 5vw, 56px); }
 }

@@ -54,7 +54,14 @@ if (frame) {
   // One cover is not a rotation.
   if (files.length < 2) return;
 
+  // `editing` is a hold of its own, apart from `paused`: while the texture kit
+  // is open the rotation stops, and closing the kit gives back whatever state
+  // the pause button had - a rotation you had paused stays paused. The kit
+  // says when it opens and closes with two events on the document; a kit that
+  // is already open when this gets here (?texture, before the manifest came
+  // back) is found by its panel.
   let at = -1, timer = null, paused = false;
+  let editing = !!document.querySelector('body > [data-texture-kit]');
   const box = frame.parentElement;   // the frame, which is the black behind it
   // Long enough to read as a dip rather than a blink, short enough that the
   // cover is up for most of the turn. The two together are a fifth of it.
@@ -111,7 +118,7 @@ if (frame) {
   // Both clocks start together on a resume: setInterval counts from now, so a
   // bar left part-filled would reach the end before the swap did.
   const start = () => {
-    if (paused || timer) return;
+    if (paused || editing || timer) return;
     if (bar) { bar.currentTime = 0; bar.play(); }
     timer = setInterval(tick, CYCLE_MS);
   };
@@ -157,6 +164,9 @@ if (frame) {
     stop();
     start();
   });
+
+  document.addEventListener('texture-kit:open', () => { editing = true; stop(); });
+  document.addEventListener('texture-kit:close', () => { editing = false; start(); });
 
   label();
   start();
