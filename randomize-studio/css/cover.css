@@ -190,3 +190,8 @@ body.is-moving .editable { cursor: move; }
 #topmenu { position: absolute; top: 0; left: 0; right: 0; z-index: 4; display: flex; align-items: center; }
 #topmenu a { text-decoration: none; white-space: nowrap; }
 #topmenu .tm-links { display: flex; align-items: center; }
+/* The three types. A pill floats a little off the edge it is placed against,
+   so its round ends are never cut by the window; vertical stacks the brand
+   over the links and the links over each other. */
+#topmenu.pill { margin: 16px; }
+#topmenu.vertical, #topmenu.vertical .tm-links { flex-direction: column; }

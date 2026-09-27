@@ -143,10 +143,22 @@
           <button class="iconbtn dice" data-rand="svgbg" title="Randomize this layer"></button>
           <button class="lockbtn lock" data-lock="svgbg" aria-pressed="false" title="Lock during randomize"></button></h4>
         <div class="sub-body">
+          <!-- Three tabs rather than one long run of controls, the way an
+               Adobe panel groups a layer's properties: what it is, what
+               colours it is in, and how those are shifted. -->
+          <div class="tabs" role="tablist" aria-label="Dynamic SVG">
+            <button type="button" role="tab" id="sv-tab-svg" aria-controls="sv-pane-svg" aria-selected="true">svg</button>
+            <button type="button" role="tab" id="sv-tab-color" aria-controls="sv-pane-color" aria-selected="false" tabindex="-1">color</button>
+            <button type="button" role="tab" id="sv-tab-adjust" aria-controls="sv-pane-adjust" aria-selected="false" tabindex="-1">adjust</button>
+          </div>
+
+          <div class="tabpane" role="tabpanel" id="sv-pane-svg" aria-labelledby="sv-tab-svg">
           <div class="row"><label>library</label><span></span><output id="sv-count"></output></div>
           <div class="chips tags" id="sv-tags"></div>
           <div class="tiles" id="sv-tiles"></div>
+          </div>
 
+          <div class="tabpane" role="tabpanel" id="sv-pane-color" aria-labelledby="sv-tab-color" hidden>
           <div class="row"><label>colours</label><span></span>
             <button class="iconbtn" id="sv-resetColors" data-mark="undo" title="Back to the original colours"></button></div>
           <div class="swatches" id="sv-swatches"></div>
@@ -165,7 +177,9 @@
           <div class="chips tags" id="sv-palTags"></div>
           <div class="pallist" id="sv-palList"></div>
           <p class="hint" id="sv-palNote" hidden></p>
+          </div>
 
+          <div class="tabpane" role="tabpanel" id="sv-pane-adjust" aria-labelledby="sv-tab-adjust" hidden>
           <div class="row"><label>adjust</label><span></span>
             <button class="iconbtn" id="sv-resetAdjust" data-mark="undo" title="Reset hue, saturation, lightness and scale"></button></div>
           <div class="row"><label>hue</label><input id="sv-hue" type="range" min="-180" max="180" step="1"><output id="sv-hueV"></output></div>
@@ -173,6 +187,7 @@
           <div class="row"><label>lightness</label><input id="sv-light" type="range" min="-50" max="50" step="1"><output id="sv-lightV"></output></div>
           <div class="row"><label>scale</label><input id="sv-scale" type="range" min="0.1" max="4" step="0.05"><output id="sv-scaleV"></output></div>
           <p class="hint" id="sv-scaleNote" hidden>This one is sized to <b>cover</b> the artboard, so it has no tile to scale.</p>
+          </div>
           <!-- The free set is free with an attribution link, which is easy to
                forget once a background is three recolours deep. -->
           <p class="hint">Free set from <a href="https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/" target="_blank" rel="noopener">SVGBackgrounds.com</a> &mdash; attribution required wherever you use one.</p>
@@ -276,6 +291,12 @@
           <button class="iconbtn dice" data-rand="topmenu" title="Randomize this layer"></button>
           <button class="lockbtn lock" data-lock="topmenu" aria-pressed="false" title="Lock during randomize"></button></h4>
         <div class="sub-body">
+      <div class="row"><label>type</label>
+        <div class="radios" id="tm-kind">
+          <label><input type="radio" name="tm-kd" value="bar">bar</label>
+          <label><input type="radio" name="tm-kd" value="pill">pill</label>
+          <label><input type="radio" name="tm-kd" value="vertical">vertical</label>
+        </div></div>
       <div class="row"><label>font-size</label><input id="tm-size" type="range" min="10" max="32" step="1"><output id="tm-sizeV"></output></div>
       <div class="row"><label>font/color</label><select id="tm-font"></select><input id="tm-color" type="color"></div>
       <div class="row"><label>weight</label><div class="chips" id="tm-weight"></div></div>
@@ -302,6 +323,11 @@
            reading, so one row — the colour on its own said nothing until you
            found the opacity two lines down. -->
         <div class="row"><label>plate</label><input id="tm-bg" type="color"><input id="tm-bgA" type="range" min="0" max="1" step="0.02"><output id="tm-bgAV"></output></div>
+        <!-- The pill's own: how round, how frosted, and its outline. -->
+        <div class="row" data-kind="pill"><label>radius</label><input id="tm-radius" type="range" min="0" max="50" step="1"><output id="tm-radiusV"></output></div>
+        <div class="row" data-kind="pill"><label>blur</label><input id="tm-blur" type="range" min="0" max="30" step="1"><output id="tm-blurV"></output></div>
+        <div class="row" data-kind="pill"><label>border</label><input id="tm-borderColor" type="color"><input id="tm-border" type="range" min="0" max="4" step="1"><output id="tm-borderV"></output></div>
+        <div class="row" data-kind="pill"><label>border α</label><input id="tm-borderA" type="range" min="0" max="1" step="0.05"><output id="tm-borderAV"></output></div>
         <!-- Last, because it changes nothing you can see: it says which corner
              of the window this position is written down from when a scene is
              saved, and read back against when one is loaded. -->
@@ -323,12 +349,13 @@
                Double-clicking the button on the cover still types your own, and
                the dropdown then reads "custom". -->
           <div class="row"><label>label</label><select id="cta-text"></select></div>
+          <!-- Two kinds: a solid box, or a link. The rows below the type that
+               belong to one kind only say so with data-cta-only, and js/cta.js
+               hides them for the other. -->
           <div class="row"><label>style</label><select id="cta-style"></select></div>
           <div class="row"><label>font-size</label><input id="cta-size" type="range" min="10" max="48" step="1"><output id="cta-sizeV"></output></div>
           <div class="row"><label>font/color</label><select id="cta-font"></select><input id="cta-color" type="color"></div>
           <div class="row"><label>weight</label><div class="chips" id="cta-weight"></div></div>
-          <div class="row"><label>fill</label><input id="cta-bg" type="color"><input id="cta-bgA" type="range" min="0" max="1" step="0.02"><output id="cta-bgAV"></output></div>
-          <div class="row"><label>radius</label><input id="cta-radius" type="range" min="0" max="40" step="1"><output id="cta-radiusV"></output></div>
           <div class="row"><label>tracking</label><input id="cta-ls" type="range" min="-0.02" max="0.4" step="0.005"><output id="cta-lsV"></output></div>
           <div class="row"><label>case</label>
             <div class="radios" id="cta-transform">
@@ -336,7 +363,19 @@
               <label title="UPPERCASE"><input type="radio" name="cta-tf" value="uppercase">AA</label>
               <label title="lowercase"><input type="radio" name="cta-tf" value="lowercase">aa</label>
             </div></div>
-          <div class="row"><label>shadow</label><span></span><input id="cta-shadow" type="checkbox"></div>
+          <!-- The menu's anchor, for the button: which point of the visible part
+               of the artboard its saved position counts from. None pressed is
+               plain artboard position; pressing the chosen one lets go of it. -->
+          <div class="row"><label>anchor</label><div class="anchorgrid" id="cta-anchor"></div><span></span></div>
+          <!-- solid -->
+          <div class="row" data-cta-only="solid"><label>fill</label><input id="cta-bg" type="color"><input id="cta-bgA" type="range" min="0" max="1" step="0.02"><output id="cta-bgAV"></output></div>
+          <div class="row" data-cta-only="solid"><label>radius</label><input id="cta-radius" type="range" min="0" max="50" step="1"><output id="cta-radiusV"></output></div>
+          <div class="row" data-cta-only="solid"><label>border</label><input id="cta-borderC" type="color"><input id="cta-border" type="range" min="0" max="6" step="1"><output id="cta-borderV"></output></div>
+          <div class="row" data-cta-only="solid"><label>drop</label><input id="cta-dropC" type="color"><input id="cta-drop" type="range" min="0" max="12" step="1"><output id="cta-dropV"></output></div>
+          <div class="row" data-cta-only="solid"><label>drop blur</label><input id="cta-dropBlur" type="range" min="0" max="24" step="1"><output id="cta-dropBlurV"></output></div>
+          <!-- link -->
+          <div class="row" data-cta-only="link"><label>underline</label><span></span><input id="cta-underline" type="checkbox"></div>
+          <div class="row" data-cta-only="link"><label>arrow</label><span></span><input id="cta-arrow" type="checkbox"></div>
         </div>
       </div>
     </div>
@@ -347,7 +386,7 @@
       <div class="row"><label>saved</label>
         <span></span>
         <button id="sceneRefresh" class="iconbtn" data-mark="refresh" title="Rescan"></button>
-        <button id="sceneDumpAll" class="iconbtn" data-mark="db-export" title="Download every scene stored in this browser, one file each"></button>
+        <button id="sceneDumpAll" class="iconbtn" data-mark="db-export" title="Download every local scene as one local-scenes.json, for scenes/"></button>
         <button id="sceneDelete" class="iconbtn" data-mark="trash" title="Delete the selected browser scene"></button>
       </div>
       <!-- Open, not a dropdown: a saved scene is something you browse, and a

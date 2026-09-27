@@ -40,7 +40,57 @@ function applyRole(r) {
   el.style.textShadow = c.shadow ? shadowCSS() : 'none';
   applyBox(r);
   if (r === 'body') { el.style.columnCount = c.columns; el.style.columnGap = '2.4em'; }
+  fitText(r);
 }
+
+/* ---- text that fits its box ----
+   A block given a height with the corner handles shows as many words of its
+   copy as that height holds, and no more; grow the box and the words come back.
+   Only then: `fit` says the height came from the handles. A boxH on its own is
+   the floor it always was - the defaults and older scenes carry small ones
+   (40px on the body) that were never meant as a limit, and treating them as
+   one cut a multi-column body down to its first line. Double-clicking a handle
+   or a fresh Randomize layout clears it.
+
+   The whole copy is kept on the element (data-full) beside what is on screen
+   (data-shown). Whatever sets the text - the length slider, the dice, a scene,
+   typing - just sets it: text that is no longer the last thing shown here is
+   taken as the new whole copy, so none of those have to know this exists. The
+   one exception is typing, which is handed the whole copy to edit (see
+   startEditing in interact.js) and is left alone while the caret is in it.
+
+   Words are cut from the end, whole, with nothing marking the cut - on a cover
+   the shorter copy should read as the copy. The count is found by halving
+   rather than word by word: a 300-word body is about nine layouts, not 300. A
+   box shorter than one line still shows one word. */
+const fullText = (r) => els[r].dataset.full ?? els[r].textContent;
+function fitText(r) {
+  const el = els[r], c = state[r];
+  if (el.isContentEditable) return;
+  if (el.dataset.shown === undefined || el.textContent !== el.dataset.shown) el.dataset.full = el.textContent;
+  const full = el.dataset.full;
+  let shown = full;
+  if (c.enabled && c.fit && c.boxH) {
+    // offsetHeight is in artboard pixels, like boxH: the scene's scale is a
+    // transform, and layout sizes ignore it. The box is a min-height, so the
+    // copy fits exactly when the element is no taller than the box.
+    const fits = (text) => { el.textContent = text; return el.offsetHeight <= c.boxH + 1; };
+    if (!fits(full)) {
+      const words = full.split(/\s+/).filter(Boolean);
+      let lo = 1, hi = words.length - 1, best = 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (fits(words.slice(0, mid).join(' '))) { best = mid; lo = mid + 1; } else hi = mid - 1;
+      }
+      shown = words.slice(0, best).join(' ');
+    }
+  }
+  if (el.textContent !== shown) el.textContent = shown;
+  el.dataset.shown = shown;
+}
+// Measured in whatever face is on screen - a web font arriving afterwards
+// changes every width, so the copy is fitted again once it has.
+document.fonts.addEventListener('loadingdone', () => TEXT_ROLES.forEach(r => fitText(r)));
 
 function renderPlate() {
   const p = state.plate, el = els.plate;
@@ -79,6 +129,9 @@ function render() {
 const MENU_WORDS = ['Work','Studio','About','Journal','Index','Contact','Shop','News','Archive','Projects'];
 const MENU_BRAND = '✶ Studio';
 const JUSTIFY = { spread:'space-between', center:'center', right:'flex-end', left:'flex-start' };
+// A vertical menu aligns across its column instead; spread has no across, so it
+// reads as left there (and spreads the links down a box taller than they are).
+const CROSS = { spread:'flex-start', center:'center', right:'flex-end', left:'flex-start' };
 
 // The anchors only need rebuilding when the menu's STRUCTURE changes — how many
 // links, and whether the brand is there. render() runs on every slider tick, so
@@ -165,20 +218,31 @@ function renderTopMenu() {
   el.style.display = 'flex';
   // Screen pixels, not artboard ones: the bar is chrome, anchored to the window.
   placeMenu();
-  // Its own box if it has been given one, the width of the window otherwise —
-  // the same bar whichever corner it is measured from.
-  el.style.width = m.boxW ? m.boxW + 'px' : '100%';
+  const kind = m.kind || 'bar', pill = kind === 'pill', vertical = kind === 'vertical';
+  for (const k of ['bar', 'pill', 'vertical']) el.classList.toggle(k, k === kind);
+  // Its own box if it has been given one; otherwise a bar is the width of the
+  // window - the same bar whichever corner it is measured from - and a pill or
+  // a column is only as wide as what it holds.
+  el.style.width = m.boxW ? m.boxW + 'px' : kind === 'bar' ? '100%' : 'auto';
   el.style.minHeight = m.boxH ? m.boxH + 'px' : '';
   el.style.background = m.bgA > 0 ? hexRgba(m.bg, m.bgA) : 'transparent';
-  el.style.padding = m.pad + 'px';
+  // A pill is a short thing, so it keeps half the padding top and bottom.
+  el.style.padding = pill ? `${Math.round(m.pad / 2)}px ${m.pad}px` : m.pad + 'px';
   el.style.gap = m.gap + 'px';
-  el.style.justifyContent = JUSTIFY[m.align] || 'flex-start';
+  el.style.justifyContent = vertical ? (m.align === 'spread' ? 'space-between' : 'flex-start') : JUSTIFY[m.align] || 'flex-start';
+  el.style.alignItems = vertical ? CROSS[m.align] || 'flex-start' : '';
+  // The pill's own, cleared again for the other two.
+  el.style.borderRadius = pill ? (m.radius >= 50 ? 999 : m.radius) + 'px' : '';
+  el.style.border = pill && m.border ? `${m.border}px solid ${hexRgba(m.borderColor, m.borderA)}` : '';
+  el.style.backdropFilter = el.style.webkitBackdropFilter = pill && m.blur ? `blur(${m.blur}px)` : '';
   loadFont(m.font);
 
   const shape = `${m.links}|${m.brand}`;
   if (shape !== menuShape) { menuShape = shape; buildMenuLinks(m, el); }
 
-  el.querySelector('.tm-links').style.gap = m.gap + 'px';
+  const links = el.querySelector('.tm-links');
+  links.style.gap = m.gap + 'px';
+  links.style.alignItems = vertical ? CROSS[m.align] || 'flex-start' : '';
   const fam = `'${m.font}', ${FB[byName(m.font).c]}`;
   el.querySelectorAll('.tm-link').forEach(a => {
     a.style.fontFamily = fam;
@@ -212,7 +276,8 @@ function restack() {
 
   // Pass one: width and x, with the height floor dropped so the copy alone
   // decides how tall each block is.
-  stack.forEach(k => { const c = state[k]; c.x = x; c.boxW = colW; c.boxH = 0; applyRole(k); });
+  // Laid out afresh, so no longer held to a height someone once dragged.
+  stack.forEach(k => { const c = state[k]; c.x = x; c.boxW = colW; c.boxH = 0; c.fit = false; applyRole(k); });
 
   // Gaps scale with the type they follow, so the rhythm holds at any size.
   const gapAfter = { heading: Math.round(state.subheading.size * 1.1), subheading: Math.round(state.body.size * 1.6), body: 0 };

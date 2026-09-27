@@ -52,7 +52,8 @@ if (params.has('curated')) {
   // Three ways to open, each falling through to the next:
   //
   //   ?scene=<path|name|folder|random>  the cover named in the URL
-  //   nothing                           a random cover from scenes/initial-load/
+  //   nothing                           DEFAULT_SCENE (js/scenes.js), else a random
+  //                                     cover from scenes/initial-load/
   //   neither could be read             a random pairing + a random photo
   //
   // The last one runs only as a fallback, and only once the others have said

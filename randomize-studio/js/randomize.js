@@ -64,6 +64,23 @@ function rTopMenu(fontsOnly) {
     state.topmenu.align = rand(['spread','spread','left','center']);
     state.topmenu.links = rnd(3,6);
     state.topmenu.gap = rnd(16,44);
+    // The type, and for a pill a plate you can see: translucent, often
+    // frosted, sometimes outlined in the text's own colour.
+    const m = state.topmenu;
+    m.kind = rand(['bar','bar','pill','vertical']);
+    if (m.kind === 'pill') {
+      m.align = rand(['left','center','spread']);
+      m.radius = rand([50, 50, 12, 6]);
+      m.bg = rand(['#000000', '#ffffff', '#0b0b0d']);
+      m.bgA = rand([0.15, 0.25, 0.4, 0.6]);
+      m.blur = rand([0, 8, 16, 24]);
+      m.border = rand([0, 1, 1, 2]);
+      m.borderColor = m.color; m.borderA = rand([0.25, 0.5, 1]);
+      m.gap = rnd(14,32); m.pad = rnd(14,28);
+    } else {
+      m.bgA = 0;
+      if (m.kind === 'vertical') { m.align = rand(['left','left','right']); m.gap = rnd(8,20); }
+    }
   }
   loadFont(state.topmenu.font);
 }

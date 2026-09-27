@@ -67,7 +67,8 @@ if (frame) {
 }
 
 /* ============================ the cover cycle ============================
-   A cover every three seconds from scenes/currated/, so the page shows what the
+   A cover every three seconds from scenes/currated/ and scenes/local-scenes.json,
+   so the page shows what the
    studio makes rather than one still frame of it.
 
    It asks the frame to load the scene instead of changing its src. A new src
@@ -85,10 +86,15 @@ if (frame) {
   const button = document.querySelector('.cyclebtn');
   if (!frame || !button) return;
 
-  const manifest = await fetch('../scenes/index.json', { cache: 'no-store' })
-    .then(r => (r.ok ? r.json() : null)).catch(() => null);
-  const files = ((manifest && manifest.scenes) || [])
-    .map(s => s.file).filter(f => f.startsWith(FOLDER + '/'));
+  // Two sources: the folder's files, by path, and every scene in
+  // scenes/local-scenes.json, by name - the studio takes "local:<name>" for
+  // those (loadNamedScene() in js/scenes.js).
+  const getJSON = (url) => fetch(url, { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  const [manifest, local] = await Promise.all([getJSON('../scenes/index.json'), getJSON('../scenes/local-scenes.json')]);
+  const files = [
+    ...((manifest && manifest.scenes) || []).map(s => s.file).filter(f => f.startsWith(FOLDER + '/')),
+    ...Object.keys(local && typeof local === 'object' && !Array.isArray(local) ? local : {}).map(n => 'local:' + n),
+  ];
   // One cover is not a rotation.
   if (files.length < 2) return;
 

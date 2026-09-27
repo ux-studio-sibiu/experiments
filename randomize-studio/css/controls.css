@@ -7,6 +7,9 @@
    markup no longer apply: one measure down the whole panel is what makes a
    dense inspector scannable. */
 .row { display: flex; align-items: center; gap: 10px; min-height: var(--ctl); margin: 5px 0; }
+/* The display above would otherwise beat `hidden`: a row a panel hides for
+   the current setting (the CTA's solid-only and link-only rows) must go. */
+.row[hidden] { display: none; }
 .row > label { flex: 0 0 var(--lbl); color: var(--muted); letter-spacing: .01em; }
 .row > input[type=range], .row > input[type=text], .row > select, .row > .chips, .row > div, .row > span {
   flex: 1 1 auto; min-width: 0;
@@ -275,15 +278,55 @@ button[data-rand]::before,
 .scenelist::-webkit-scrollbar { width: 6px; }
 .scenelist::-webkit-scrollbar-thumb { background: var(--faint); }
 /* Where these live. Sticky, so the heading is still there when you are three
-   folders down the box. */
+   folders down the box. A button: clicking it folds its group, the chevron
+   says which way, and the count says what a shut one holds. */
 .scenegroup {
   position: sticky; top: 0; z-index: 1;
-  padding: 4px 6px 3px; background: var(--bg);
-  border-bottom: 1px solid var(--faint);
-  font-family: var(--ui-mono); font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: flex-start; gap: 6px;
+  width: 100%; height: auto; padding: 4px 6px 3px; background: var(--bg);
+  border: 0; border-bottom: 1px solid var(--faint);
+  font-family: var(--ui-mono); font-size: 9px; font-weight: 700; line-height: 1.4;
   letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  text-align: left; cursor: pointer;
 }
+.scenegroup:hover { background: var(--wash); color: var(--ink); }
+.scenegroup::before {
+  content: ''; flex: none; width: 0; height: 0;
+  border-left: 4px solid currentColor; border-top: 3px solid transparent; border-bottom: 3px solid transparent;
+  transition: transform .12s;
+}
+.scenegroup[aria-expanded="true"]::before { transform: rotate(90deg); }
+.scenegroup .count { margin-left: auto; font-weight: 400; letter-spacing: .04em; }
 .scenegroup ~ .scenegroup { border-top: 1px solid var(--faint); margin-top: 4px; }
+.scenegroup-body[hidden] { display: none; }
+
+/* Tabs, the way an Adobe panel draws them: a hairline under the row, and the
+   open tab framed on three sides and joined to the content below it. The
+   closed ones are words in grey. Undoes the shared button look, which would
+   make each tab read as a command rather than as a place.
+
+   The hairline is drawn by the row (::after, under the tabs), not as a border,
+   so which tab covers it is a matter of stacking rather than of a -1px
+   overlap: the open tab reaches down over it in the panel's own paper, and a
+   closed one - hovered or not - stops a pixel short of it, so its wash never
+   touches the rule. */
+.tabs { position: relative; display: flex; align-items: flex-end; gap: 2px; margin: 6px 0 8px; }
+.tabs::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ink); }
+.tabs button {
+  position: relative; z-index: 1;
+  height: 22px; margin: 0 0 1px; padding: 0 12px;
+  background: transparent; color: var(--muted);
+  border: 1px solid transparent; border-bottom: 0; box-shadow: none; transform: none;
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+}
+.tabs button:hover,
+.tabs button:active { background: var(--wash); color: var(--ink); border-color: transparent; box-shadow: none; transform: none; }
+.tabs button[aria-selected="true"] {
+  height: 23px; margin-bottom: 0;
+  background: var(--bg); color: var(--ink);
+  border-color: var(--ink);
+}
+.tabpane[hidden] { display: none; }
 /* A block rather than the flex the other buttons are: the name is one line that
    has to trail off when it is too long, and ellipsis needs a block to do it. */
 .scenerow {
@@ -295,6 +338,8 @@ button[data-rand]::before,
 }
 .scenerow:hover { background: var(--wash); color: var(--ink); }
 .scenerow[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+/* A local scene that is only in this browser, not in local-scenes.json yet. */
+.scenerow.is-browser-only::before { content: '• '; }
 .scene-empty {
   margin: 0; padding: 7px 6px;
   font-family: var(--ui-mono); font-size: 10px; color: var(--muted);

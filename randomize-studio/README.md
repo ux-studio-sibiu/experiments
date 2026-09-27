@@ -40,10 +40,13 @@ cover: it is anchored to the screen, so its numbers are screen pixels.
   its form), and shift hue / saturation / lightness or the tile size across all
   of it. The free set needs an attribution link wherever you use one.
 - **Web elements** — the furniture of a page rather than the cover itself: the
-  **top menu**, and a **CTA** button in one of eleven ready-made shapes (solid,
-  studio wipe, outline, pill, ghost, hard shadow, split block, tag, full bar,
-  underline, arrow link) with its own label, type, fill and radius. It is a
-  block like any other, so it is placed, resized and typed into the same way.
+  **top menu**, and a **CTA** of two kinds: **solid** - a box with its fill,
+  corner radius up to a full pill, border, drop shadow (hard or soft), full
+  width and a wipe on hover, which between them cover pill, outline, ghost,
+  hard-shadow, bar and tag buttons - or **link**, the words with an underline,
+  an arrow, or both. Its own label and type too. It is a block like any other,
+  so it is placed, resized and typed into the same way. Scenes saved with the
+  old eleven shapes are converted when they load.
 - **Randomize** — one click pairs a characterful heading with a contrasting,
   readable body and lays the stack out. Press <kbd>R</kbd> anywhere except while
   editing text. **Lock** a section or a single layer to hold it through a
@@ -96,11 +99,11 @@ file may only call into the ones above it while it is loading.
 | `js/background.js` | descriptors → a picture |
 | `js/randomize.js` | the dice, per layer |
 | `js/svg-background.js` | the Dynamic SVG layer — a self-contained editor behind one `SVGBG` object |
-| `js/cta.js` | the CTA block: eleven button shapes and the knobs around them |
+| `js/cta.js` | the CTA block: solid or link, their settings, and the old shapes converted on load |
 | `js/panel-window.js` | the panel as a floating window |
 | `js/scenes.js` | curated presets, saved scenes, the dropdown |
 | `js/init.js` | first paint; the only file that runs the app |
-| `css/base.css` → `cover.css` → `panel.css` → `controls.css` → `svg-background.css` → `cta.css` | tokens, the cover, the window, the controls, the Dynamic SVG widgets, the button shapes |
+| `css/base.css` → `cover.css` → `panel.css` → `controls.css` → `svg-background.css` → `cta.css` | tokens, the cover, the window, the controls, the Dynamic SVG widgets, the two button kinds |
 
 > The font catalogue is the `FONTS` array in `js/fonts.js` — add a family with
 > its `{n, c, w, i}` (name, category, weights, has-italics) to extend it. The

@@ -114,6 +114,7 @@ selFrame.querySelectorAll('.handle').forEach(handle => {
   handle.addEventListener('dblclick', () => {
     if (!primary) return;
     state[primary].boxW = state[primary].boxH = null;
+    if (TEXT_ROLES.includes(primary)) state[primary].fit = false;
     render();
   });
 });
@@ -126,6 +127,9 @@ document.addEventListener('pointermove', e => {
   const dy = (e.clientY - resizing.py) / scale;
   c.boxW = Math.max(MIN_BOX, Math.round(resizing.w + dx * sx));
   c.boxH = Math.max(MIN_BOX, Math.round(resizing.h + dy * sy));
+  // A height given by hand is a limit the copy is fitted to (fitText in
+  // render.js), not just the floor a box height used to be.
+  if (TEXT_ROLES.includes(key)) c.fit = true;
   // The opposite corner stays put: an edge that moves takes the block's own
   // position with it by however much the box actually grew. Plain arithmetic
   // now that blocks are positioned absolutely — there is no flow left to shift
@@ -201,6 +205,10 @@ function startEditing(key, x, y) {
   if (key === 'topmenu') return;            // the menu is generated, not typed
   const el = els[key];
   editing = key;
+  // A box that trims its copy (fitText in render.js) hands over the whole of
+  // it to edit, not the part that fits - the rest is put back out of sight
+  // when the editing stops.
+  if (TEXT_ROLES.includes(key) && el.dataset.full !== undefined) el.textContent = el.dataset.full;
   el.contentEditable = 'true';
   el.classList.add('is-editing');
   el.focus();
@@ -208,11 +216,13 @@ function startEditing(key, x, y) {
 }
 function stopEditing() {
   if (!editing) return;
-  const el = els[editing];
+  const el = els[editing], key = editing;
   el.contentEditable = 'false';
   el.classList.remove('is-editing');
   el.blur();
   editing = null;
+  // What was typed is the whole copy now; fit it to the box again.
+  if (TEXT_ROLES.includes(key)) fitText(key);
 }
 
 // { keys, sx, sy, start, collapseTo, moving } while the pointer is down on a block

@@ -101,8 +101,18 @@ $('tm-anchor').addEventListener('click', e => {
   if (btn && btn.dataset.anchor !== state.topmenu.anchor) setMenuAnchor(btn.dataset.anchor);
 });
 
+const MENU_PILL = 50;   // the top of the radius slider: fully round, whatever the height
 function syncTopMenu() {
   const m = state.topmenu;
+  $('tm-kind').querySelectorAll('input').forEach(i => { i.checked = (i.value === m.kind); });
+  // Rows that only mean something for one type are hidden for the others.
+  document.querySelectorAll('[data-section="topmenu"] [data-kind]').forEach(r => { r.hidden = r.dataset.kind !== m.kind; });
+  $('tm-radius').value = Math.min(m.radius, MENU_PILL);
+  $('tm-radiusV').value = m.radius >= MENU_PILL ? 'pill' : m.radius + 'px';
+  $('tm-blur').value = m.blur;     $('tm-blurV').value = m.blur + 'px';
+  $('tm-border').value = m.border; $('tm-borderV').value = m.border + 'px';
+  $('tm-borderColor').value = m.borderColor;
+  $('tm-borderA').value = m.borderA; $('tm-borderAV').value = Math.round(m.borderA*100) + '%';
   $('tm-anchor').querySelectorAll('[data-anchor]')
     .forEach(b => b.setAttribute('aria-pressed', String(b.dataset.anchor === m.anchor)));
   $('tm-links').value = m.links;   $('tm-linksV').value = m.links;
@@ -258,6 +268,12 @@ $('plate-color').addEventListener('input', e => { state.plate.color = e.target.v
 $('plate-alpha').addEventListener('input', e => { state.plate.alpha = +e.target.value; $('plate-alphaV').value = Math.round(e.target.value*100) + '%'; render(); });
 
 /* top menu controls */
+$('tm-kind').addEventListener('change', e => { state.topmenu.kind = e.target.value; syncTopMenu(); render(); });
+$('tm-radius').addEventListener('input', e => { state.topmenu.radius = +e.target.value; syncTopMenu(); render(); });
+$('tm-blur').addEventListener('input', e => { state.topmenu.blur = +e.target.value; $('tm-blurV').value = e.target.value + 'px'; render(); });
+$('tm-border').addEventListener('input', e => { state.topmenu.border = +e.target.value; $('tm-borderV').value = e.target.value + 'px'; render(); });
+$('tm-borderColor').addEventListener('input', e => { state.topmenu.borderColor = e.target.value; render(); });
+$('tm-borderA').addEventListener('input', e => { state.topmenu.borderA = +e.target.value; $('tm-borderAV').value = Math.round(e.target.value*100) + '%'; render(); });
 $('tm-links').addEventListener('input', e => { state.topmenu.links = +e.target.value; $('tm-linksV').value = e.target.value; render(); });
 $('tm-font').addEventListener('change', e => { state.topmenu.font = e.target.value; setWeightOptions('topmenu'); render(); });
 $('tm-weight').addEventListener('change', e => { state.topmenu.weight = +e.target.value; render(); });

@@ -117,9 +117,11 @@ function serializeScene() {
     // The copy is edited by hand on the stage, so it is part of the scene, not
     // something `amount` can regenerate.
     text: {
-      heading: els.heading.textContent,
-      subheading: els.subheading.textContent,
-      body: els.body.textContent,
+      // The whole copy, not the part a trimmed box is showing (fitText in
+      // render.js): loaded again, it is fitted to the box again.
+      heading: fullText('heading'),
+      subheading: fullText('subheading'),
+      body: fullText('body'),
     },
   };
   BLOCKS.forEach(k => { out[k] = { ...state[k] }; });   // all scalars now, so a shallow copy is a whole one
@@ -128,6 +130,9 @@ function serializeScene() {
   // to. That is the whole job of the anchor, and this is one of the two places
   // it happens.
   Object.assign(out.topmenu, menuOffsets());
+  // The button the same way, counted from the visible part of the artboard
+  // when it has an anchor (see js/cta.js); plain artboard x/y when not.
+  Object.assign(out.cta, CTA.offsets());
   return out;
 }
 
@@ -163,6 +168,9 @@ function applyScene(data) {
   // half of that sum and only a laid-out bar knows it.
   const saved = data.topmenu || {};
   menuFromOffsets(saved.x ?? DEFAULTS.topmenu.x, saved.y ?? DEFAULTS.topmenu.y);
+  // And the button's, against the part of the artboard this window shows.
+  const savedCta = data.cta || {};
+  CTA.fromOffsets(savedCta.x ?? DEFAULTS.cta.x, savedCta.y ?? DEFAULTS.cta.y);
 }
 
 const NOTE_DEFAULT = $('sceneNote').textContent;
@@ -198,27 +206,21 @@ function saveScene(btn) {
 $('sceneSave').addEventListener('click', e => saveScene(e.currentTarget));
 $('sceneSaveTop').addEventListener('click', e => saveScene(e.currentTarget));
 
-// The whole browser store, one file each — the way out of localStorage and into
-// scenes/, and the way to keep what is there before clearing site data.
-//
-// One file per scene rather than an archive: these are already JSON, and a zip
-// would mean a library to make it and a step to undo it. They are spaced out
-// because a browser that is handed a dozen downloads at once takes the first
-// and quietly drops the rest.
+// Every local scene as ONE file - the one already in scenes/ with this
+// browser's on top - which is the way out of localStorage and into the project:
+// drop it into scenes/ in place of the old one and the local list reads it from
+// there, on any browser, and survives clearing site data.
 function downloadStore(btn) {
-  const store = readStore();
-  const names = Object.keys(store);
-  if (!names.length) { sceneNote('Nothing is stored in this browser yet.'); return; }
-  names.forEach((name, i) => setTimeout(() => {
-    const blob = new Blob([JSON.stringify(store[name], null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    const slug = name.replace(/[^a-z0-9._ -]+/gi, '').trim().replace(/\s+/g, '-');
-    a.download = `scene-${slug || 'untitled'}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }, i * 180));
-  sceneNote(`Downloading ${names.length} scene${names.length > 1 ? 's' : ''} — move them into ${SCENES_DIR} to list them above.`);
+  const all = localScenes();
+  const names = Object.keys(all);
+  if (!names.length) { sceneNote('There are no local scenes yet.'); return; }
+  const sorted = Object.fromEntries(names.sort((a, b) => a.localeCompare(b)).map(n => [n, all[n]]));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' }));
+  a.download = LOCAL_FILE;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  sceneNote(`${names.length} scene${names.length > 1 ? 's' : ''} in ${LOCAL_FILE} — put it in ${SCENES_DIR}, replacing the one there, to keep them in the project.`);
   if (btn) {
     btn.textContent = '✓';
     setTimeout(() => { btn.textContent = '⇊'; }, 1200);
@@ -272,7 +274,7 @@ async function readDir(path) {
   const names = hrefs
     .filter(h => !/(^|\/)\.\.\/?$/.test(h))
     .map(h => decodeURIComponent(h.replace(/\/$/, '').split('/').filter(Boolean).pop() || '') + (h.endsWith('/') ? '/' : ''));
-  const files = names.filter(n => /\.json$/i.test(n) && n !== 'index.json');
+  const files = names.filter(n => /\.json$/i.test(n) && n !== 'index.json' && n !== LOCAL_FILE);
   const dirs = names.filter(n => n.endsWith('/')).map(n => n.slice(0, -1)).filter(Boolean);
   if (!files.length && !dirs.length && !isListing) return null;
   return { files, dirs };
@@ -337,6 +339,22 @@ function writeStore(map) {
   catch (err) { sceneNote(`This browser refused to store it (${err.name}) — use Export instead.`); return false; }
 }
 
+/* ---- the local scenes file ----
+   scenes/local-scenes.json holds the local scenes in the project, keyed by
+   name the way the browser store is - the ⇊ button writes it. The local list
+   is that file with this browser's store on top: a scene saved since the file
+   was written is there too, and one saved again under the same name wins. A
+   page cannot write the file, so ★ still saves into the browser. */
+const LOCAL_FILE = 'local-scenes.json';
+let fileStore = {};
+async function readLocalFile() {
+  try {
+    const j = await getJSON(SCENES_DIR + LOCAL_FILE);
+    fileStore = j && typeof j === 'object' && !Array.isArray(j) ? j : {};
+  } catch { fileStore = {}; }
+}
+const localScenes = () => ({ ...fileStore, ...readStore() });
+
 /* ---- the list: both sources, open ----
    Every scene on screen under a heading for where it lives, rather than behind
    a dropdown that has to be opened before it says how much is in there.
@@ -344,19 +362,61 @@ function writeStore(map) {
    carry the same name and they are fetched differently. */
 let picked = '';                     // 'local:<name>' or 'file:<path>', or nothing yet
 
+/* ---- a heading that folds its group ----
+   Each group - this browser, and every folder under scenes/ - opens and shuts
+   from its heading, which carries a chevron and how many it holds, so a shut
+   group still says what is in it. What is shut is remembered in this browser,
+   per list and heading, and survives the list being rebuilt (it is rebuilt on
+   every save, delete and rescan). A convenience only: storage that throws, in
+   a private window, just means everything opens. */
+const FOLD_KEY = 'randomizeStudio.foldedGroups';
+function readFolded() { try { return new Set(JSON.parse(localStorage.getItem(FOLD_KEY)) || []); } catch { return new Set(); } }
+function writeFolded(set) { try { localStorage.setItem(FOLD_KEY, JSON.stringify([...set])); } catch { /* this visit only */ } }
+function groupHead(list, label, count) {
+  const key = `${list.id}|${label}`, shut = readFolded().has(key);
+  const h = document.createElement('button');
+  h.type = 'button';
+  h.className = 'scenegroup';
+  h.dataset.fold = key;
+  h.setAttribute('aria-expanded', String(!shut));
+  h.textContent = label;
+  const n = document.createElement('span');
+  n.className = 'count';
+  n.textContent = count;
+  h.append(n);
+  const body = document.createElement('div');
+  body.className = 'scenegroup-body';
+  body.hidden = shut;
+  list.append(h, body);
+  return body;
+}
+// One listener per list, for its headings: open or shut, and remember.
+function foldOnClick(list) {
+  list.addEventListener('click', e => {
+    const h = e.target.closest('[data-fold]');
+    if (!h) return;
+    const open = h.getAttribute('aria-expanded') !== 'true';
+    h.setAttribute('aria-expanded', String(open));
+    h.nextElementSibling.hidden = !open;
+    const set = readFolded();
+    open ? set.delete(h.dataset.fold) : set.add(h.dataset.fold);
+    writeFolded(set);
+  });
+}
+
 async function refreshScenes(selectValue) {
   const list = $('sceneList');
-  const local = Object.keys(readStore()).sort((a, b) => a.localeCompare(b));
-  const { scenes: files, folders, source } = await listScenes();
+  const [{ scenes: files, folders, source }] = await Promise.all([listScenes(), readLocalFile()]);
+  const stored = readStore();
+  const local = Object.keys(localScenes()).sort((a, b) => a.localeCompare(b));
   const total = local.length + files.length;
 
   list.replaceChildren();
   const group = (label, entries, showEmpty = false) => {
     if (!entries.length && !showEmpty) return;
-    const h = document.createElement('div');
-    h.className = 'scenegroup';
-    h.textContent = label;
-    list.append(h);
+    // The heading folds its group (see groupHead() below); the rows sit in a
+    // body of their own so there is one thing to hide.
+    const body = groupHead(list, label, entries.length);
     for (const [text, value] of entries) {
       const b = document.createElement('button');
       b.type = 'button';
@@ -366,18 +426,24 @@ async function refreshScenes(selectValue) {
       // textContent, not innerHTML: a scene names itself and a name cannot be
       // allowed to bring markup with it.
       b.textContent = text;
+      // A local scene not in the file yet is only in this browser: marked,
+      // so it is plain which ones ⇊ still has to carry into scenes/.
+      if (value.startsWith('local:') && !(text in fileStore)) {
+        b.classList.add('is-browser-only');
+        b.title = `${text} - only in this browser; ⇊ to put it in ${LOCAL_FILE}`;
+      }
       b.setAttribute('aria-pressed', String(value === picked));
-      list.append(b);
+      body.append(b);
     }
     if (!entries.length) {
       const empty = document.createElement('p');
       empty.className = 'scene-empty';
       empty.textContent = 'empty';
-      list.append(empty);
+      body.append(empty);
     }
   };
   // This browser first: it is where the one you saved a minute ago is.
-  group('this browser · local storage', local.map(n => [n, 'local:' + n]));
+  group(`local · ${SCENES_DIR}${LOCAL_FILE}`, local.map(n => [n, 'local:' + n]), true);
   // Then a heading per folder under scenes/, in name order, with whatever sits
   // loose in scenes/ itself first — a folder is how a set of covers is kept
   // together, so it is how they are listed. Folders come from the listing
@@ -419,10 +485,11 @@ function markScene() {
   syncSceneButtons();
 }
 
-// Only a browser scene can be deleted from here; a file in scenes/ is not ours
-// to remove, and nothing in a web page should pretend otherwise.
+// Only a browser scene can be deleted from here; a file in scenes/ - the local
+// scenes file included - is not ours to remove, and nothing in a web page
+// should pretend otherwise.
 function syncSceneButtons() {
-  $('sceneDelete').disabled = !picked.startsWith('local:');
+  $('sceneDelete').disabled = !(picked.startsWith('local:') && picked.slice(6) in readStore());
 }
 
 // Per segment, so a scene inside a folder keeps its slash: encoding the whole
@@ -437,6 +504,10 @@ const sceneUrl = (file) => SCENES_DIR + file.split('/').map(encodeURIComponent).
    it — and init.js falls back to the random first paint. Nothing is painted on
    the way out of here, so the fallback is never racing a half-applied scene. */
 const INITIAL_DIR = 'initial-load';
+// The cover a plain visit opens on, ahead of the folder above: anything
+// ?scene= takes. When it cannot be found - not in local-scenes.json, nor in
+// this browser - the folder is used as before.
+const DEFAULT_SCENE = 'local:2026-09-27 20:01';
 
 // One file, applied and marked in the list. The two openers below differ only
 // in how they choose it.
@@ -456,6 +527,10 @@ async function openSceneFile(file) {
 }
 
 async function loadInitialScene() {
+  if (DEFAULT_SCENE) {
+    if (await loadNamedScene(DEFAULT_SCENE)) { sceneNote(`Opened with ${DEFAULT_SCENE}.`); return true; }
+    sceneMiss = '';                     // a missing default is not the visitor's typo
+  }
   try {
     const { scenes } = await listScenes();
     const pool = scenes.filter(s => s.group === INITIAL_DIR);
@@ -475,6 +550,8 @@ async function loadInitialScene() {
      ?scene=2026-09-21-0915             the timestamp, without the scene- prefix
      ?scene=currated                    a folder: one of the covers in it, at random
      ?scene=random                      any scene at all
+     ?scene=local:high-office           a scene in scenes/local-scenes.json
+     ?scene=local                       one of those, at random
 
    Forgiving on purpose: the name in the URL is written by hand, and a URL that
    half-works is worse than one that takes what you meant. Case is ignored, as
@@ -494,8 +571,30 @@ const sceneKey = (s) => {
   return t;
 };
 
+// A scene from scenes/local-scenes.json, by name. The file's own copy first:
+// an embed shows what the project holds, not what this browser happens to have
+// saved under the same name. The file is read once, on the first ask.
+let localRead = null;
+async function localScene(name) {
+  if (!Object.keys(fileStore).length) await (localRead ||= readLocalFile());
+  return fileStore[name] || readStore()[name] || null;
+}
+
 async function loadNamedScene(spec) {
   if (!spec) return false;
+  // local:<name>, or plain "local" for any one of them.
+  const loc = String(spec).trim().match(/^local(?::(.+))?$/i);
+  if (loc) {
+    if (!Object.keys(fileStore).length) await (localRead ||= readLocalFile());
+    const names = Object.keys(localScenes());
+    const name = loc[1] ?? names[Math.floor(Math.random() * names.length)];
+    const data = name != null && (prefetched.has('local:' + name) ? await prefetched.get('local:' + name) : await localScene(name));
+    if (!data) { sceneMiss = `No local scene called "${spec}" — `; return false; }
+    applyScene(data);
+    picked = 'local:' + name;          // so the list opens with it marked
+    markScene();
+    return true;
+  }
   // A full path needs no listing: fetch it and see. That is the cycling
   // embed's case — a cover a second, each one named exactly — and a directory
   // listing per swap is a round trip nobody reads. A miss just falls through
@@ -560,13 +659,17 @@ addEventListener('message', (e) => {
 
    Kept by path for the life of the page: the rotation comes back round, and a
    scene is a few KB. A failed fetch is forgotten, so the swap tries again. */
-const prefetched = new Map();   // scene path -> Promise of its data
+const prefetched = new Map();   // scene path, or local:<name> -> Promise of its data
 function prefetchScene(spec) {
   let file = String(spec).trim();
   while (file.startsWith('/')) file = file.slice(1);
-  if (!file.includes('/') || !file.toLowerCase().endsWith('.json')) return;   // a full path only
+  const local = /^local:./i.test(file);
+  if (!local && (!file.includes('/') || !file.toLowerCase().endsWith('.json'))) return;   // a full path only
   if (prefetched.has(file)) return;
-  const p = getJSON(sceneUrl(file)).then(data => {
+  // A local scene is already in the file, so there is nothing to fetch but
+  // what it paints with.
+  const p = (local ? localScene(file.slice(6)).then(d => { if (!d) throw new Error('no such local scene'); return d; })
+                   : getJSON(sceneUrl(file))).then(data => {
     // The photograph, into the cache: applyBg's own preload then finds it.
     const b = data.bg || {};
     if (b.kind === 'photo' && b.seed) { const im = new Image(); im.src = photoURL(b.seed); }
@@ -619,10 +722,10 @@ async function loadScene(value) {
   const id = value.slice(value.indexOf(':') + 1);
   try {
     if (value.startsWith('local:')) {
-      const scene = readStore()[id];
-      if (!scene) throw new Error('it is no longer in this browser');
+      const scene = localScenes()[id];
+      if (!scene) throw new Error('it is no longer in the local scenes');
       applyScene(scene);
-      sceneNote(`Loaded "${id}" from this browser.`);
+      sceneNote(`Loaded "${id}" from ${id in readStore() ? 'this browser' : LOCAL_FILE}.`);
     } else {
       applyScene(await getJSON(sceneUrl(id)));
       sceneNote(`Loaded ${id}.`);
@@ -636,6 +739,7 @@ $('sceneList').addEventListener('click', e => {
   const row = e.target.closest('[data-scene]');
   if (row) loadScene(row.dataset.scene);
 });
+foldOnClick($('sceneList'));
 
 /* Up and down walk the list, headings and all, and load as they go: flicking
    through saved covers is the point of having them in one place. The rows are
@@ -643,7 +747,8 @@ $('sceneList').addEventListener('click', e => {
 $('sceneList').addEventListener('keydown', async e => {
   const STEP = { ArrowDown: 1, ArrowUp: -1, Home: 0, End: 0 };
   if (!(e.key in STEP)) return;
-  const rows = [...$('sceneList').querySelectorAll('[data-scene]')];
+  // Only what is on screen: a shut group's rows are skipped, not loaded blind.
+  const rows = [...$('sceneList').querySelectorAll('[data-scene]')].filter(r => !r.closest('[hidden]'));
   if (!rows.length) return;
   e.preventDefault();
   const at = rows.findIndex(r => r.dataset.scene === picked);
@@ -672,12 +777,16 @@ $('sceneStore').addEventListener('click', () => {
 $('sceneDelete').addEventListener('click', () => {
   if (!picked.startsWith('local:')) return;
   const name = picked.slice(6);
-  picked = '';
   const map = readStore();
+  if (!(name in map)) return;
   delete map[name];
   if (!writeStore(map)) return;
+  // One also in the file stays listed, as the file's version of it.
+  const inFile = name in fileStore;
+  picked = inFile ? picked : '';
   refreshScenes();
-  sceneNote(`Deleted "${name}" from this browser.`);
+  sceneNote(inFile ? `Deleted "${name}" from this browser - the one in ${LOCAL_FILE} is still listed.`
+                   : `Deleted "${name}" from this browser.`);
 });
 
 $('sceneRefresh').addEventListener('click', async () => {
@@ -688,7 +797,7 @@ $('sceneRefresh').addEventListener('click', async () => {
     sceneNote(`Cannot read ${SCENES_DIR}: this page is served without directory listings. ` +
               `Run "node tools/build-scenes-index.js" to write ${SCENES_DIR}index.json, then rescan.`);
   else
-    sceneNote(`${local} in this browser, ${files} in ${SCENES_DIR}` +
+    sceneNote(`${local} local, ${files} in ${SCENES_DIR}` +
               (folders ? ` across ${folders} folder${folders > 1 ? 's' : ''}` : '') +
               // The manifest is a snapshot, so a scene added since it was
               // written is not in it — which looks exactly like a scene that

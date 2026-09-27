@@ -35,7 +35,14 @@ function genText(r) {
   if (r === 'subheading') return phrase(SUB, state.subheading.amount);
   return paragraph(state.body.amount);
 }
-const setText = (r) => { els[r].textContent = genText(r); };
+// New copy from the length slider or the dice: always the whole copy now -
+// even when it happens to read exactly like what a trimmed box was showing -
+// and fitted to the box straight away (fitText in render.js).
+const setText = (r) => {
+  els[r].textContent = genText(r);
+  delete els[r].dataset.shown;
+  fitText(r);
+};
 
 // Fixed cover copy used by the global Randomize button and on page load only.
 // (Per-section dice still pulls varied copy from the word banks above.)

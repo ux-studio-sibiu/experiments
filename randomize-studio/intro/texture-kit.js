@@ -503,30 +503,7 @@ textarea {
 }
 textarea[hidden] { display: none; }
 
-/* Tabs, the way an Adobe panel draws them: a hairline under the row, and the
-   open tab framed on three sides and joined to the content below it by
-   standing over that line in the panel's own paper. The closed ones are
-   words in grey. Undoes the shared button look, which would make each tab
-   read as a command rather than as a place. */
-.tabs { display: flex; gap: 2px; margin: 6px 0 8px; border-bottom: 1px solid var(--ink); }
-/* A closed tab sits clear of the hairline, and its hover wash is inset by a
-   ring of paper, so it never paints over the rule under the row or the frame
-   of the open tab beside it. Only the open tab steps down over the line. */
-.tabs button {
-  height: 22px; padding: 0 12px;
-  background: transparent; color: var(--muted);
-  border: 1px solid transparent; border-bottom: 0;
-  font-size: 10px; font-weight: 700; letter-spacing: .12em;
-}
-.tabs button:hover,
-.tabs button:active { background: var(--wash); color: var(--ink); border-color: transparent; box-shadow: inset 0 0 0 3px var(--bg); }
-.tabs button[aria-selected="true"] {
-  margin-bottom: -1px;
-  background: var(--bg); color: var(--ink);
-  border-color: var(--ink); border-bottom: 1px solid var(--bg);
-  box-shadow: none;
-}
-.tabpane[hidden] { display: none; }
+/* Tabs: the shared ones, in the studio's css/controls.css. */
 
 /* The page button's first second (see open()): the page has just been
    randomized and the panel, the selection frame and the maximize button are
@@ -1324,6 +1301,40 @@ textarea[hidden] { display: none; }
     return { src, name, look: (src === 'file' ? filePresets : readPresets())[name] };
   };
 
+  /* ---- a heading that folds its group ----
+     As in the studio: the heading opens and shuts its rows, shows how many it
+     holds, and what is shut is remembered in this browser (storage that throws
+     just means everything opens). */
+  const FOLD_KEY = 'randomizeStudio.textureFolded';
+  const readFolded = () => { try { return new Set(JSON.parse(localStorage.getItem(FOLD_KEY)) || []); } catch { return new Set(); } };
+  const writeFolded = (set) => { try { localStorage.setItem(FOLD_KEY, JSON.stringify([...set])); } catch { /* this visit only */ } };
+  function groupHead(list, label, count) {
+    const key = `${list.id}|${label}`, shut = readFolded().has(key);
+    const h = document.createElement('button');
+    h.type = 'button'; h.className = 'scenegroup'; h.dataset.fold = key;
+    h.setAttribute('aria-expanded', String(!shut));
+    h.textContent = label;
+    const n = document.createElement('span');
+    n.className = 'count'; n.textContent = count;
+    h.append(n);
+    const body = document.createElement('div');
+    body.className = 'scenegroup-body'; body.hidden = shut;
+    list.append(h, body);
+    return body;
+  }
+  function foldOnClick(list) {
+    list.addEventListener('click', e => {
+      const h = e.target.closest('[data-fold]');
+      if (!h) return;
+      const open = h.getAttribute('aria-expanded') !== 'true';
+      h.setAttribute('aria-expanded', String(open));
+      h.nextElementSibling.hidden = !open;
+      const set = readFolded();
+      open ? set.delete(h.dataset.fold) : set.add(h.dataset.fold);
+      writeFolded(set);
+    });
+  }
+
   let pickedPreset = '';
   function refreshPresets(select) {
     if (select !== undefined) pickedPreset = select;
@@ -1332,22 +1343,19 @@ textarea[hidden] { display: none; }
     const local = sorted(readPresets()), shipped = sorted(filePresets);
     list.replaceChildren();
     const group = (label, names, src, emptyText) => {
-      const h = document.createElement('div');
-      h.className = 'scenegroup';
-      h.textContent = label;
-      list.append(h);
+      const body = groupHead(list, label, names.length);
       for (const n of names) {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'scenerow'; b.dataset.preset = `${src}:${n}`; b.title = n;
         b.textContent = n;                     // a name cannot bring markup with it
         b.setAttribute('aria-pressed', String(`${src}:${n}` === pickedPreset));
-        list.append(b);
+        body.append(b);
       }
       if (!names.length && emptyText) {
         const empty = document.createElement('p');
         empty.className = 'scene-empty';
         empty.textContent = emptyText;
-        list.append(empty);
+        body.append(empty);
       }
     };
     group('this browser · local storage', local, 'local', 'No presets yet — select an element and ★ its look.');
@@ -1382,6 +1390,7 @@ textarea[hidden] { display: none; }
 
   function wirePresets() {
     $('pre-list').addEventListener('click', e => { const row = e.target.closest('[data-preset]'); if (row) applyPreset(row.dataset.preset); });
+    foldOnClick($('pre-list'));
     $('pre-store').addEventListener('click', () => savePreset($('pre-name').value.trim()));
     // The two boxes stay consistent: "only" needs presets in use at all, so
     // ticking it ticks the half-time box, and unticking that unticks "only".
@@ -1541,22 +1550,19 @@ textarea[hidden] { display: none; }
     if (select !== undefined) picked = select;
     const list = $('scn-list'), names = Object.keys(readStore()).sort((a, b) => a.localeCompare(b));
     list.replaceChildren();
-    const h = document.createElement('div');
-    h.className = 'scenegroup';
-    h.textContent = 'this browser · local storage';
-    list.append(h);
+    const body = groupHead(list, 'this browser · local storage', names.length);
     for (const n of names) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'scenerow'; b.dataset.scene = n; b.title = n;
       b.textContent = n;                       // a name cannot bring markup with it
       b.setAttribute('aria-pressed', String(n === picked));
-      list.append(b);
+      body.append(b);
     }
     if (!names.length) {
       const empty = document.createElement('p');
       empty.className = 'scene-empty';
       empty.textContent = 'Nothing saved yet — ★ keeps one in this browser.';
-      list.append(empty);
+      body.append(empty);
     }
     $('scn-delete').disabled = !names.includes(picked);
   }
@@ -1580,11 +1586,12 @@ textarea[hidden] { display: none; }
   function wireScenes() {
     $('scn-noDividers').addEventListener('change', e => setDividers(e.target.checked));
     $('scn-list').addEventListener('click', e => { const row = e.target.closest('[data-scene]'); if (row) loadStored(row.dataset.scene); });
+    foldOnClick($('scn-list'));
     // Up and down walk the list and load as they go, as in the studio.
     $('scn-list').addEventListener('keydown', e => {
       const STEP = { ArrowDown: 1, ArrowUp: -1 };
       if (!(e.key in STEP)) return;
-      const rows = [...$('scn-list').querySelectorAll('[data-scene]')];
+      const rows = [...$('scn-list').querySelectorAll('[data-scene]')].filter(r => !r.closest('[hidden]'));
       if (!rows.length) return;
       e.preventDefault();
       const at = rows.findIndex(r => r.dataset.scene === picked);

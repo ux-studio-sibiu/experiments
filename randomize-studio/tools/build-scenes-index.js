@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DIR = 'scenes';
-const isScene = (f) => f.endsWith('.json') && f !== 'index.json';
+const isScene = (f) => f.endsWith('.json') && f !== 'index.json' && f !== 'local-scenes.json';
 
 if (!fs.existsSync(DIR)) {
   console.error(`No ${DIR}/ here — run this from the randomize-studio folder.`);

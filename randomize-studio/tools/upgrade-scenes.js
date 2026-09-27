@@ -42,7 +42,7 @@ const files = [];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory() && depth < 1) walk(p, depth + 1);
-    else if (e.isFile() && e.name.endsWith('.json') && e.name !== 'index.json') files.push(p);
+    else if (e.isFile() && e.name.endsWith('.json') && e.name !== 'index.json' && e.name !== 'local-scenes.json') files.push(p);
   }
 })(DIR, 0);
 

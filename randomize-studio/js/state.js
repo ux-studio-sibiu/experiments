@@ -39,21 +39,40 @@ const state = {
   // was, except it is now a block of its own and can be placed anywhere.
   plate: { enabled: false, x: 54, y: 240, boxW: 940, boxH: 380, color: '#000000', alpha: 0.36 },
   //                                         x, y and the box are artboard px; every block carries its own
-  heading:    { enabled:true, font:'Playfair Display', weight:700, size:96, lh:1.04, ls:-0.01, italic:false, transform:'none', align:'left', amount:5,   color:'#ffffff', shadow:true, x:54, y:250, boxW:940, boxH:40 },
-  subheading: { enabled:true, font:'Inter',           weight:500, size:22, lh:1.35, ls:0.18,  italic:false, transform:'uppercase', align:'left', amount:11, color:'#ffffff', shadow:true, x:54, y:400, boxW:940, boxH:30 },
-  body:       { enabled:true, font:'Inter',           weight:400, size:18, lh:1.7,  ls:0,     italic:false, transform:'none', align:'left', columns:2, amount:180, color:'#ffffff', shadow:true, x:54, y:470, boxW:940, boxH:40 },
+  //                                         `fit`: the box's height was set with the corner handles, so the
+  //                                         copy is trimmed to it (fitText in render.js); otherwise boxH is
+  //                                         only a floor, as it always was
+  heading:    { enabled:true, font:'Playfair Display', weight:700, size:96, lh:1.04, ls:-0.01, italic:false, transform:'none', align:'left', amount:5,   color:'#ffffff', shadow:true, x:54, y:250, boxW:940, boxH:40, fit:false },
+  subheading: { enabled:true, font:'Inter',           weight:500, size:22, lh:1.35, ls:0.18,  italic:false, transform:'uppercase', align:'left', amount:11, color:'#ffffff', shadow:true, x:54, y:400, boxW:940, boxH:30, fit:false },
+  body:       { enabled:true, font:'Inter',           weight:400, size:18, lh:1.7,  ls:0,     italic:false, transform:'none', align:'left', columns:2, amount:180, color:'#ffffff', shadow:true, x:54, y:470, boxW:940, boxH:40, fit:false },
   // `anchor` is which point of the WINDOW x and y are measured from — two
   // letters, vertical then horizontal, from 'tl' to 'br'. It is what makes a
   // saved position survive a different window: a bar anchored 'br' stays in the
   // bottom-right corner rather than at some number of pixels that only meant
   // the corner on the screen it was saved from.
-  topmenu:    { enabled:true, anchor:'tl', links:4, font:'Inter', weight:500, size:14, ls:0.08, transform:'uppercase', align:'spread', gap:28, pad:28, color:'#ffffff', shadow:true, brand:true, bg:'#0b0b0d', bgA:0, x:0, y:0, boxW:null, boxH:null },
-  // The call to action. `style` names one of the ten shapes in css/cta.css; the
-  // padding around the label follows `size`, and a box of your own comes from
-  // the corner handles. Off until you ask for it: a cover does not always want
-  // a button on it.
+  // `kind` is how the links are held: a 'bar' across the window (the original),
+  // a 'pill' - one rounded capsule around them, whose plate can be translucent,
+  // frosted (`blur`, of what is behind it) and outlined (`border`) - or
+  // 'vertical', the bar's links stacked one above the other. `radius` 50 and up
+  // is fully round, as on the button.
+  topmenu:    { enabled:true, kind:'bar', radius:50, blur:0, border:0, borderColor:'#ffffff', borderA:0.5, anchor:'tl', links:4, font:'Inter', weight:500, size:14, ls:0.08, transform:'uppercase', align:'spread', gap:28, pad:28, color:'#ffffff', shadow:true, brand:true, bg:'#0b0b0d', bgA:0, x:0, y:0, boxW:null, boxH:null },
+  // The call to action. `style` is one of the two kinds in css/cta.css: a
+  // `solid` is its fill, radius (50 and up is a full pill), border and drop
+  // shadow (drop is the offset, dropBlur 0 is a hard shadow); a `link` is its
+  // underline and/or arrow. The padding around the label follows `size`, and a
+  // box of your own comes from the corner handles. Off until you ask for it: a
+  // cover does not always want a button on it. Scenes saved with one of the old
+  // eleven shapes are put into these when they load (see js/cta.js).
   cta:        { enabled:false, text:'Get started', style:'solid', font:'Inter', weight:600, size:16, ls:0.04,
-                transform:'none', color:'#ffffff', bg:'#000000', bgA:1, radius:4, shadow:false, x:54, y:650, boxW:null, boxH:null },
+                transform:'none', color:'#ffffff', bg:'#000000', bgA:1, radius:4,
+                border:0, borderColor:'#000000', drop:0, dropBlur:0, dropColor:'#000000',
+                underline:true, arrow:false,
+                // Like the menu's, which point x and y are written down from in a
+                // scene - but of the part of the ARTBOARD a window shows, since the
+                // button lives on the artboard. null (the default, and every scene
+                // saved before this) is the artboard itself: plain artboard x/y.
+                anchor:null,
+                x:54, y:650, boxW:null, boxH:null },
 };
 /* The cover as it starts, kept whole and untouched.
 

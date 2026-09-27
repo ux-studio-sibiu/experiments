@@ -361,6 +361,30 @@ const SVGBG = (() => {
   /* ---------------------------------------------------------------- wiring */
 
   $('sv-tags').addEventListener('change', e => { tag = e.target.value; buildTiles(); });
+  // The three tabs. The grids scroll their current item into view on the way
+  // in - a hidden grid has no layout to scroll against.
+  const tabs = [...document.querySelectorAll('[data-section="svgbg"] [role="tab"]')];
+  const openTab = (tab) => {
+    for (const t of tabs) {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      $(t.getAttribute('aria-controls')).hidden = !on;
+    }
+    if (tab.id === 'sv-tab-svg') revealTile();
+    if (tab.id === 'sv-tab-color') markPalette();
+  };
+  for (const t of tabs) {
+    t.addEventListener('click', () => openTab(t));
+    // Arrow keys move along the row, as a tab list does.
+    t.addEventListener('keydown', e => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!step) return;
+      const next = tabs[(tabs.indexOf(t) + step + tabs.length) % tabs.length];
+      openTab(next); next.focus(); e.preventDefault();
+    });
+  }
+
   $('sv-tiles').addEventListener('click', e => {
     const tile = e.target.closest('[data-id]');
     if (tile) pick(tile.dataset.id);
