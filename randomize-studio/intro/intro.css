@@ -20,6 +20,13 @@
 
   --ui-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --ui-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* The face the titles are set in, and the only thing on the page that is:
+     the page name, the section titles and the part titles. Lexend is drawn
+     wide and open, with a lot of room inside the letters, which is what a
+     title set large and in capitals wants and what Archivo - a good face for
+     running text - gives up at that size. Kept as a token because three rules
+     read it and a fourth will. */
+  --ui-display: "Lexend", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   --gutter: clamp(20px, 3vw, 40px);
   /* The room above the page title: this on a narrow screen, and on a wide one
@@ -43,6 +50,38 @@ body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ---- shown once, settled ----
+   Between the first paint and the page being itself there are three changes
+   worth not watching: Archivo arriving and reflowing every heading, the
+   default texture scene going on, and the two of them landing in either
+   order. Covered until they have, then faded off.
+
+   A cover rather than fading the body: opacity below 1 on the body would make
+   it the containing block for everything fixed inside it, which is the panel
+   and the frame's own furniture. The cover is a pseudo-element of the root,
+   so nothing in the page is touched by it.
+
+   Two classes, not one: a pseudo-element cannot fade out as its class is
+   removed — it simply stops existing. So the first holds it opaque and the
+   second fades it, and only then does it go. */
+html.is-settling::after,
+html.is-revealing::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+
+html.is-settling::after { opacity: 1; }
+html.is-revealing::after { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.is-settling::after, html.is-revealing::after { transition: none; }
 }
 
 /* ============================ the two columns ============================ */
@@ -152,13 +191,140 @@ body {
   list-style: none;
   text-align: left;
 }
-.steps li {
+/* Direct children only. The second part's steps carry a list of kits inside
+   one of them, and a bare `.steps li` reached those too - at three classes it
+   outweighed every rule the kits set for themselves, so they came out in the
+   step's face and at the step's size however they were written. */
+.steps > li {
   font-family: var(--ui-sans);
   font-size: clamp(1.125rem, 1.7vw, 1.75rem);
   line-height: 1;
   letter-spacing: -.035em;
   font-weight: 700;
 }
+/* ---- the plate this part is printed on ----
+   White, mostly opaque, floated over whatever texture the page is wearing.
+   This is the one part of the column with steps to follow and a button to
+   press, and small type over a pattern is the wrong thing to ask anyone to
+   read. Translucent rather than solid, so the texture still shows through and
+   the box reads as paper laid on the page rather than as a hole cut in it.
+
+   A box around the content, not a band across the part. It takes the cell the
+   title and the body used to share - both grid rows, so the number beside it
+   still centres against the whole of it - and is as tall as what is in it and
+   no taller. It wears the offset shadow every frame and button on this page
+   does, so it floats rather than sits.
+
+   There were two of these, side by side at half the part each: the steps and
+   the demo. The steps moved to the reading column, where they are read rather
+   than glanced at, and one box in a half-width cell is a box with an empty
+   half beside it - so this one takes the part's whole width. Centred down the
+   part rather than pinned to the top of it, because half a screen with a short
+   box at the top of it is mostly a gap.
+
+   Real content, so it paints over the texture kit's layers without anything to
+   arrange: those go in a host div at z-index -1, under the element's content
+   and over its background. Which is also why the plate is not the element's
+   own background colour - that is the kit's control, written to this section
+   inline whenever a scene names a colour. */
+.part-use .plate {
+  grid-column: 2; grid-row: 1 / 3; align-self: center; min-width: 0;
+  padding: clamp(1rem, 2vw, 1.75rem);
+  background: #ffffffd9;
+  box-shadow: 3px 5px #00000033;
+  /* One typeface inside a plate. Everything here is a small, close-read thing
+     - a title, four steps, three kit names, two buttons - and the page's other
+     two faces were each doing a job that does not apply at this size: Lexend
+     800 carries a half-screen title, Archivo 700 carries a step read at a
+     glance. The mono is what the left column reads its own lists in, and it is
+     what the buttons here were already set in. */
+  font-family: var(--ui-mono);
+  /* What the title measures itself against: the plate's own width, not the
+     window's. The two plates are halves of a column that is itself a fraction
+     of the page, so a vw would say nothing useful about the room in here. */
+  container-type: inline-size;
+}
+/* The two lists take the plate's mono, and their tracking goes with them:
+   both were tightened for a proportional face set large, and mono at this size
+   wants its own.
+
+   The title does not. It is a title, and the page sets its titles in the
+   display face wherever they are - a plate is a place on the page, not a
+   reason to rename the thing standing at the top of it. */
+.part-use .plate .steps > li,
+.part-use .plate .kits li { font-family: inherit; letter-spacing: normal; }
+.part-use .plate .part-title { font-family: var(--ui-display); }
+/* 700 is the heaviest mono the page loads (see the font link in index.html);
+   800 would be drawn by the browser rather than by the face.
+
+   One line, always. The title is a sentence with a colon in the middle of it
+   and it breaks in the wrong place when it breaks at all, so it is told not to
+   and sized to the plate instead: cqw against the plate's own width, which is
+   half the column and nothing to do with the window. The coefficient is the
+   measured width of this string in this face at a known size - change the
+   words OR the face and it wants measuring again. The rem caps it where the
+   plate is wide enough that following the box would only make it shout.
+
+   Measured again for each face and each case it has worn: 19.8em in the
+   plate's old JetBrains Mono 700, 19.87em when it moved to Lexend 700, and
+   15.82em now that it is capitalised rather than set in capitals. Lower case
+   is narrower, so the same plate carries the title a quarter larger than it
+   did - which is most of the increase, and it is bought rather than forced.
+
+   6.1cqw against a measured 6.32, and 25.2px as the ceiling: that is the size
+   chosen in the kit, and the cqw is what stops a half-plate being asked to
+   hold it. At this window the plate gives about 19px and the title fits; on a
+   wider one it climbs to 25.2px and stops there.
+
+   Scoped under .showcase to outrank the wide-screen rule further down this
+   file, which sizes the part titles off the window and weighs the same three
+   classes - on a tie the later rule wins, and it was leaving the title at the
+   window's size to overflow the plate rather than fit it. */
+.showcase .part-use .plate .part-title {
+  font-weight: 700;
+  word-spacing: normal;
+  white-space: nowrap;
+  text-transform: capitalize;
+  font-size: min(25.2px, 6.1cqw);
+}
+.part-use .plate .steps > li { position: relative; padding-left: 2.1em; line-height: 1.45; }
+/* ---- the step numbers, boxed ----
+   Not scoped to the part: the same steps are repeated in the reading column
+   (see .aside-part) and the chips belong to the steps, not to where they are.
+   Inverted squares down the left edge. Set in the same mono as the line beside
+   them, a whole numbered list of short instructions came out as one grey block
+   with no way in; a black chip per step gives the eye somewhere to land and a
+   place to come back to after following one.
+
+   Written out in index.html rather than counted by CSS: a step can be
+   commented out while it is being decided (step 3 is, today), and a counter
+   would quietly renumber the rest behind it. The number in the markup is the
+   number on the page.
+
+   Square by construction: the box is 1.45em on both sides, which is the line
+   height beside it, so it fills exactly one line of the step and no more -
+   including a step that wraps onto two. */
+.steps > li .num {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 1.45em;
+  height: 1.45em;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: .9em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The second part's steps at a flat 1rem. They are instructions to follow
+   rather than a list to take in at a glance, and they sit under a title that
+   is now half the size it was — scaling them with the window put them level
+   with it. The studio's list keeps the ramp: it is read across the page. */
+.part-use .steps > li { font-size: .875rem; }
+
 .part-use .actions { margin-top: 1.5rem; }
 /* Not the buttons: a bare .button rule loses to this one on specificity - a
    class plus a type beats a class - and the primary button came out black on
@@ -170,11 +336,12 @@ body {
    a line of detail; this one is the section someone is actually looking for,
    so it says so above the text rather than at the head of it. */
 .section-title {
-  margin: 0 0 .7rem;
+  margin: 0 0 1.5rem;
+  font-family: var(--ui-display);
   font-size: 2rem;
   line-height: 1.1;
   letter-spacing: -.025em;
-  text-transform: uppercase;
+  /* Capitalised rather than set in capitals. */
   font-weight: 700;
 }
 
@@ -227,8 +394,13 @@ kbd {
    keeps it from running away on a very wide screen. */
 .title {
   margin: 0;
+  font-family: var(--ui-display);
   font-size: clamp(1.5rem, 2.6vw, 2rem);
-  font-size: clamp(1.5rem, 12.2cqw, 5rem);
+  /* 38px is the size chosen in the kit. It is the CEILING rather than the
+     size, because this title is set nowrap and the cqw is what keeps it on
+     one line in a column that is a fraction of the page - a flat 38px would
+     hold that size right up to the point where the title ran out of column. */
+  font-size: clamp(1.5rem, 12.2cqw, 38px);
   line-height: 1.02;
   letter-spacing: -.04em;
   font-weight: 700;
@@ -302,6 +474,114 @@ kbd {
 
 .colophon p { font-size: .8125rem; line-height: 1.7; color: var(--muted); }
 
+/* The tools a coding agent can be sent for, under the step that sends it.
+   The copy column's square, not a disc and not a number: the steps around them
+   are numbered, and a second kind of counter reads as a second kind of order.
+   Each line names a kit and offers the press that copies its prompt. */
+.kits {
+  margin: .5em 0 .1em;
+  /* Indented past the numbers of the steps they hang under, so the squares
+     start inside the list rather than in line with its counters. */
+  padding: 0 0 0 .9em;
+  list-style: none;
+  display: grid;
+  gap: .45em;
+}
+/* The copy column's type, not the step's. The steps are set large, bold and
+   tight because each is a line to take in at a glance; these are three names
+   with a control on each, read one at a time — which is the left column's job
+   exactly, so they are set the way it sets its own bulleted lists. */
+.kits li {
+  position: relative;
+  padding-left: 1.3em;
+  font-family: var(--ui-mono);
+  /* Two steps under the left column's .8rem: mono sets wide, and the line has
+     to hold a kit name, a colon, a mark and two more words on one line inside
+     half a plate. */
+  font-size: .7rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+}
+/* Centred on the first line rather than hung at a fixed height: half the line
+   box, less half the square. */
+.kits li::before {
+  content: "";
+  position: absolute;
+  top: calc(.75em - 3px);
+  left: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--ink);
+}
+
+/* Nothing to copy yet — see the note in intro.js. Dimmed rather than gone,
+   because the list is the shape the thing is heading for. */
+.copy-prompt[disabled] { opacity: .3; cursor: not-allowed; }
+.copy-prompt[disabled]:hover { opacity: .3; }
+
+/* ---- copy the agent prompt ----
+   The mark and the words that say what it does, after the name of the kit it
+   belongs to. Dashicons admin-page, inlined as a mask so it takes currentColor
+   like every other mark in this project.
+
+   The mark is drawn on ::before rather than on the button, because the button
+   carries its own label and has to be able to say what the press did — and a
+   mask on the element would cut both away with everything outside the glyph.
+
+   Inline rather than a flex row: the mark is an inline-block sat on the text's
+   baseline by hand, which keeps the whole button on the line of the kit name
+   beside it. A flex container would baseline on the mark instead, and the mark
+   has no text in it to have a baseline. */
+.copy-prompt {
+  --icon-copy: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 15V2h10v13H6zm-1 1h8v2H3V5h2v11z'/%3E%3C/svg%3E");
+  position: relative;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  /* The line's type, at its normal weight and underlined: the kit name beside
+     it is the label and this is the thing you press, so it is the one word on
+     the line that should look like a link rather than like more of the name. */
+  font: inherit;
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.copy-prompt::before {
+  content: "";
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 5px;
+  vertical-align: -3px;
+  background: currentColor;
+  -webkit-mask: var(--icon-copy) center / contain no-repeat;
+  mask: var(--icon-copy) center / contain no-repeat;
+}
+
+.copy-prompt:hover { opacity: .6; }
+
+/* What the press did, said beside it and gone again. An attribute rather than
+   a class: the word itself is the state. Absolute, so a word appearing does
+   not move the step it is attached to. */
+.copy-prompt[data-said]::after {
+  content: attr(data-said);
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 0;
+  font-family: var(--ui-mono);
+  font-size: 10px;
+  line-height: 15px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
 /* ---- buttons ----
    The studio's own: ink on paper, two-pixel border, the shadow offset down and
    to the right. They stay put under the pointer - no push into the shadow. */
@@ -326,31 +606,69 @@ kbd {
 .button.quiet { background: var(--bg); color: var(--ink); }
 
 /* Randomize this page: a paper rule inside the ink edge, so the button holds
-   its shape on a textured band as well as on paper - and on hover it rolls
-   through a run of dark colours, a few a second, the way the thing it starts
-   does. Dark ones only, so the white label stays readable on every step. */
+   its shape on a textured band as well as on paper - and it wears a texture of
+   its own, the one the kit was pointed at it to make. The button that starts
+   the thing is the one place on the page that should look like the thing.
+
+   The layer is what Copy CSS wrote out: a row of circles in the palette it was
+   rolled in, over the orange the roll left behind it. Pasted rather than kept
+   in the scene file, because this one is the page's own look rather than
+   something the kit should put back every visit.
+
+   z-index -1 under isolation puts it over the button's black background and
+   under its label, the same sandwich every kit layer sits in. It was turned 15
+   degrees in the panel; flat CSS cannot carry that - one pseudo-element cannot
+   cover its own corners when turned - so it is square on here.
+
+   The hover keeps the old roll, on the artwork instead of on a colour: the
+   tile is 600 wide with a circle every 100, so stepping 100 a sixth runs the
+   whole row through in the same 1.08s it always took. */
 .button.randomize-page {
+  position: relative;
+  isolation: isolate;
   border-color: var(--bg);
   box-shadow: 0 0 0 2px var(--ink), 3px 5px #00000033;
 }
-.button.randomize-page:hover { animation: randomize-roll 1.08s steps(1, end) infinite; }
+.button.randomize-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #f2ab27;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='scale' width='600' height='100' viewBox='0 0 600 100'%3E%3Cg class='color8' stroke='%23f2ab27' stroke-width='0' stroke-miterlimit='10' stroke-opacity='1'%3E%3Ccircle class='color2' fill='%2300506a' cx='0' cy='0' r='50'/%3E%3Ccircle class='color3' fill='%232d7dec' cx='100' cy='0' r='50'/%3E%3Ccircle class='color4' fill='%23f07666' cx='200' cy='0' r='50'/%3E%3Ccircle class='color5' fill='%23ee41a4' cx='300' cy='0' r='50'/%3E%3Ccircle class='color6' fill='%23028dde' cx='400' cy='0' r='50'/%3E%3Ccircle class='color7' fill='%2302697e' cx='500' cy='0' r='50'/%3E%3Ccircle class='color2' fill='%2300506a' cx='600' cy='0' r='50'/%3E%3Ccircle cx='-50' cy='50' r='50'/%3E%3Ccircle class='blend23' fill='%2303758f' cx='50' cy='50' r='50'/%3E%3Ccircle class='blend34' fill='%23d824d6' cx='150' cy='50' r='50'/%3E%3Ccircle class='color1' fill='%23f2ab27' cx='250' cy='50' r='50'/%3E%3Ccircle class='blend56' fill='%238250e1' cx='350' cy='50' r='50'/%3E%3Ccircle class='blend67' fill='%230381b7' cx='450' cy='50' r='50'/%3E%3Ccircle class='blend72' fill='%23015c74' cx='550' cy='50' r='50'/%3E%3Ccircle cx='650' cy='50' r='50'/%3E%3Ccircle class='color2' fill='%2300506a' cx='0' cy='100' r='50'/%3E%3Ccircle class='color3' fill='%232d7dec' cx='100' cy='100' r='50'/%3E%3Ccircle class='color4' fill='%23f07666' cx='200' cy='100' r='50'/%3E%3Ccircle class='color5' fill='%23ee41a4' cx='300' cy='100' r='50'/%3E%3Ccircle class='color6' fill='%23028dde' cx='400' cy='100' r='50'/%3E%3Ccircle class='color7' fill='%2302697e' cx='500' cy='100' r='50'/%3E%3Ccircle class='color2' fill='%2300506a' cx='600' cy='100' r='50'/%3E%3Ccircle cx='50' cy='150' r='50'/%3E%3Ccircle cx='150' cy='150' r='50'/%3E%3Ccircle cx='250' cy='150' r='50'/%3E%3Ccircle cx='350' cy='150' r='50'/%3E%3Ccircle cx='450' cy='150' r='50'/%3E%3Ccircle cx='550' cy='150' r='50'/%3E%3C/g%3E%3C/svg%3E");
+  background-attachment: scroll;
+}
+.button.randomize-page:hover::before { animation: randomize-roll 1.08s steps(1, end) infinite; }
 
-/* View the skill: the secondary to it - paper, ink edge, the same height
-   (same padding, type and border), a shade down under the pointer like Open
-   studio. */
-.button.skill-link { transition: background-color .12s ease; }
-.button.skill-link:hover { background: #e8e8e4; }
+/* Explore typography: the other tool, and the Randomize button's peer rather
+   than its follower - the two are separate kits and the demo offers both. It
+   wears the white rule inside the ink edge for the same reason that one does,
+   but no texture of its own: the textured button is the texture kit saying
+   what it does, and a second patterned button beside it would say nothing
+   except that there are two patterns. */
+.button.explore-type {
+  border-color: var(--bg);
+  box-shadow: 0 0 0 2px var(--ink), 3px 5px #00000033;
+  transition: background-color .12s ease;
+}
+.button.explore-type:hover { background: #262626; }
+
+/* The second tool's row, under the first: one gap between the two buttons of
+   a pair, a smaller one between the pairs, so each reads as a tool with its
+   skill beside it rather than as four buttons in a block. */
+
 @keyframes randomize-roll {
-  0%     { background-color: #1d2b53; }
-  16.66% { background-color: #7e1f2b; }
-  33.33% { background-color: #1f4d3a; }
-  50%    { background-color: #4b2366; }
-  66.66% { background-color: #0f4c5c; }
-  83.33% { background-color: #8a3b12; }
+  0%     { background-position: 0 0; }
+  16.66% { background-position: -100px 0; }
+  33.33% { background-position: -200px 0; }
+  50%    { background-position: -300px 0; }
+  66.66% { background-position: -400px 0; }
+  83.33% { background-position: -500px 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .button.randomize-page:hover { animation: none; }
+  .button.randomize-page:hover::before { animation: none; }
 }
 
 /* ============================ column 2: the studio ============================
@@ -389,7 +707,12 @@ kbd {
   /* Under .showcase so they outrank the base rules further down the file. */
   .showcase .part-number { font-size: clamp(4rem, min(14vw, 24svh), 14rem); }
   .showcase .part-title { font-size: clamp(1.75rem, min(3.4vw, 6svh), 3.5rem); margin-bottom: min(1.1rem, 1.8svh); }
-  .steps li { font-size: clamp(1rem, min(1.7vw, 3.2svh), 1.75rem); }
+  /* Half of that for the second part - see the note by .part-use .part-title.
+     Scoped under .showcase as well, or the rule above would outweigh it. */
+  .showcase .part-use .part-title { font-size: clamp(.875rem, min(1.7vw, 3svh), 1.75rem); }
+  .steps > li { font-size: clamp(1rem, min(1.7vw, 3.2svh), 1.75rem); }
+  /* Under .showcase too, or the rule above outweighs the flat size. */
+  .showcase .part-use .steps > li { font-size: .875rem; }
   .part-use .actions { margin-top: min(1.5rem, 2.5svh); }
 }
 
@@ -407,16 +730,13 @@ kbd {
    and takes no width, so drop the gap after it too and the part's content
    starts at the gutter. Take `hidden` off to bring them back. */
 .part:has(> .part-number[hidden]) { column-gap: 0; }
-/* The same rule the copy column draws between its sections. */
-.part + .part::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: var(--gutter);
-  right: var(--gutter);
-  height: 2px;
-  background: var(--ink);
-}
+/* No rule between the two parts. The copy column draws one between its
+   sections because they are a list of short subjects on one page; these two
+   are half a screen each and already read as separate — a line across the
+   middle only cuts the texture that runs behind them.
+
+   Their ::before is free because of it, which is why the kit no longer counts
+   it as taken: a texture can be laid there like anywhere else. */
 /* Centred down the height of its part, and in a column of the same width in
    both - a 1 is narrower than a 2, and without it the two parts' titles would
    start at different places. .62em is a digit's width in this face, bold. */
@@ -438,17 +758,29 @@ kbd {
   grid-column: 2;
   margin: 0 0 1.1rem;
   font-size: clamp(2.25rem, 3.4vw, 3.5rem);
-  /* Inter rather than the page's Archivo: at this weight and in capitals its
-     open shapes and wider set read far more easily. index.html loads the one
-     weight used, 800. Looser letters, a real gap between words, and a little
-     more lead for a title that wraps. */
-  font-family: "Inter", var(--ui-sans);
+  /* The display face, like the other two titles. It was Inter, for the same
+     reason Lexend is here now - open shapes and a wide set read far better at
+     this weight and in capitals than the page's Archivo does - and the three
+     titles being one face is worth more than the difference between them.
+     Looser letters, a real gap between words, and a little more lead for a
+     title that wraps. */
+  font-family: var(--ui-display);
   line-height: 1.05;
   letter-spacing: -.01em;
   word-spacing: .18em;
   text-transform: uppercase;
   font-weight: 800;
 }
+/* The second part's title, at half the first's. THE STUDIO is a name and
+   carries the top of the page; ANY PROJECT. AI-ASSISTED. is a claim standing
+   over five numbered steps, and at the shared size it shouted over the thing
+   it was introducing. Halved it still leads the steps — uppercase, 800, in
+   Lexend against their sans — without taking the half-screen for itself.
+
+   Exactly half the ramp above, at both ends, so the two titles keep their
+   relationship at every window size rather than only at one. */
+.part-use .part-title { font-size: clamp(1.125rem, 1.7vw, 1.75rem); }
+
 .part-body { grid-column: 2; min-height: 0; }
 
 /* Part 1: the frame and the steps side by side, the frame taking whatever the
@@ -557,20 +889,41 @@ kbd {
   .frame iframe, .cover, .cover .label { transition: none; }
 }
 
-/* The cycle clock: a bar along the inside bottom of the cover, growing across
-   one turn of the rotation (intro.js drives it). Paper over ink, so it reads
-   on a dark cover and on a light one. At nothing until a rotation starts. */
-.cyclebar {
+/* The cycle clock: a short white line near the bottom of the cover that fills
+   with ink over one turn of the rotation (intro.js drives it).
+
+   A 60px line rather than the full width of the cover. Edge to edge it was a
+   loading bar across a picture, which is the shape of something the page is
+   waiting for - and nothing is waiting, the cover is simply due to change.
+   Short and centred it reads as a clock for a thing that recurs.
+
+   Two elements, because two things are being drawn: the track is the white
+   line, always its full 60px, and the fill is the ink growing across it. The
+   animation is on the fill, so the line itself never changes size.
+
+   Hidden until there is a rotation to clock - intro.js gives up before it
+   reaches the bar when there is only one scene, so this hides with the pause
+   button and for the same reason. */
+.cycle-bar {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
+  left: calc(50% - 30px);
+  bottom: 10px;
+  width: 60px;
+  height: 3px;
   background: var(--bg);
-  box-shadow: 0 -1px 0 #0000004d;
+  /* A hairline of the cover's own black around it, so the white line reads
+     over a pale photograph as well as over a dark one. */
+  box-shadow: 0 0 0 1px #00000038;
+  overflow: hidden;
+  pointer-events: none;
+}
+.cycle-bar i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ink);
   transform: scaleX(0);
   transform-origin: left center;
-  pointer-events: none;
   will-change: transform;
 }
 
@@ -581,7 +934,7 @@ kbd {
    see intro.js), a paper mark on a dark chip so it holds on any cover. The
    mark follows aria-pressed: pressed, meaning held, shows the way to start it
    again. */
-.cyclebtn {
+.cycle-btn {
   position: absolute;
   bottom: 12px;         /* the 4px bar, and the same 8px of air as the side */
   right: 8px;
@@ -596,9 +949,9 @@ kbd {
   color: var(--bg);
   cursor: pointer;
 }
-.cyclebtn[hidden] { display: none; }
+.cycle-btn[hidden] { display: none; }
 
-.cyclebtn::before {
+.cycle-btn::before {
   content: "";
   width: 100%;
   height: 100%;
@@ -607,22 +960,37 @@ kbd {
   mask: var(--icon-pause) center / contain no-repeat;
 }
 
-.cyclebtn[aria-pressed="true"]::before {
+.cycle-btn[aria-pressed="true"]::before {
   -webkit-mask-image: var(--icon-play);
   mask-image: var(--icon-play);
 }
 
-.cyclebtn:hover { background: var(--ink); }
+.cycle-btn:hover { background: var(--ink); }
 
-/* Open studio, under the steps: the quiet studio button, with an arrow that
+/* Open studio, under the steps: the page's primary button, with an arrow that
    steps forward on hover - it leaves for a new tab. */
 .part-studio .actions { margin-top: 1.5rem; }
-/* Heavier and a size up from the other buttons, and the arrow larger still:
-   it is the way into the studio itself. */
-.button.open-studio { font-size: 14px; font-weight: 700; transition: background-color .12s ease; }
-/* A shade down from paper under the pointer - enough to answer it, not
-   enough to read as the black of the Randomize button. */
-.button.open-studio:hover { background: #e8e8e4; }
+/* Ink, with the label and the arrow in paper. It is the one thing this half of
+   the page is asking anyone to do, and it was set quiet - lighter than the
+   Randomize button below it, which is the demo rather than the way in.
+   Heavier and a size up from the other buttons, and the arrow larger still.
+
+   The white rule inside the ink edge is the Randomize button's, and it does
+   the same work here: it holds the button's shape against a textured band,
+   where a black edge on a black face has nothing to sit against. Drawn as a
+   paper border with the ink ring painted outside it by the first shadow, so
+   the button keeps the offset shadow it shares with every other box here. */
+.button.open-studio {
+  font-size: 14px;
+  font-weight: 700;
+  border-color: var(--bg);
+  box-shadow: 0 0 0 2px var(--ink), 3px 5px #00000033;
+  transition: background-color .12s ease;
+}
+/* A shade up from ink under the pointer, the answer the quiet version gave a
+   shade down from paper. Not an invert: the white rule is the shape of the
+   button, and a paper face would take it away at the moment of the press. */
+.button.open-studio:hover { background: #262626; }
 .open-studio .arrow {
   display: inline-block; margin-left: .4em;
   font-size: 1.45em; line-height: 0; vertical-align: -.08em;
@@ -640,5 +1008,107 @@ kbd {
   .copy > section:first-child { padding-top: clamp(32px, 5vw, 56px); }
   /* No room for the steps beside the frame: under it instead. */
   .part-studio .part-body { flex-direction: column; align-items: stretch; }
+  /* The plate took its grid placement from a wrapper that held two of them;
+     with one there is no grid to place it in on a single-column page. */
+  .part-use .plate { grid-column: auto; grid-row: auto; }
   .part-number { font-size: clamp(4.5rem, 22vw, 8rem); }
 }
+
+/* ============================ the repeated parts ============================
+   The right column's two parts, said again in the reading column. Mostly this
+   is a matter of telling the column to stop: .copy styles every ul and every
+   li it contains, and both of those rules land on lists that came with a
+   layout and a bullet of their own.
+
+   Everything here is an override, not a new look. The parts keep the type they
+   have in the plate - mono, small, the numbered chips - because that is what
+   they are; what changes is only the size, which follows this column rather
+   than half a screen. */
+
+/* The steps: a block list, not the plate's centred grid, and at the column's
+   own size rather than the size a half-screen part sets. */
+.copy > .aside-part .steps {
+  display: block;
+  margin: .6rem 0 0;
+}
+.copy > .aside-part .steps > li {
+  position: relative;
+  margin-bottom: .5rem;
+  padding-left: 2.1em;
+  font-family: var(--ui-mono);
+  font-size: .8rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+}
+.copy > .aside-part .steps > li:last-child { margin-bottom: 0; }
+/* No square: these are numbered, and .copy li::before would give every step a
+   bullet as well as a chip. */
+.copy > .aside-part .steps > li::before { content: none; }
+
+/* The kit list keeps its own grid and its own square. `.copy ul` is a flex
+   column and outweighs `.kits` on its own, so the layout has to be said again
+   here where it can win - the margin included, or `.copy ul` would set that
+   too.
+
+   Air above and below it. The three kits are a list inside step one, and set
+   tight against the step above and the step below they read as four things in
+   a row rather than as three things belonging to one of them. */
+.copy > .aside-part .kits {
+  display: grid;
+  gap: .35em;
+  margin: .9em 0;
+  padding: 0 0 0 .9em;
+}
+
+/* The two tool buttons, one to a line, closer together than the 1.5rem a
+   part's actions row takes - this column is read, not filled. */
+.copy > .aside-part .actions { margin-top: 1.1rem; }
+
+/* ---- two tools, one line ----
+   The pair of kit buttons, side by side in a column about 310px wide. At the
+   size the other buttons here are set they need something over 400px between
+   them, so this row sets its own: a step down in type, tighter tracking and
+   half the side padding.
+
+   Each at its own label's width rather than half the row: filling the row
+   made two slabs the size of the plate, and these are two things to press,
+   not a navigation bar. They can still give way - flex-shrink stays on - so a
+   narrow column squeezes them rather than pushing one out of the row.
+
+   The labels wrap rather than hold one line. Held to one line they fit this
+   window and clip in a narrower one, which is the worst of the three
+   outcomes: the request was for the two BUTTONS to share a line, and a label
+   that takes two lines to do that is still one button beside another. Both
+   halves are the same width, so a wrap makes the pair taller and never
+   lopsided. */
+.actions.pair { flex-wrap: nowrap; gap: 8px; }
+.actions.pair .button {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 9px 6px;
+  font-size: 10px;
+  letter-spacing: .06em;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* The Demo part's one line of text. It was a bulleted list of one item in the
+   plate and a bare span in the column - neither of which is a line of text -
+   and the span in particular took whatever its parent happened to set, which
+   in the plate is the body's own 16px and the largest type in the box.
+
+   A paragraph, set in the same mono at the same size as the text around it in
+   each place. The two places differ because their surroundings do: the
+   column's lists are .8rem and the plate's steps .875rem, and this line
+   belongs with whichever it is standing next to. */
+.copy > .aside-part .lede,
+.part-use .plate .lede {
+  margin: 0;
+  font-family: var(--ui-mono);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+}
+.copy > .aside-part .lede { font-size: .8rem; }
+.part-use .plate .lede { font-size: .875rem; }

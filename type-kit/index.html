@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Type Kit</title>
+<meta name="description" content="A floating panel for editing the typography of a page, in the page.">
+
+<link rel="icon" href="../randomize-studio/icon.svg" type="image/svg+xml">
+
+<!-- The page's own two faces. Everything the kit sets afterwards is an inline
+     style over the top of these, so closing the panel puts this back. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+
+<!-- Six blocks, and they are the point of the page: one of each kind of thing
+     typography has to do - a label, a title, a deck, a credit, a run of
+     reading, and a line pulled out of it. Between them they cover the whole
+     range the panel has controls for, so any edit has somewhere to show.
+
+     Each one carries a data-type-kit name: that is what the panel lists it
+     under. Without it an element is still reachable with Select element, but
+     it has to be found on the page rather than chosen from the list. -->
+<article class="page">
+
+  <p class="kicker" data-type-kit="kicker">Field notes</p>
+
+  <h1 class="title" data-type-kit="title">The quick brown fox jumps over the lazy dog</h1>
+
+  <p class="deck" data-type-kit="deck">A pangram earns its keep: every letter of the alphabet, once, which is the
+    shortest honest way to look at a typeface before you commit a page to it.</p>
+
+  <p class="byline" data-type-kit="byline">Set in Source Serif 4 and Inter &middot; 12 minutes</p>
+
+  <div class="body" data-type-kit="body">
+    <p>Type is the one part of a page that has to be read rather than looked at, which makes it the
+      hardest thing to judge from a specimen sheet. A face that is handsome at 96 pixels can close up
+      and turn to mud at 16, and a face that reads beautifully at 16 can look like nothing at all
+      across a title.</p>
+    <p>So the useful question is never "is this a good typeface" but "is this a good typeface here,
+      at this size, on this measure, against the thing next to it". That is a question you can only
+      answer by trying it on the page itself, which is what the panel is for: pick a block, roll the
+      dice or set it by hand, and read the result where it will actually live.</p>
+    <p>Hierarchy does most of the work. Size, weight and space between lines will separate a title
+      from a deck from a paragraph long before the choice of face does, and a page whose hierarchy is
+      right will survive almost any face you put it in.</p>
+  </div>
+
+  <blockquote class="pull" data-type-kit="pull quote">Set it, read it, and change it where it is
+    going to be read.</blockquote>
+
+</article>
+
+<!-- The kit itself. Opt-in: nothing happens until Shift+T, ?type in the URL,
+     or a press on the button below. data-studio says where randomize-studio
+     sits relative to this page - the kit takes its stylesheets and its font
+     catalogue from there. -->
+<p class="actions">
+  <button type="button" class="button" data-type-kit-open=".title">Edit the type</button>
+</p>
+
+<script src="type-kit.js" data-studio="../randomize-studio/" defer></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "kind": "randomize-studio/texture-scene",
+  "version": 1,
+  "noDividers": false,
+  "elements": {
+    ".part-studio": {
+      "onTop": false,
+      "color": null,
+      "colorAlpha": 1,
+      "pattern": {
+        "enabled": true,
+        "name": "tiny-checkers",
+        "scale": 1.8,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      }
+    },
+    ".part-use": {
+      "onTop": false,
+      "color": null,
+      "colorAlpha": 1,
+      "pattern": {
+        "enabled": true,
+        "name": "tiny-checkers",
+        "scale": 1.8,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      }
+    }
+  }
+}

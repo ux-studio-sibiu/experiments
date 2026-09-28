@@ -35,9 +35,10 @@
   // The studio folder, found from this script's own address rather than from
   // the page's, so the kit works from any page that loads it - the intro
   // page, or a page of your own with randomize-studio/ copied beside it.
-  const ROOT = new URL('../', document.currentScript?.src || location.href).href;
+  const SELF = document.currentScript;
+  const ROOT = new URL('../', SELF?.src || location.href).href;
   const DATA = ['js/svg-backgrounds-data.js', 'js/palettes.js', 'js/overlay-patterns.js', 'js/static-background.js'];
-  const SHEETS = ['css/panel.css', 'css/controls.css', 'css/svg-background.css'];
+  const SHEETS = ['css/panel.css', 'css/controls.css', 'css/svg-background.css', 'css/tooltip.css'];
 
   // The page's main layout elements, by the names the panel shows, in the
   // order they sit on a wide screen: the copy on the left, the studio on the
@@ -251,11 +252,15 @@
       movedPosition: false, onTop: false,
       host: null, grain: null,
       locks: { background: false, svgbg: false, pattern: false, fx: false },
-      svgbg:   { enabled: false, id: lib.BACKGROUNDS[0]?.id, overrides: {}, hue: 0, sat: 0, light: 0, scale: 1, palette: null, palRot: 0, fixed: false },
+      svgbg:   { enabled: false, id: lib.BACKGROUNDS[0]?.id, overrides: {}, hue: 0, sat: 0, light: 0, scale: 1, rotate: 0, zoom: 1, palette: null, palRot: 0, fixed: false },
       pattern: { enabled: false, name: 'polka-dots', scale: 1, opacity: 0.35, color: '#000000', blend: 'normal', rotate: 0 },
       fx:      { enabled: false, ...FX_DEF },
       color: null,   // a flat colour under the layers, set from the Background header; null for none
-      colorAlpha: 1, // its opacity, 0.1 to 1 in tenths
+      // How strong the background is, 0.1 to 1 in tenths: an alpha on the
+      // flat colour and the opacity of the layers over it. Named for the
+      // colour because that is all it drove at first, and forty-eight shipped
+      // presets have it written down under this name.
+      colorAlpha: 1,
     };
   }
 
@@ -280,7 +285,9 @@
     // turned 90 degrees on a short wide band it covers only a strip twice the
     // band's height. The layer is a size container so cqmax can say "longer
     // side".
-    host.innerHTML = `<div style="${fill}"></div>` +
+    // The dynamic svg gets the same box for the same reason, but only once it
+    // is actually turned: see the note in paint().
+    host.innerHTML = `<div style="${fill}overflow:hidden;container-type:size"><i style="display:block"></i></div>` +
       `<div style="${fill}overflow:hidden;container-type:size"><i style="position:absolute;left:50%;top:50%;width:142cqmax;height:142cqmax;display:block"></i></div>` +
       `<div style="${fill}"></div>`;
     el.prepend(host);
@@ -314,16 +321,40 @@
     if (!sv.enabled && !pat.enabled && !fx.enabled) { demount(entry); paintColor(entry); return; }
     mount(entry);
     paintColor(entry);
-    const [sl, pl, fl] = entry.host.children, tile = pl.firstElementChild;
+    const [sl, pl, fl] = entry.host.children, tile = pl.firstElementChild, svTile = sl.firstElementChild;
     entry.host.style.zIndex = entry.onTop ? '2' : '-1';
+    // The section opacity, on the whole stack. It reads as one control over
+    // one background, which is what the header it sits in says it is: the
+    // colour takes it as an alpha (see colorCss) and the graphics over it
+    // take it here. Each layer keeps its own on top of this — the pattern is
+    // still whatever it was set to, of whatever is left.
+    entry.host.style.opacity = entry.colorAlpha ?? 1;
 
     // Recolouring a 100KB data URI per slider tick is real work, so only when
     // something this layer cares about has changed — as the studio does.
     const key = sv.enabled ? JSON.stringify(sv) : 'off';
     if (sl.dataset.key !== key) {
       sl.dataset.key = key;
-      if (sv.enabled) { applyCss(sl, editedCss(sv)); sl.style.cssText = FILL + sl.style.cssText; }
-      else sl.style.cssText = FILL + 'display:none';
+      sl.style.display = sv.enabled ? '' : 'none';
+      if (sv.enabled) {
+        applyCss(svTile, editedCss(sv));
+        // Unturned, the drawing paints in the element's own box. That matters:
+        // a good half of the 44 are sized in percentages or to cover, and an
+        // oversized box would quietly rescale them - so the big square is only
+        // taken when there is a rotation that needs it, and the layer looks
+        // exactly as it always did at 0.
+        //
+        // Zoom rides on whichever box that leaves, rather than choosing one of
+        // its own: sizing the box to the zoom would move a cover drawing the
+        // moment the slider left 1, since cover refits to whatever box it is
+        // given and the two would cancel. On the box as it stands, 1 is always
+        // the layer untouched and the scale is the only thing that moved.
+        const turned = sv.rotate % 360, zoom = sv.zoom ?? 1;
+        const tf = [turned ? `rotate(${sv.rotate}deg)` : '', zoom !== 1 ? `scale(${zoom})` : ''].filter(Boolean).join(' ');
+        svTile.style.cssText = (turned
+          ? `position:absolute;left:50%;top:50%;width:142cqmax;height:142cqmax;transform:translate(-50%,-50%) ${tf};`
+          : `position:absolute;inset:0;${tf ? `transform:${tf};` : ''}`) + svTile.style.cssText;
+      }
     }
 
     pl.style.display = pat.enabled ? '' : 'none';
@@ -370,7 +401,7 @@
     // titlebar Randomize hands every element the same one.
     svgbg(e, palette) {
       const s = e.svgbg, list = visibleBgs();
-      Object.assign(s, { id: rand(list).id, hue: 0, sat: 0, light: 0, scale: 1, palRot: 0 });
+      Object.assign(s, { id: rand(list).id, hue: 0, sat: 0, light: 0, scale: 1, rotate: 0, zoom: 1, palRot: 0 });
       if (palette != null && lib.PALETTES[palette]) {
         s.palette = palette;
         s.palRot = Math.floor(Math.random() * lib.PALETTES[palette].colors.length);
@@ -416,11 +447,49 @@
 
   function cssFor(entry) {
     const { svgbg: sv, pattern: pat, fx } = entry, sel = selectorFor(entry.el), z = entry.onTop ? 2 : -1;
+    // The section opacity. On the page it is one opacity on the one element
+    // that holds all three layers; there is no such element in exported CSS, so
+    // it is folded into each of them instead — and into the pattern's own
+    // opacity, which is why that one becomes a multiplication.
+    const a = entry.colorAlpha ?? 1, dim = (v) => +(v * a).toFixed(3);
     const decl = (o) => Object.entries(o).map(([k, v]) => `  ${k}: ${v};`).join('\n');
     const layer = { content: '""', position: 'absolute', inset: '0', 'z-index': z, 'pointer-events': 'none' };
+
+    // ---- a layer that is turned or zoomed ----
+    // Both were dropped from this export once, on the belief that a
+    // pseudo-element could not make itself the square a rotation needs: 142%
+    // of whichever side is longer, which cqmax says in a size container and
+    // nothing says in plain percentages, since width and height each resolve
+    // against their own axis.
+    //
+    // `aspect-ratio: 1` with both minimums says it. The box is square, and it
+    // is at least 142% of the width AND at least 142% of the height, so the
+    // larger minimum wins on both axes - 142% of the longer side, on an
+    // element of any shape, with no container query anywhere.
+    //
+    // Zoom alone keeps the element's own box: scaling up from inset 0 covers
+    // it already, and taking the square would refit a cover-sized drawing and
+    // move it before the zoom even applied - the same trap the live layer
+    // avoids. Either way the element has to clip, which is what needsClip
+    // below is for.
+    const turnBox = (rotate, zoom = 1) => {
+      const tf = [rotate % 360 ? `rotate(${rotate}deg)` : '', zoom !== 1 ? `scale(${zoom})` : ''].filter(Boolean).join(' ');
+      if (!tf) return {};
+      if (!(rotate % 360)) return { transform: tf };
+      return { inset: 'auto', top: '50%', left: '50%',
+        'aspect-ratio': '1', 'min-width': '142%', 'min-height': '142%',
+        transform: `translate(-50%, -50%) ${tf}` };
+    };
+    // The host the live layers sit in clips them; in exported CSS there is no
+    // host, so the element itself has to - and only when something actually
+    // reaches past its edges, since overflow: hidden on a page element clips
+    // whatever else that element was letting through.
+    const needsClip = (sv.enabled && (sv.rotate % 360 || (sv.zoom ?? 1) !== 1)) || (pat.enabled && pat.rotate % 360);
+
     const out = [`${sel} {\n${decl({
       ...(entry.movedPosition ? { position: 'relative' } : {}),
       ...(entry.host ? { isolation: 'isolate' } : {}),
+      ...(needsClip ? { overflow: 'hidden' } : {}),
       ...(entry.color ? { 'background-color': colorCss(entry) } : {}),
     })}\n}`];
     // Only the pseudo-elements the page is not already using - a section's
@@ -428,20 +497,22 @@
     // A divider's ::before counts as taken even while "no dividers" hides it:
     // the exported no-dividers rule sets it to nothing, and would take a
     // texture put there down with it.
-    const divider = entry.el.matches('.copy > section + section, .part + .part');
+    const divider = entry.el.matches('.copy > section + section');
     const free = ['::before', '::after'].filter(p => !(divider && p === '::before') && getComputedStyle(entry.el, p).content === 'none');
     const slot = (what) => free.shift() || (out.push(`/* ${sel}: no free ::before / ::after left for the ${what} - it needs a child element of its own */`), null);
     const svSlot = sv.enabled ? slot('dynamic svg') : null;
     const patSlot = pat.enabled ? slot('pattern') : null;
-    if (svSlot) out.push(`${sel}${svSlot} {\n${decl({ ...layer, ...editedCss(sv) })}\n}`);
+    if (svSlot) out.push(`${sel}${svSlot} {\n${decl({ ...layer, ...editedCss(sv),
+      ...turnBox(sv.rotate || 0, sv.zoom ?? 1), ...(a < 1 ? { opacity: a } : {}) })}\n}`);
     if (patSlot) {
       const url = `url("../overlay-patterns/${pat.name}.svg")`, size = patternSize(pat);
-      out.push((pat.rotate % 360 ? `/* rotated ${pat.rotate}deg in the kit: a mask cannot turn, so this is unrotated */\n` : '') +
-        `${sel}${patSlot} {\n${decl({ ...layer, 'background-color': pat.color,
-          '-webkit-mask': `${url} 0 0 / ${size} repeat`, mask: `${url} 0 0 / ${size} repeat`,
-          opacity: pat.opacity })}\n}`);
+      // The mask itself cannot be turned, but the box wearing it can, and a
+      // turned box carries its mask round with it - which is the same picture.
+      out.push(`${sel}${patSlot} {\n${decl({ ...layer, 'background-color': pat.color,
+        '-webkit-mask': `${url} 0 0 / ${size} repeat`, mask: `${url} 0 0 / ${size} repeat`,
+        ...turnBox(pat.rotate || 0), opacity: dim(pat.opacity) })}\n}`);
     }
-    if (fx.enabled) out.push(`/* ${sel}: static fx is a canvas, not css. createStaticBackground({ container, opacity: ${fx.opacity}, fps: ${fx.fps}, cellSize: ${fx.cell} }) from ../js/static-background.js */`);
+    if (fx.enabled) out.push(`/* ${sel}: static fx is a canvas, not css. createStaticBackground({ container, opacity: ${dim(fx.opacity)}, fps: ${fx.fps}, cellSize: ${fx.cell} }) from ../js/static-background.js */`);
     return out.join('\n');
   }
 
@@ -473,6 +544,8 @@
   --icon-download: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M14.01 4v6h2V2H4v8h2.01V4h8zm-2 2v6h3l-5 6-5-6h3V6h4z'/%3E%3C/g%3E%3C/svg%3E");
   --icon-upload: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M8 14V8H5l5-6 5 6h-3v6H8zm-2 2v-6H4v8h12.01v-8H14v6H6z'/%3E%3C/g%3E%3C/svg%3E");
   --icon-db-export: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M9 6c0-1.6.8-3 2-4h-1c-3.9 0-7 .9-7 2 0 1 2.6 1.8 6 2zm1 9c-3.9 0-7-.9-7-2v3c0 1.1 3.1 2 7 2s7-.9 7-2v-3c0 1.1-3.1 2-7 2zm2.8-4.2c-.9.1-1.9.2-2.8.2-3.9 0-7-.9-7-2v3c0 1.1 3.1 2 7 2s7-.9 7-2v-2c-.9.7-1.9 1-3 1-.4 0-.8-.1-1.2-.2zM10 10h1c-1-.7-1.7-1.8-1.9-3C5.7 6.9 3 6 3 5v3c0 1.1 3.1 2 7 2zm4 0c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0-7l3 3h-2v3h-2V6h-2l3-3z'/%3E%3C/g%3E%3C/svg%3E");
+  --icon-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M9 15h2V9H9v6zm1-10c-.5 0-1 .5-1 1s.5 1 1 1 1-.5 1-1-.5-1-1-1zm0-4c-5 0-9 4-9 9s4 9 9 9 9-4 9-9-4-9-9-9zm0 16c-3.9 0-7-3.1-7-7s3.1-7 7-7 7 3.1 7 7-3.1 7-7 7z'/%3E%3C/g%3E%3C/svg%3E");
+  --icon-copy: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 15V2h10v13H6zm-1 1h8v2H3V5h2v11z'/%3E%3C/svg%3E");
   --icon-trash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M12 4h3c.6 0 1 .4 1 1v1H3V5c0-.6.5-1 1-1h3c.2-1.1 1.3-2 2.5-2s2.3.9 2.5 2zM8 4h3c-.2-.6-.9-1-1.5-1S8.2 3.4 8 4zM4 7h11l-.9 10.1c0 .5-.5.9-1 .9H5.9c-.5 0-.9-.4-1-.9L4 7z'/%3E%3C/g%3E%3C/svg%3E");
 }
 * { box-sizing: border-box; }
@@ -505,11 +578,52 @@ textarea[hidden] { display: none; }
 
 /* Tabs: the shared ones, in the studio's css/controls.css. */
 
+/* ---- where the panel sits, and how it gets there ----
+   Centred on the right edge rather than hung from the top, and centred with
+   the standalone translate property: the arrival is a transform, and the two
+   are separate properties that compose, so neither has to carry the other.
+
+   Not auto margins between a top and bottom of zero, which is the usual way
+   of centring an absolute box. That needs a definite height, and the only
+   one available is max-content — under which a collapsed layer still
+   contributes the full size of what it is hiding, because a 0fr grid row
+   measures its contents even while showing none of them. The window would
+   then stand at its 90vh cap whatever was open. A plain auto height is laid
+   out for real, where a shut layer is the nothing it looks like.
+
+   The drag writes left/top inline and clears the centring with them, so a
+   panel that has been moved stays where it was put. */
+.kit .panel {
+  top: 50%;
+  bottom: auto;
+  height: auto;
+  margin-block: 0;
+  translate: 0 -50%;
+}
+
+/* Off to the right, by its whole width and the gap it sits in: entirely
+   outside the window, so nothing of it shows before it starts moving. */
+.kit.is-away .panel {
+  opacity: 0;
+  transform: translateX(calc(100% + var(--panel-gap) + 16px));
+}
+
+/* Half a second and an ease that settles rather than stops dead — slower than
+   the .24s the panel minimizes on, because that one is a window going back
+   where it came from and this one is an introduction. Worn only for the
+   flight, so minimizing afterwards is its own quick thing again. */
+.kit.is-entering .panel {
+  transition: transform .5s cubic-bezier(.22, .68, .28, 1), opacity .38s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kit.is-entering .panel { transition: opacity .2s ease; }
+  .kit.is-away .panel { transform: none; }
+}
+
 /* The page button's first second (see open()): the page has just been
-   randomized and the panel, the selection frame and the maximize button are
-   held back. Taking the class off lets the panel fade up on its own opacity
-   transition from panel.css. */
-.kit.is-intro .panel,
+   randomized, and the selection frame and the maximize button are held back
+   with the panel while it happens. */
 .kit.is-intro .outline,
 .kit.is-intro .hover,
 .kit.is-intro #panelShow { opacity: 0; visibility: hidden; }
@@ -548,7 +662,7 @@ textarea[hidden] { display: none; }
 .grp h3 .colorbtn.is-set { background: linear-gradient(var(--swatch), var(--swatch)), repeating-linear-gradient(45deg, var(--bg) 0 3px, var(--faint) 3px 4px); }
 .grp h3 .colorbtn input { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; opacity: 0; cursor: pointer; }
 .grp h3 .colorbtn ~ button { margin-left: 0; }
-/* Its opacity, just before it: a short slider in tenths and the figure. The
+/* The background opacity, just before the swatch: a short slider in tenths and
    slider takes the header's push to the right now, so the swatch after it
    must not. Quiet while there is no colour for it to act on. */
 .grp h3 .alpha { flex: 0 0 56px; width: 56px; margin-left: auto; }
@@ -558,6 +672,149 @@ textarea[hidden] { display: none; }
 }
 .grp h3 .alpha ~ .colorbtn { margin-left: 0; }
 .grp h3.no-color .alpha, .grp h3.no-color .alpha-v { opacity: .35; }
+
+/* ---- a sub-layer, boxed ----
+   The panel is a long column of rows, and the hairline above a heading only
+   separates the headings — below them the rows of one layer run straight into
+   the rows of the next on the same white. A light ground draws the group,
+   so the eye can take a layer in at once instead of reading down to find
+   where it ends.
+
+   The heading is inside it with its rows: the eye, the dice and the lock act
+   on everything below them, and a heading sitting on the paper above the box
+   reads as a label for a thing rather than as part of it.
+
+   Only while it is open. Shut, there is no group to draw — just a row you
+   can press — and a column of grey bars would make a folded panel look busier
+   than an open one. The padding goes with it, or every shut layer would carry
+   room for rows that are not there.
+
+   The rule between sub-layers goes with it. Two boxes with air between them
+   are already separated, and a line as well would be saying it twice. */
+.sub {
+  /* panel.css indents a sub-layer 20px to show it belongs to the section.
+     The box does that now, and the indent only made it narrower. */
+  margin-left: 0;
+  margin-top: 6px;
+  padding: 7px 12px 12px;
+  border-top: 0;
+}
+
+.sub:not(.collapsed) { background: var(--wash); }
+.sub.collapsed { padding-top: 4px; padding-bottom: 4px; }
+
+.sub-body { margin-top: 8px; padding: 0; background: none; }
+
+/* The tab strip sits on that ground now. The selected tab is already paper
+   against it, which is the lift it wants; the hover was wash on wash and read
+   as nothing at all, so it goes a step darker instead. */
+.sub-body .tabs button:hover,
+.sub-body .tabs button:active { background: color-mix(in srgb, var(--wash) 55%, var(--faint)); }
+
+/* The label takes whatever room is left, so the gap between it and the
+   controls is one flexible box rather than the leftovers of an auto margin
+   pushing against an anonymous one. nowrap because a heading that wraps
+   changes the height of the row it is in. */
+.grp > h3 > .head-label,
+.sub > h4 > .head-label { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+
+/* controls.css maps every other mark; this one is the kit's own. */
+[data-mark="copy"] { --mark: var(--icon-copy); }
+
+/* ---- the info mark ----
+   Beside the word it explains rather than out at the right edge, which is
+   where a section's own controls live — this one acts on nothing. So the
+   label stops taking the free space and the mark takes it instead, which
+   leaves the two of them together on the left.
+
+   A size up from the other marks, as in panel.css: a circle among squares
+   reads as a symbol rather than as one more little control. */
+.grp[data-section="element"] > h3 > .head-label { flex: 0 0 auto; }
+/* button.infobtn, to weigh the same as the .grp h3 button:first-of-type that
+   pushes every heading control to the right edge. A bare class loses to it. */
+.grp > h3 > button.infobtn { margin-left: 6px; margin-right: auto; cursor: help; color: var(--muted); }
+.grp > h3 > button.infobtn::before { width: 15px; height: 15px; }
+.grp > h3 > button.infobtn:hover { color: var(--ink); background: transparent; }
+
+/* ---- minimized: the way back in, and the way out ----
+   Both sit over a page that has just been textured, which is the one place in
+   this project where ink on ink stops reading. The page's own Randomize
+   button solves it with a paper edge and an ink ring outside that; these
+   borrow it, so a black button keeps its shape on black.
+
+   The exit is the outer of the two: it is the smaller target and the rarer
+   press, and putting it on the corner keeps the bigger one where the hand
+   already goes. */
+.kit #panelShow {
+  right: 46px;
+  border-color: var(--bg);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+#kitExit {
+  position: fixed;
+  bottom: 14px;
+  right: 14px;
+  z-index: 50;
+  display: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: var(--ink);
+  color: var(--bg);
+  border: 1px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--ink);
+  font: 15px/1 var(--ui-mono);
+  cursor: pointer;
+}
+
+.kit.panel-hidden #kitExit { display: block; }
+.kit.is-intro #kitExit { opacity: 0; visibility: hidden; }
+#kitExit:hover { background: var(--bg); color: var(--ink); }
+
+/* ---- room kept for the scrollbar ----
+   The body scrolls only when there is more in it than fits, so the bar comes
+   and goes as layers open and close — and every time it does, it takes its
+   width out of the controls and puts it back. A stable gutter is that width,
+   reserved whether or not there is a bar in it: the rows stop moving
+   sideways for a reason that has nothing to do with them. */
+.pbody { scrollbar-gutter: stable; }
+
+/* ---- the eye leads a sub-layer ----
+   panel.css pushes the whole cluster of controls to the right off whichever
+   button comes first. Here the first one is the main switch and belongs at
+   the head of the row, so the shove moves to the dice and the eye sits where
+   the reading starts. */
+/* button.eyebtn, not .eyebtn: the rule being beaten is
+   .sub h4 button:first-of-type, which carries one more element name than a
+   bare class does and wins on that alone. Matching its weight and coming
+   later is what takes the shove off the eye. */
+.sub h4 > button.eyebtn { margin-left: 0; margin-right: 6px; }
+.sub h4 > button.dice { margin-left: auto; }
+
+/* Off is a state of the LAYER, not of its switch. panel.css greys the whole
+   heading and puts the dice and lock back in ink; for a sub-layer that is the
+   wrong way round — the eye is the one control that still does something, and
+   it is the way back, so it should never look spent. The rest grey out
+   because there is nothing to roll and nothing to hold.
+
+   A lock that IS holding something stays in ink: it is the reason the layer
+   will still be off after the next roll, which is worth being able to see. */
+.sub.is-hidden > h4 > .eyebtn { color: var(--ink); }
+/* The mark AND the box around it: a grey glyph in a black border still reads
+   as a live button with something wrong inside it. */
+.sub.is-hidden > h4 > button:not(.eyebtn) { color: var(--faint); border-color: var(--faint); }
+.sub.is-hidden > h4 > .lock[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); }
+
+/* svg-background.css turns pointer events off for a disabled row, which also
+   takes away the hover a title needs — and the title is the only thing that
+   says why the row is dead. The row stays hoverable and the input carries the
+   disabled attribute instead, which is what should have been refusing input
+   all along: pointer-events never stopped a keyboard. */
+.row.is-disabled { pointer-events: auto; cursor: help; }
+
+.sub-body .tabs button:hover,
+.sub-body .tabs button:active { background: color-mix(in srgb, var(--wash) 55%, var(--faint)); }
 /* The element being edited: a heavy dashed rule in ink, with a paper line
    inside it, so it reads over a white column and over a dark texture alike.
    No wash over the element - it tinted the colours being judged. Drawn just
@@ -594,14 +851,21 @@ textarea[hidden] { display: none; }
 [data-texture-kit-hover="copy"], [data-texture-kit-hover="copy"] * { cursor: ${EYEDROPPER} !important; }
 [data-texture-kit-hover="paste"], [data-texture-kit-hover="paste"] * { cursor: ${BUCKET} !important; }`;
 
-  const head = (label, key, title) => `<h4>${label}
-          <button class="eyebtn" data-vis="${key}" aria-pressed="false" title="Show this on the element"></button>
+  // The eye first, in the markup as well as on screen: it is the switch the
+  // layer hangs off, and reading order should say so too.
+  const head = (label, key, title) => `<h4>
+          <button class="eyebtn" data-vis="${key}" aria-pressed="false" title="Show this on the element"></button>${label}
           <button class="iconbtn dice" data-rand="${key}" title="Randomize this layer"></button>
           <button class="lockbtn lock" data-lock="${key}" aria-pressed="false" title="Lock during randomize"></button></h4>`;
 
   const PANEL = `
 <div class="kit">
   <button id="panelShow" data-mark="plus">Maximize texture panel</button>
+  <!-- data-plain-title: the browser's own tooltip, not the hover card. This
+       one sits out over the page rather than in the panel, and a card the size
+       of the panel's cards next to a 26px button reads as a thing that opened
+       rather than a label. -->
+  <button id="kitExit" data-plain-title title="Close edit mode" aria-label="Close edit mode">&times;</button>
   <div class="hover"></div>
   <div class="toast" role="status" aria-live="polite"></div>
   <div class="outline"></div>
@@ -616,18 +880,17 @@ textarea[hidden] { display: none; }
     <div class="pbody">
 
     <div class="grp" data-section="element">
-      <h3>Element</h3>
-      <div class="row"><label>target</label><select id="kit-target"></select><button id="kit-pick" title="Click an element on the page">Pick</button></div>
+      <h3>Element<button class="infobtn" data-mark="info" title="Alt-click an element to copy its look, Ctrl+Alt-click (Cmd+Option on a Mac) to paste it onto another, Q to keep its look as a preset, Esc to deselect. Shift- or Ctrl-click clicks the page itself." aria-label="What you can do here"></button></h3>
+      <div class="row"><label>target</label><select id="kit-target"></select><button id="kit-pick" title="Click an element on the page">Select element</button></div>
       <div class="row"><label>layers</label><span class="inline-check"><input type="checkbox" id="kit-onTop"><label for="kit-onTop">over the content</label></span></div>
-      <div class="btnrow spaced"><button id="kit-copy">Copy CSS</button><button id="kit-clear">Clear element</button></div>
+      <div class="row"><label>actions</label><button class="iconbtn" data-mark="copy" id="kit-copy" title="Copy the CSS for everything textured" aria-label="Copy CSS"></button><button class="iconbtn" data-mark="trash" id="kit-clear" title="Take every layer off this element" aria-label="Clear element"></button></div>
       <textarea id="kit-css" readonly hidden aria-label="Exported CSS"></textarea>
       <p class="hint" id="kit-note"></p>
-      <p class="hint"><b>Alt</b>-click an element to copy its look, <b>Ctrl+Alt</b>-click (<b>Cmd+Option</b> on a Mac) to paste it onto another, <b>Q</b> to keep its look as a preset, <b>Esc</b> to deselect. <b>Shift</b>- or <b>Ctrl</b>-click clicks the page itself.</p>
     </div>
 
     <div class="grp" data-section="background">
       <h3>Background
-        <input type="range" class="alpha" id="bg-alpha" min="0.1" max="1" step="0.1" title="Opacity of the flat colour" aria-label="Flat colour opacity"><output class="alpha-v" id="bg-alphaV"></output>
+        <input type="range" class="alpha" id="bg-alpha" min="0.1" max="1" step="0.1" title="Opacity of the whole background — the colour and the layers over it" aria-label="Background opacity"><output class="alpha-v" id="bg-alphaV"></output>
         <label class="colorbtn" id="bg-colorbtn" title="Flat colour under the layers — right-click to clear"><input type="color" id="bg-color" aria-label="Flat background colour"></label>
         <button class="iconbtn dice" data-rand="background" title="Randomize every layer"></button>
         <button class="lockbtn lock" data-lock="background" aria-pressed="false" title="Lock during randomize"></button></h3>
@@ -667,12 +930,13 @@ textarea[hidden] { display: none; }
 
           <div class="tabpane" role="tabpanel" id="sv-pane-adjust" aria-labelledby="sv-tab-adjust" hidden>
           <div class="row"><label>adjust</label><span></span>
-            <button class="iconbtn" id="sv-resetAdjust" data-mark="undo" title="Reset hue, saturation, lightness and scale"></button></div>
+            <button class="iconbtn" id="sv-resetAdjust" data-mark="undo" title="Reset hue, saturation, lightness, scale, rotation and zoom"></button></div>
           <div class="row"><label>hue</label><input id="sv-hue" type="range" min="-180" max="180" step="1"><output id="sv-hueV"></output></div>
           <div class="row"><label>saturation</label><input id="sv-sat" type="range" min="-100" max="100" step="1"><output id="sv-satV"></output></div>
           <div class="row"><label>lightness</label><input id="sv-light" type="range" min="-50" max="50" step="1"><output id="sv-lightV"></output></div>
           <div class="row"><label>scale</label><input id="sv-scale" type="range" min="0.1" max="4" step="0.05"><output id="sv-scaleV"></output></div>
-          <p class="hint" id="sv-scaleNote" hidden>This one is sized to <b>cover</b> the element, so it has no tile to scale.</p>
+          <div class="row"><label>rotation</label><input id="sv-rotate" type="range" min="0" max="360" step="15"><output id="sv-rotateV"></output></div>
+          <div class="row"><label>zoom</label><input id="sv-zoom" type="range" min="1" max="4" step="0.05" title="Scales the drawing itself, so it works on the gradients that the tiled scale above cannot touch"><output id="sv-zoomV"></output></div>
           <div class="row"><label>attach</label><span class="inline-check"><input type="checkbox" id="sv-fixed"><label for="sv-fixed">fixed to the window</label></span></div>
           </div>
         </div>
@@ -801,6 +1065,30 @@ textarea[hidden] { display: none; }
     ui.root.querySelector('.kit').classList.toggle('is-unselected', !el);
     buildTargets();
     syncAll();
+    if (el) frameSelection();
+  }
+
+  /* ---- what the panel shows the moment an element is picked ----
+     Everything shut, then the two sections that answer the question just
+     asked: element, which says WHAT is selected, and background, which is
+     what there is to do to it. Nothing else is in the way, so the panel is
+     the same shape every time rather than however the last element left it.
+
+     One sub-layer opens with them, the one already on this element - its
+     dynamic SVG or its pattern. On an element with both, the SVG: it is the
+     one underneath, and the one whose settings run deepest. On an element
+     with neither there is nothing relevant to open, and the eyes in the
+     background header are the next thing to press.
+
+     Runs after syncAll, which collapses the sub-layers that are switched off:
+     before it, this would open one and have it shut again. */
+  function frameSelection(instant) {
+    const r = ui.root, e = cur();
+    r.querySelectorAll('.panel .grp').forEach(g => collapse(g, true, instant));
+    for (const name of ['element', 'background'])
+      { const g = r.querySelector(`.grp[data-section="${name}"]`); if (g) collapse(g, false, instant); }
+    const layer = e.svgbg.enabled ? 'svgbg' : e.pattern.enabled ? 'pattern' : null;
+    openSub(layer ? r.querySelector(`.sub[data-section="${layer}"]`) : null, instant);
   }
 
   /* ---- Dynamic SVG (ported from svg-background.js) ---- */
@@ -903,7 +1191,7 @@ textarea[hidden] { display: none; }
   }
   function pickBg(id) {
     const s = cur().svgbg;
-    Object.assign(s, { id, overrides: {}, hue: 0, sat: 0, light: 0, scale: 1 });
+    Object.assign(s, { id, overrides: {}, hue: 0, sat: 0, light: 0, scale: 1, rotate: 0, zoom: 1 });
     applyPalette(s);
     syncSvg();
     revealTile();
@@ -912,13 +1200,21 @@ textarea[hidden] { display: none; }
   function syncSvg() {
     const s = cur().svgbg;
     if (!lib.BACKGROUNDS.some(b => b.id === s.id)) s.id = lib.BACKGROUNDS[0].id;
-    for (const [id, v] of [['hue', s.hue], ['sat', s.sat], ['light', s.light], ['scale', s.scale]]) $('sv-' + id).value = v;
+    for (const [id, v] of [['hue', s.hue], ['sat', s.sat], ['light', s.light], ['scale', s.scale], ['rotate', s.rotate], ['zoom', s.zoom ?? 1]]) $('sv-' + id).value = v;
     for (const id of ['hue', 'sat', 'light']) $(`sv-${id}V`).value = (s[id] > 0 ? '+' : '') + s[id];
     $('sv-scaleV').value = (+s.scale).toFixed(2) + '×';
+    $('sv-rotateV').value = (s.rotate || 0) + '°';
+    $('sv-zoomV').value = (+(s.zoom ?? 1)).toFixed(2) + '×';
     $('sv-fixed').checked = !!s.fixed;
     const scalable = !!tileSizes(bgById(s.id));
-    $('sv-scale').closest('.row').classList.toggle('is-disabled', !scalable);
-    $('sv-scaleNote').hidden = scalable;
+    // Why the row is dead, on the row itself. It was a line of standing text
+    // under the slider, which is a permanent answer to a question only asked
+    // while the control is greyed — and it moved everything below it every
+    // time the background changed.
+    const scaleRow = $('sv-scale').closest('.row');
+    scaleRow.classList.toggle('is-disabled', !scalable);
+    $('sv-scale').disabled = !scalable;
+    scaleRow.title = scalable ? '' : 'This one is sized to cover the element, so it has no tile to scale.';
     markTile();
     buildSwatches();
     markPalette();
@@ -954,6 +1250,64 @@ textarea[hidden] { display: none; }
     for (const k of ['opacity', 'fps', 'cell']) { $('fx-' + k).value = f[k]; $(`fx-${k}V`).value = f[k]; }
   }
 
+  /* ---- opening and shutting a section or a layer ----
+     One place for it, so the three ways in — a heading, an eye, and the
+     reframe that runs when an element is picked — cannot drift apart.
+
+     The height is animated rather than eased in CSS, because panel.css shows
+     and hides a body with display and there is nothing to ease between. The
+     one number needed is measured each time: open it first and read it, or
+     read it before closing. Nothing is left on the element afterwards, so a
+     shut body is display:none as it always was and a body sized by its
+     contents keeps being sized by its contents.
+
+     Closing waits for the animation before the class goes on, or display:none
+     would take the body away before there was anything to watch — and a timer
+     races that wait, because a window that is not being drawn parks its
+     animations and the promise would never settle. Whichever arrives first
+     adds the class; the second finds it already there. */
+  const OPEN_MS = 150;
+  const stillness = matchMedia('(prefers-reduced-motion: reduce)');
+  function collapse(sec, shut, instant) {
+    const body = sec.querySelector(':scope > .grp-body, :scope > .sub-body');
+    const was = sec.classList.contains('collapsed');
+    sec.anim?.cancel();
+    clearTimeout(sec.shutTimer);
+    // Instant is for the panel that is not on screen yet: there is nothing to
+    // watch, and an animation still running when it arrives is the jump it was
+    // meant to prevent.
+    if (!body || instant || stillness.matches || was === shut) {
+      sec.classList.toggle('collapsed', shut);
+      return;
+    }
+    if (shut) {
+      const from = body.offsetHeight + 'px';
+      sec.anim = body.animate([{ height: from, overflow: 'hidden' }, { height: '0px', overflow: 'hidden' }],
+                              { duration: OPEN_MS, easing: 'ease' });
+      const shutIt = () => sec.classList.add('collapsed');
+      sec.anim.finished.then(shutIt).catch(() => {});
+      sec.shutTimer = setTimeout(shutIt, OPEN_MS + 60);
+    } else {
+      sec.classList.remove('collapsed');
+      const to = body.offsetHeight + 'px';
+      sec.anim = body.animate([{ height: '0px', overflow: 'hidden' }, { height: to, overflow: 'hidden' }],
+                              { duration: OPEN_MS, easing: 'ease' });
+      // The same backstop the other way round: an animation that never runs
+      // holds its first frame, and the first frame of this one is a height of
+      // nothing. Cancelling hands the body back to its own height.
+      sec.shutTimer = setTimeout(() => sec.anim?.cancel(), OPEN_MS + 60);
+    }
+  }
+
+  /* ---- one sub-layer open at a time ----
+     The panel is taller than the window with two of these open, and a layer
+     is something you work on rather than compare: opening one is almost
+     always a decision to stop looking at the last. Passing nothing shuts the
+     lot, which is what happens when the open layer is switched off. */
+  function openSub(which, instant) {
+    ui.root.querySelectorAll('.panel .sub').forEach(s => collapse(s, s !== which, instant));
+  }
+
   /* ---- eyes, locks, and the whole panel from the element ---- */
   const HIDDEN_TIP = 'Hidden — turn its eye back on to open it';
   function syncEyes() {
@@ -963,7 +1317,7 @@ textarea[hidden] { display: none; }
       b.setAttribute('aria-pressed', String(on));
       const sec = b.closest('.sub');
       sec.classList.toggle('is-hidden', !on);
-      if (!on) sec.classList.add('collapsed');
+      if (!on) collapse(sec, true);
       const h = sec.querySelector(':scope > h4');
       h.title = on ? '' : HIDDEN_TIP;
       const dice = h.querySelector('[data-rand]');
@@ -980,7 +1334,9 @@ textarea[hidden] { display: none; }
     const e = cur(), c = e.color, btn = $('bg-colorbtn'), a = e.colorAlpha ?? 1;
     btn.classList.toggle('is-set', !!c);
     btn.style.setProperty('--swatch', c ? colorCss(e) : 'transparent');
-    btn.closest('h3').classList.toggle('no-color', !c);
+    // Quiet only when there is nothing for it to act on. It used to go quiet
+    // without a flat colour, which was right while that was all it did.
+    btn.closest('h3').classList.toggle('no-color', !c && !LAYERS.some(l => e[l].enabled));
     $('bg-color').value = c || '#ffffff';
     $('bg-alpha').value = a;
     $('bg-alphaV').value = Math.round(a * 100) + '%';
@@ -1009,7 +1365,7 @@ textarea[hidden] { display: none; }
     $('kit-copy').addEventListener('click', () => {
       const textured = [...entries.values()].filter(isTextured);
       const parts = textured.map(cssFor);
-      if (ui.noDividers) parts.unshift(`/* no dividers */\n${DIVIDERS} {\n  content: none;\n}`);
+      if (noDividers) parts.unshift(`/* no dividers */\n${DIVIDERS} {\n  content: none;\n}`);
       const css = parts.length ? '/* texture kit */\n' + parts.join('\n\n') + '\n' : '';
       const area = $('kit-css');
       area.value = css; area.hidden = !css;
@@ -1034,6 +1390,10 @@ textarea[hidden] { display: none; }
       const s = cur()[btn.dataset.vis];
       s.enabled = !s.enabled;
       syncEyes(); render();
+      // Switching a layer on is asking to set it up, so it opens — and shuts
+      // whichever was open before. Switching one off leaves the panel alone:
+      // syncEyes has already collapsed it.
+      if (s.enabled) openSub(btn.closest('.sub'));
     }));
     r.querySelectorAll('[data-lock]').forEach(btn => btn.addEventListener('click', () => {
       const e = cur(), k = btn.dataset.lock;
@@ -1155,6 +1515,120 @@ textarea[hidden] { display: none; }
       note(held ? `${held} locked element${held > 1 ? 's' : ''} kept as they were.` : '');
     });
 
+    /* ---- the hover card ----
+       The panel is rows of unlabelled icon buttons, and the native tooltip
+       cannot be styled, cannot be placed, and waits a second before it says
+       anything. This is the studio's card (js/tooltip.js, itself the
+       portfolio's cursor-card): a box at the pointer that follows it until it
+       leaves whatever opened it.
+
+       A copy rather than the file, because that one delegates on document and
+       these titles are inside a shadow root — events from in here retarget to
+       the host on the way out, so it would only ever see the host. In here
+       they do not retarget, and e.target is the button itself.
+
+       A title comes OFF its element while its card is up, or the browser
+       draws its own over ours a second later, and goes back on at close — so
+       the attribute stays the one place the text lives. */
+    (() => {
+      const OFFSET = 18, MARGIN = 10;
+      let card = null, owner = null, text = '', blocked = null;
+      const place = (x, y) => {
+        // Never off the bottom or the right: past those it sits back from the
+        // pointer instead of in front of it.
+        const left = Math.min(x + OFFSET, innerWidth - card.offsetWidth - MARGIN);
+        const top = Math.min(y + OFFSET, innerHeight - card.offsetHeight - MARGIN);
+        card.style.transform = `translate(${Math.round(Math.max(MARGIN, left))}px, ${Math.round(Math.max(MARGIN, top))}px)`;
+      };
+      const shut = () => {
+        // Back exactly as it was, unless something wrote a new title while
+        // ours was off the element - in which case the new one is the true one.
+        if (owner && text && !owner.hasAttribute('title')) owner.setAttribute('title', text);
+        owner = null; text = '';
+        card?.remove(); card = null;
+      };
+      const show = (el, x, y) => {
+        // Anything marked data-plain-title keeps the browser's tooltip.
+        if (!el || el === blocked || el.hasAttribute('data-plain-title')) return;
+        const tip = el.getAttribute('title') || '';
+        // An empty title is how a child says "nothing here" over a parent that
+        // has something to say, and the browser honours that. So do we.
+        if (!tip.trim()) return;
+        owner = el; text = tip;
+        el.removeAttribute('title');
+        const [head, ...rest] = tip.split('\n');
+        const body = rest.join('\n').trim();
+        // Built rather than assigned: a tip can carry an element's own name,
+        // and a name cannot be allowed to bring markup with it.
+        card = document.createElement('div');
+        card.className = 'nsc-tipcard';
+        card.setAttribute('aria-hidden', 'true');   // it is the title, which is announced already
+        const h = document.createElement('p');
+        h.className = 'card-title'; h.textContent = head.trim();
+        card.append(h);
+        if (body) {
+          const p2 = document.createElement('p');
+          p2.className = 'card-summary'; p2.textContent = body;
+          card.append(p2);
+        }
+        r.append(card);
+        place(x, y);
+      };
+      const titled = (n) => (n && n.closest) ? n.closest('[title]') : null;
+      // Mouse only: on a touch screen the card would come up under the finger
+      // that just pressed the button it describes.
+      const mouse = (e) => e.pointerType === 'mouse';
+
+      r.addEventListener('pointerover', (e) => {
+        if (!mouse(e)) return;
+        // Still inside the one on screen. Without this, moving onto a child of
+        // the owner finds the owner's PARENT instead - the owner has no title
+        // on it while its card is up - and the card would swap to the section.
+        if (owner && owner.contains(e.target)) return;
+        if (owner) shut();
+        show(titled(e.target), e.clientX, e.clientY);
+      });
+      r.addEventListener('pointerout', (e) => {
+        if (!owner) return;
+        if (e.relatedTarget && owner.contains(e.relatedTarget)) return;   // onto a child
+        shut();
+      });
+      r.addEventListener('pointermove', (e) => {
+        if (blocked && !blocked.contains(e.target)) blocked = null;
+        if (owner) {
+          // A panel that rebuilds itself under the pointer takes the owner
+          // away without a pointerout, and the card would sit there naming
+          // something that is gone.
+          if (!owner.isConnected) shut();
+          else { place(e.clientX, e.clientY); return; }
+        }
+        if (mouse(e)) show(titled(e.target), e.clientX, e.clientY);
+      }, { passive: true });
+      // Pressing a control does the thing the card was explaining. It stays
+      // down until the pointer leaves.
+      r.addEventListener('pointerdown', (e) => { blocked = owner || titled(e.target); shut(); }, true);
+      // Scrolling takes the control out from under the pointer, and whether
+      // that produces a pointerout is up to the browser.
+      r.addEventListener('scroll', shut, { capture: true, passive: true });
+    })();
+
+    // The heading label is a bare text node between a chevron and a row of
+    // buttons, which makes it an ANONYMOUS flex item: the browser builds a box
+    // for it on the fly, and what that box measures depends on how the
+    // whitespace around it collapses. Every time a sibling changes — a slider
+    // undimming, a button disabling, a hover — it can be re-resolved a
+    // fraction differently, and the text shifts. A real element is measured
+    // once and stays put.
+    r.querySelectorAll('.panel .grp > h3, .panel .sub > h4').forEach(h => {
+      for (const n of [...h.childNodes]) {
+        if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+        const span = document.createElement('span');
+        span.className = 'head-label';
+        span.textContent = n.textContent.trim();
+        n.replaceWith(span);
+      }
+    });
+
     // Collapsible sections and layers, as in panel.js — except that the
     // sections here start open, since there are only two of them.
     r.querySelectorAll('.panel .grp').forEach(grp => {
@@ -1164,15 +1638,22 @@ textarea[hidden] { display: none; }
       for (let n = h.nextSibling; n; ) { const nx = n.nextSibling; body.appendChild(n); n = nx; }
       grp.appendChild(body);
       h.insertBefore(Object.assign(document.createElement('span'), { className: 'chev' }), h.firstChild);
-      h.addEventListener('click', ev => { if (!ev.target.closest('button, .colorbtn, input, output')) grp.classList.toggle('collapsed'); });
+      h.addEventListener('click', ev => { if (!ev.target.closest('button, .colorbtn, input, output')) collapse(grp, !grp.classList.contains('collapsed')); });
     });
     r.querySelectorAll('.panel .sub').forEach(sub => {
       const h = sub.querySelector('h4');
-      h.insertBefore(Object.assign(document.createElement('span'), { className: 'chev' }), h.firstChild);
-      sub.classList.add('collapsed');
+      // After the eye, not before it. A section's chevron leads its heading
+      // because opening it is all the heading does; a sub-layer's first
+      // question is whether the layer is on at all, and the chevron that opens
+      // it is the second. The eye is also what stays live while the layer is
+      // off, so it is the one thing in the row always worth reaching for.
+      const eye = h.querySelector('.eyebtn');
+      h.insertBefore(Object.assign(document.createElement('span'), { className: 'chev' }),
+                     eye ? eye.nextSibling : h.firstChild);
+      collapse(sub, true);
       h.addEventListener('click', ev => {
         if (ev.target.closest('button') || sub.classList.contains('is-hidden')) return;
-        sub.classList.toggle('collapsed');
+        openSub(sub.classList.contains('collapsed') ? sub : null);
       });
     });
 
@@ -1209,14 +1690,17 @@ textarea[hidden] { display: none; }
     $('sv-palTags').addEventListener('change', e => { palTag = e.target.value; buildPaletteList(); });
     $('sv-palRandom').addEventListener('click', () => { const list = visiblePalettes(); if (list.length) setPalette(rand(list)); });
     $('sv-palRotate').addEventListener('click', () => { const s = cur().svgbg; s.palRot++; applyPalette(s); buildSwatches(); paintSvg(); });
-    for (const id of ['hue', 'sat', 'light', 'scale']) {
+    for (const id of ['hue', 'sat', 'light', 'scale', 'rotate', 'zoom']) {
       $('sv-' + id).addEventListener('input', e => {
         cur().svgbg[id] = +e.target.value;
-        $(`sv-${id}V`).value = id === 'scale' ? (+e.target.value).toFixed(2) + '×' : (e.target.value > 0 ? '+' : '') + e.target.value;
+        const v = e.target.value;
+        $(`sv-${id}V`).value = id === 'scale' || id === 'zoom' ? (+v).toFixed(2) + '×'
+          : id === 'rotate' ? v + '°'
+          : (v > 0 ? '+' : '') + v;
         paintSvg();
       });
     }
-    $('sv-resetAdjust').addEventListener('click', () => { Object.assign(cur().svgbg, { hue: 0, sat: 0, light: 0, scale: 1 }); syncSvg(); render(); });
+    $('sv-resetAdjust').addEventListener('click', () => { Object.assign(cur().svgbg, { hue: 0, sat: 0, light: 0, scale: 1, rotate: 0, zoom: 1 }); syncSvg(); render(); });
     $('sv-fixed').addEventListener('change', e => { cur().svgbg.fixed = e.target.checked; render(); });
 
     // Pattern
@@ -1463,7 +1947,7 @@ textarea[hidden] { display: none; }
       } catch (err) { presetNote(`Could not import: ${err.message}`); }
     });
     // Shut on open, like Scene.
-    ui.root.querySelector('.grp[data-section="presets"]').classList.add('collapsed');
+    collapse(ui.root.querySelector('.grp[data-section="presets"]'), true);
     refreshPresets();
     // The shipped presets arrive a moment later; list them when they do.
     ui.presetsReady.then(() => { if (ui) refreshPresets(); });
@@ -1502,7 +1986,7 @@ textarea[hidden] { display: none; }
       if (!isTextured(e)) continue;          // nothing showing, nothing to keep
       elements[selectorFor(e.el)] = { onTop: e.onTop, color: e.color, colorAlpha: e.colorAlpha, svgbg: clone(e.svgbg), pattern: clone(e.pattern), fx: clone(e.fx) };
     }
-    return { kind: 'randomize-studio/texture-scene', version: 1, noDividers: !!ui.noDividers, elements };
+    return { kind: 'randomize-studio/texture-scene', version: 1, noDividers: !!noDividers, elements };
   }
 
   /* ---- no dividers ----
@@ -1510,11 +1994,23 @@ textarea[hidden] { display: none; }
      two parts of the studio column. Taken off with one rule added to the
      kit's page sheet, so closing the kit - which removes the sheet - puts
      them back; kept with a scene, and written out by Copy CSS. */
-  const DIVIDERS = '.copy > section + section::before, .part + .part::before';
+  const DIVIDERS = '.copy > section + section::before';
+  // Whether the page draws its rules is the PAGE's state, not the panel's: a
+  // default scene sets it before there is a panel at all, and it has to outlive
+  // one being closed. So it lives on a style element of its own rather than in
+  // the panel's sheet, and the panel only reflects it when there is a panel.
+  let noDividers = false, dividerSheet = null;
+  // The look the page opened with, kept so closing the kit can put it back.
+  let defaultScene = null;
   function setDividers(off) {
-    ui.noDividers = !!off;
-    ui.sheet.textContent = CURSOR_SHEET + (ui.noDividers ? `\n${DIVIDERS} { content: none !important; }` : '');
-    $('scn-noDividers').checked = ui.noDividers;
+    noDividers = !!off;
+    if (!dividerSheet) {
+      dividerSheet = document.createElement('style');
+      dividerSheet.dataset.textureKitKeep = '';
+      document.head.append(dividerSheet);
+    }
+    dividerSheet.textContent = noDividers ? `${DIVIDERS} { content: none !important; }` : '';
+    if (ui && !ui.loading) $('scn-noDividers').checked = noDividers;
   }
   // Replaces what is on the page: every element is cleared first, so a scene
   // is the whole look rather than a layer on top of the last one. Locks are
@@ -1540,7 +2036,9 @@ textarea[hidden] { display: none; }
       for (const l of LAYERS) if (s[l]) Object.assign(e[l], clone(s[l]));
       paint(e);
     }
-    buildTargets(); syncAll();
+    // Only when there is a panel to bring up to date: a default scene is
+    // applied before one exists.
+    if (ui && !ui.loading) { buildTargets(); syncAll(); }
     return missing;
   }
 
@@ -1635,7 +2133,7 @@ textarea[hidden] { display: none; }
       } catch (err) { sceneNote(`Could not load: ${err.message}`); }
     });
     // Shut on open, as the studio's sections are: it is for when you want it.
-    ui.root.querySelector('.grp[data-section="scene"]').classList.add('collapsed');
+    collapse(ui.root.querySelector('.grp[data-section="scene"]'), true);
     refreshScenes();
   }
 
@@ -1653,6 +2151,10 @@ textarea[hidden] { display: none; }
       kit.classList.add('panel-hidden');
     });
     show.addEventListener('click', () => kit.classList.remove('panel-hidden'));
+    // Minimized, the only way out was to bring the panel back and close it
+    // from its titlebar. This is that titlebar button, standing where the
+    // panel is not.
+    $('kitExit').addEventListener('click', close);
 
     let dx = 0, dy = 0, dragging = false;
     const place = (x, y) => {
@@ -1660,6 +2162,14 @@ textarea[hidden] { display: none; }
       panel.style.left = Math.round(Math.max(gap, Math.min(x, innerWidth - w - gap))) + 'px';
       panel.style.top = Math.round(Math.max(gap, Math.min(y, innerHeight - h - gap))) + 'px';
       panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+      panel.style.translate = 'none';   // it was centred on its own height; now it is placed
+      // Held to the room below where it was dropped. Dragging is clamped, but
+      // a panel that has been put down low can still grow past the bottom of
+      // the screen when a layer is opened inside it — and the drag is long
+      // over by then. Capping the height here means it can only ever get
+      // shorter and scroll, instead of walking off the screen.
+      panel.style.maxHeight = Math.max(160, innerHeight - parseFloat(panel.style.top) - gap) + 'px';
     };
     bar.addEventListener('pointerdown', e => {
       if (e.button !== 0 || e.target.closest('button')) return;
@@ -1680,8 +2190,50 @@ textarea[hidden] { display: none; }
     };
     bar.addEventListener('pointerup', endDrag);
     bar.addEventListener('pointercancel', endDrag);
-    bar.addEventListener('dblclick', e => { if (!e.target.closest('button')) panel.style.left = panel.style.top = panel.style.right = ''; });
+    bar.addEventListener('dblclick', e => { if (!e.target.closest('button')) panel.style.left = panel.style.top = panel.style.right = panel.style.bottom = panel.style.translate = panel.style.maxHeight = ''; });
     ui.onResize = () => { if (panel.style.left) place(parseFloat(panel.style.left), parseFloat(panel.style.top)); placeOutline(); };
+
+    /* ---- the window follows its own contents ----
+       A tab swaps panes with display, a background swaps its swatches, a
+       palette list grows: the window is sized by what is in it, so it jumps to
+       the new height between one frame and the next.
+
+       Nothing announces those changes, and hooking each one would mean
+       remembering to hook the next. A ResizeObserver asks the other way round:
+       whatever just changed, the contents are a different size now. It fires
+       AFTER layout, so the jump has already happened - the animation runs
+       backwards from where the window was to where it now is, which lands in
+       the same place either way and needs no measuring of its own.
+
+       The guard matters: the animation changes the height, which resizes the
+       body, which fires the observer. Ignoring callbacks while our own
+       animation is running is what stops that being a loop. */
+    if (typeof ResizeObserver === 'function') {
+      const body = panel.querySelector('.pbody');
+      const still = matchMedia('(prefers-reduced-motion: reduce)');
+      let last = panel.getBoundingClientRect().height, flight = null;
+      const ro = new ResizeObserver(() => {
+        const now = panel.getBoundingClientRect().height;
+        // Ours, or the arrival putting the panel together before anyone sees
+        // it. Either way the new height is taken as read rather than animated
+        // to, so the next real change still starts from the right place.
+        if (flight || ui.settling) { last = now; return; }
+        const from = last;
+        last = now;
+        // A pixel or two is a rounding difference, not a change of shape.
+        if (still.matches || Math.abs(now - from) < 3) return;
+        flight = panel.animate([{ height: from + 'px' }, { height: now + 'px' }],
+                               { duration: 170, easing: 'cubic-bezier(.2, .7, .3, 1)' });
+        flight.finished.catch(() => {}).finally(() => { flight = null; });
+        // A window that has been dragged is held wherever it was put, and
+        // growing from there can push it past the bottom of the screen. The
+        // drag clamps on the way down; this clamps it again when the size
+        // rather than the pointer is what moved it.
+        ui.onResize?.();
+      });
+      if (body) ro.observe(body);
+      ui.panelRO = ro;
+    }
   }
 
   /* ---- Pick: click any element on the page ---- */
@@ -1896,7 +2448,7 @@ textarea[hidden] { display: none; }
   // straight away, with the panel held out of sight, and the panel comes up a
   // second later - so the first thing you see is the page changing, and the
   // tools arrive after it.
-  async function open({ randomizeFirst = false } = {}) {
+  async function open({ randomizeFirst = false, select = null } = {}) {
     if (ui) return;
     ui = { loading: true };
     // The shipped presets load alongside the catalogues rather than after the
@@ -1911,7 +2463,12 @@ textarea[hidden] { display: none; }
     root.innerHTML = SHEETS.map(s => `<link rel="stylesheet" href="${ROOT}${s}">`).join('') +
                      `<style>${TOKENS}</style>` + PANEL;
     // Hidden before it is ever on the page, so it cannot flash up first.
-    if (randomizeFirst) root.querySelector('.kit').classList.add('is-intro');
+    // Off-screen and ready to fly before it is ever on the page, so it cannot
+    // flash up in place first. The page button holds it there a second longer
+    // while the page randomizes behind it.
+    const kitEl = root.querySelector('.kit');
+    kitEl.classList.add('is-away', 'is-entering');
+    if (randomizeFirst) kitEl.classList.add('is-intro');
     document.body.append(host);
 
     // The one thing the kit has to style on the page itself: the cursor over
@@ -1921,7 +2478,10 @@ textarea[hidden] { display: none; }
     sheet.textContent = CURSOR_SHEET;
     document.head.append(sheet);
 
-    ui = { host, root, sheet, presetsReady, picking: false, hover: null, targets: [], current: document.querySelector('.copy') || document.body };
+    // What it opens on: the element the opener named, if it is on the page,
+    // and the reading column otherwise.
+    const asked = select ? document.querySelector(select) : null;
+    ui = { host, root, sheet, presetsReady, picking: false, hover: null, targets: [], current: asked || document.querySelector('.copy') || document.body };
     ui.outline = root.querySelector('.outline');
     ui.hoverBox = root.querySelector('.hover');
     wire();
@@ -1943,14 +2503,37 @@ textarea[hidden] { display: none; }
     // still - a cover changing under you is a moving target.
     document.dispatchEvent(new CustomEvent('texture-kit:open'));
 
+    // Let it go, and take the slower transition off once it has landed.
+    const arrive = () => {
+      // Nothing is to animate while it is on its way in: the sections are put
+      // in place without a transition, and the window is told not to chase its
+      // own height until the flight is over.
+      ui.settling = true;
+      // Framed the way clicking that element would frame it, and framed HERE:
+      // last thing before the panel is seen, after the roll has decided which
+      // layers this element ended up with. Earlier in the sequence something
+      // else still had the last word on which sections were open.
+      if (asked) frameSelection(true);
+      kitEl.classList.remove('is-intro', 'is-away');
+      ui.enterTimer = setTimeout(() => {
+        kitEl.classList.remove('is-entering');
+        ui.settling = false;
+      }, 620);
+    };
+
     if (randomizeFirst) {
       // The shipped presets are part of what it rolls from - wait for them,
       // briefly: a slow file is not worth holding the page up for.
       await Promise.race([presetsReady, new Promise(r => setTimeout(r, 1200))]);
       if (!ui || ui.host !== host) return;
       $('randomize').click();
-      const kit = root.querySelector('.kit');
-      ui.introTimer = setTimeout(() => kit.classList.remove('is-intro'), 1000);
+      ui.introTimer = setTimeout(arrive, 1000);
+    } else {
+      // Two frames: the first is the off-screen state being taken up, the
+      // second is the one it can be transitioned away from. Release on the
+      // same frame and the browser folds the two into one style change, with
+      // nothing in between to animate.
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (ui && ui.host === host) arrive(); }));
     }
   }
 
@@ -1972,9 +2555,17 @@ textarea[hidden] { display: none; }
     document.removeEventListener('contextmenu', onEditMenu, { capture: true });
     clearTimeout(ui.toastTimer);
     clearTimeout(ui.introTimer);
+    clearTimeout(ui.enterTimer);
+    ui.panelRO?.disconnect();
     ui.sheet.remove();
     ui.host.remove();
     ui = null;
+    // Back to the look the page opened with, not to a bare page. Editing is a
+    // visit to the page's design rather than a replacement for it — shutting
+    // the panel puts down what you picked up. Without a default scene there is
+    // nothing to go back TO, and the teardown above has already left the page
+    // as its own CSS drew it.
+    if (defaultScene) { try { applyScene(defaultScene); } catch { /* a page that has since changed */ } }
     document.dispatchEvent(new CustomEvent('texture-kit:close'));
   }
 
@@ -2015,7 +2606,11 @@ textarea[hidden] { display: none; }
   // data-texture-kit-open opens it - the button under the page title - and
   // Shift+T toggles it.
   document.addEventListener('click', (ev) => {
-    if (!ui && ev.target.closest?.('[data-texture-kit-open]')) open({ randomizeFirst: true });
+    const opener = ev.target.closest?.('[data-texture-kit-open]');
+    // The attribute can name the element to open on: data-texture-kit-open=".part-use".
+    // The kit has no idea what is on the page, so the page says which element
+    // the button is about — empty means the one the kit would pick anyway.
+    if (!ui && opener) open({ randomizeFirst: true, select: opener.getAttribute('data-texture-kit-open') || null });
   });
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'T' || !ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey) return;
@@ -2023,5 +2618,47 @@ textarea[hidden] { display: none; }
     if (t?.closest?.('input, textarea, select, [contenteditable]')) return;
     ui ? close() : open();
   });
+  /* One tool at a time. The type kit takes clicks on the page to choose what
+     it is editing, exactly as this one does, and two open at once means two
+     frames, two hover cursors and a click only one of them gets. It stands
+     down for this kit's texture-kit:open; this is the other half of that
+     bargain, and it costs nothing on a page that has no type kit. */
+  document.addEventListener('type-kit:open', () => close());
+
   if (/[?&]texture\b/.test(location.search)) open();
+
+  /* ---- the look the page opens with ----
+     data-scene on the script tag names a scene file, and the page wears it
+     from the first paint:
+
+       <script src="texture-kit.js" data-scene="main-scene.json" defer></script>
+
+     Every visit, not just the first — it is the page's design, the same way
+     its stylesheet is, rather than something a visitor is left holding. What
+     they do with the panel afterwards is theirs until they reload.
+
+     Resolved against the script rather than against the page, so the file sits
+     beside texture-kit.js wherever that is. A scene that will not load leaves
+     the page exactly as its own CSS drew it and says why in the console: a
+     missing decoration is not worth a blank page. */
+  (async () => {
+    const named = SELF?.dataset.scene;
+    if (!named) return;
+    try {
+      const res = await fetch(new URL(named, SELF.src).href, { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      await loadLib();
+      defaultScene = await res.json();
+      const missing = applyScene(defaultScene);
+      if (missing.length) console.warn('[texture-kit] default scene: not on this page:', missing);
+    } catch (err) {
+      console.warn('[texture-kit] could not apply the default scene:', err);
+    } finally {
+      // Said either way, and said last: a page holding its first paint until
+      // the textures are on (intro.js does) must be let go whether they
+      // arrived or not. A scene that failed is a reason to show the page, not
+      // a reason to keep hiding it.
+      document.dispatchEvent(new CustomEvent('texture-kit:scene'));
+    }
+  })();
 })();

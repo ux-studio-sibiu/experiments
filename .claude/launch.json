@@ -4,20 +4,54 @@
     {
       "name": "static-background",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "http-server", "static-background", "-p", "8127", "-c-1"],
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "static-background",
+        "-p",
+        "8127",
+        "-c-1"
+      ],
       "port": 8127
     },
     {
       "name": "randomize-studio",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "http-server", "randomize-studio", "-p", "8128", "-c-1"],
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "randomize-studio",
+        "-p",
+        "8128",
+        "-c-1"
+      ],
       "port": 8128
     },
     {
       "name": "icons",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "http-server", "icons", "-p", "8129", "-c-1"],
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "icons",
+        "-p",
+        "8129",
+        "-c-1"
+      ],
       "port": 8129
+    },
+    {
+      "name": "effects-collection",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        ".",
+        "-p",
+        "8130",
+        "-c-1"
+      ],
+      "port": 8130
     }
   ]
 }

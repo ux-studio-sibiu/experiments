@@ -28,6 +28,11 @@
   animation: tipcard-in .12s ease both;
 }
 
+/* Wider for a long one. The cap above is right for a sentence — a two-word
+   tip gets a two-word box — and wrong for anything with its own line breaks,
+   which wraps into a column too tall to show. */
+.nsc-tipcard.is-long { max-width: min(40rem, 86vw); }
+
 @media (prefers-reduced-motion: reduce) {
   .nsc-tipcard { animation: none; }
 }
@@ -45,7 +50,12 @@
 /* The second line and everything after it, when a tip has one: the what-it-is
    on top, the why underneath. Read in the moment it is under the pointer with
    no second pass, so it gets the air the sans does not carry on its own. */
+/* A tip written across several lines keeps them: the summary is the rest of a
+   title attribute after its first line, and where that is a prompt or a list
+   the breaks are the shape of it. pre-wrap rather than pre-line, so an indent
+   that was put there on purpose survives too. */
 .nsc-tipcard .card-summary {
+  white-space: pre-wrap;
   margin: 7px 0 0;
   font-family: var(--ui-sans);
   font-size: 12px;

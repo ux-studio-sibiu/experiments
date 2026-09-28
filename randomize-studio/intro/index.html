@@ -7,9 +7,22 @@
 <meta name="description" content="A cover playground: photograph, plate and editable type on a fixed artboard, with live Google Fonts and a dice for when nothing is working.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Lexend:wght@700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="icon" href="../icon.svg" type="image/svg+xml">
+<!-- The hover card the studio and the texture panel both use, over this page's
+     own title attributes: one card everywhere rather than a styled one inside
+     the panel and the browser's own out here. -->
+<!-- Where a coding agent sent here by the copy-prompt buttons finds what to do:
+     linked rather than written into the page, so the instructions are a plain
+     markdown file it can read without parsing any of this. -->
+<link rel="help" href="agent-setup.md" title="Setup notes for a coding agent">
+<link rel="stylesheet" href="../css/tooltip.css">
 <link rel="stylesheet" href="intro.css">
+<!-- The page is covered until it has settled - see the note by .is-settling in
+     intro.css, and the reveal at the end of intro.js. Set from here rather than
+     written into the markup, so a browser with no JavaScript never gets a cover
+     it has no way to take away. -->
+<script>document.documentElement.classList.add("is-settling");</script>
 <!-- Everything "Randomize this page" needs, asked for with the page rather
      than on the first press: the texture panel's three stylesheets (it loads
      them inside its own shadow root, by these same addresses, so they come
@@ -30,8 +43,8 @@
   <div class="copy">
 
     <section class="intro">
-      <h1 class="title">Randomize Studio</h1>
-      <p class="role">design concepts : rapid prototyping : for designer-devs</p>
+      <h1 class="title" data-type-kit="page title">Randomize Studio</h1>
+      <p class="role" data-type-kit="strapline">design concepts : rapid prototyping : for designer-devs</p>
       <!-- <hr class="intro-rule"> -->
       <!-- <ul class="intro-list">
         <li>Playground for approaching design from the dev angle</li>
@@ -51,10 +64,52 @@
         </ul>
     </section>
 
+    <!-- The two parts of the right-hand column, repeated here in the reading
+         column. The column beside this one is sticky and half a screen per
+         part, so on a short window it crops; these are the same two sections
+         with nothing held back, in the column's own voice.
+
+         Both copies are live. The buttons open the same two kits and the
+         copy-prompt buttons carry the same errand - intro.js wires every
+         [data-copy-prompt] on the page, not the first one. Which also means
+         the words exist twice: an edit to either part has to be made in both.
+         See .aside-part in intro.css for what the column has to be told not
+         to do to them. -->
+    <section class="aside-part">
+      <h2 class="section-title" data-type-kit="section title (demo)">Demo</h2>
+      <p class="lede">This page runs both kits, try them out below</p>
+      <p class="actions pair">
+        <button type="button" class="button randomize-page" data-texture-kit-open=".part-use">Randomize this page</button>
+        <button type="button" class="button explore-type" data-type-kit-open=".title">Explore typography</button>
+      </p>
+    </section>
+
+    <section class="aside-part">
+      <h2 class="section-title" data-type-kit="section title (use)">Use in your project : AI-assisted</h2>
+      <ol class="steps">
+        <li><span class="num">1</span>Temporarily add tool in your project, using code-agent
+          <ul class="kits">
+            <li>texture kit :
+              <button type="button" class="copy-prompt" data-copy-prompt="texture"
+                      aria-label="Copy the prompt for the texture kit">copy prompt</button></li>
+            <li>typography kit :
+              <button type="button" class="copy-prompt" data-copy-prompt="typography"
+                      aria-label="Copy the prompt for the typography kit">copy prompt</button></li>
+            <li>effects kit :
+              <button type="button" class="copy-prompt" data-copy-prompt="effects"
+                      aria-label="Copy the prompt for the effects kit">copy prompt</button></li>
+          </ul>
+        </li>
+        <li><span class="num">2</span>Shift+T opens edit UI : randomize or manual edit</li>
+        <li><span class="num">3</span>serve changes as .json to coding-agent for lasting implementation</li>
+        <li><span class="num">4</span>prompt tool to self-remove from project</li>
+      </ol>
+    </section>
+
 
 
     <section>
-      <h2 class="section-title">Adobe-like UI</h2>
+      <h2 class="section-title" data-type-kit="section title">Adobe-like UI</h2>
 
 
       <ul>
@@ -80,6 +135,23 @@
                   sections, each row with an eye, a dice and a lock.">
         <figcaption>Four sections, and the same three controls on every layer.</figcaption>
       </figure>
+    </section>
+
+    <!-- What the studio is made of, and why the panel on this page can exist
+         at all: each concern is its own module, so two of them can be lifted
+         out and dropped onto a page that is not the studio. -->
+    <section>
+      <h2 class="section-title" data-type-kit="section title (modular)">Modular</h2>
+      <ul>
+        <li>the studio wraps a few more specific, specialized tools</li>
+        <li>these can be used independently to handle: typography, texture, effects or layout edits</li>
+        <li><strong>typography</strong> - fonts, sizing, and the text blocks themselves</li>
+        <li><strong>texture</strong> - photographs, dynamic svg, patterns</li>
+        <li><strong>effects</strong> - grain and other static fx, over everything else</li>
+        <li><strong>layout</strong> - coming soon</li>
+        <li>the panel on this page is two of them - texture and effects - running on a page
+          that is not the studio</li>
+      </ul>
     </section>
 
     <section>
@@ -126,7 +198,7 @@
       <!-- The cycle clock: a bar along the bottom of the cover that grows
            across exactly one turn of the rotation, driven from intro.js. It
            stays at nothing when there is no rotation to clock. -->
-      <span class="cyclebar" aria-hidden="true"></span>
+      <span class="cycle-bar" aria-hidden="true" hidden><i></i></span>
       <!-- The whole frame is the link. The studio inside is a preview here -
            pointer-events are off it, so a stray drag cannot leave a cover
            half-edited - and this is what a click on it should do instead. An
@@ -135,22 +207,22 @@
       <a class="cover" href="../index.html" target="_blank" rel="noopener"><span class="label">Open studio</span></a>
       <!-- Shown by intro.js, and only once there is a rotation to control. In
            the frame's corner, over the cover it stops. -->
-      <button type="button" class="cyclebtn" hidden></button>
+      <button type="button" class="cycle-btn" hidden></button>
     </div>
     </div>
 
     <!-- The title heads the steps rather than the part, so the frame can take
          the part's full height. -->
     <div class="part-aside">
-    <h2 class="part-title">The studio</h2>
-    <ol class="steps">
+    <h2 class="part-title" data-type-kit="part title">The studio</h2>
+    <ol class="steps" data-type-kit="steps">
       <li>1. Randomize design elements</li>
       <li>2. Get inspired</li>
       <li>3. Keep what works</li>
       <li>4. Randomize the rest</li>
       <li>5. Refine manually at any step</li>
     </ol>
-    <p class="actions"><a class="button quiet open-studio" href="../index.html" target="_blank" rel="noopener">Open studio <span class="arrow" aria-hidden="true">&rarr;</span></a></p>
+    <p class="actions"><a class="button open-studio" href="../index.html" target="_blank" rel="noopener">Open studio <span class="arrow" aria-hidden="true">&rarr;</span></a></p>
     </div>
     </div>
     </section>
@@ -160,24 +232,33 @@
          folder and adding a script tag - and this page is the demo of it. -->
     <section class="part part-use">
       <span class="part-number" aria-hidden="true" hidden>2</span>
-      <h2 class="part-title">Any project. AI-assisted.</h2>
-      <div class="part-body">
-        <!-- Said to a code agent, in any stack: the kit is one script and
-             plain files, so there is nothing framework-shaped to wire up. -->
-        <ol class="steps">
-          <li>1. Point coding agent to this page</li>
-          <li>2. "Inject texture kit"</li>
-          <li>3. Shift+T to open UI : Texture anything</li>
-          <li>4. generate json with changes</li>
-          <li>5. coding-agent implements json </li>
-        </ol>
-        <!-- Opens the texture kit, the same as Shift+T (see texture-kit.js).
-             Beside it, the skill a code agent follows to add the kit to a
-             project - on GitHub, which renders it, in a new tab. -->
-        <p class="actions">
-          <button type="button" class="button randomize-page" data-texture-kit-open>Randomize this page</button>
-          <a class="button quiet skill-link" href="https://github.com/ux-studio-sibiu/experiments/blob/main/.claude/skills/inject-texture-kit/SKILL.md" target="_blank" rel="noopener">View skill.md</a>
-        </p>
+      <!-- One box, the width of the part: the demo of the kits running on the
+           page you are reading. The steps that stood beside it are in the
+           reading column now (see .aside-part in intro.css), where there is
+           room to read them - this half of the studio column is for pressing
+           things rather than for following instructions.
+
+           Being real content it sits over the texture kit's layers, which are
+           behind it at z-index -1 - there is no stacking to arrange. -->
+      <div class="plate demo">
+      <h2 class="part-title">Demo</h2>
+
+      <p class="lede">This page runs both kits, try them out below</p>
+
+      <!-- Two tools, two buttons, and they are separate things: the first is
+           the texture kit (Shift+T), the second the type kit (Shift+Y). Each
+           closes the other when it opens - both take clicks on the page to
+           choose what they are editing, so only one can have them.
+
+           The skills a coding agent follows to put either kit into a project
+           of its own are not linked here: the copy-prompt buttons beside the
+           steps in the reading column already hand an agent the whole errand,
+           and a person reading this page is being offered the tools, not their
+           setup. -->
+      <p class="actions pair">
+        <button type="button" class="button randomize-page" data-texture-kit-open=".part-use">Randomize this page</button>
+        <button type="button" class="button explore-type" data-type-kit-open=".title">Explore typography</button>
+      </p>
       </div>
     </section>
 
@@ -186,6 +267,7 @@
 
 </div>
 </div>
+<script src="../js/tooltip.js" defer></script>
 <script src="intro.js"></script>
 <!-- The texture kit's catalogues - backgrounds, palettes, pattern tiles, the
      grain - loaded with the page, so the first "Randomize this page" has
@@ -197,7 +279,13 @@
 <script src="../js/static-background.js" defer></script>
 <!-- Opt-in texture editor: Shift+T or ?texture. Idle until opened, and takes
      itself back out when closed - see the note at the top of the file. -->
-<script src="texture-kit.js" defer></script>
+<script src="texture-kit.js" data-scene="main-scene.json" defer></script>
+<!-- Opt-in type editor, the texture kit's sister and entirely separate from
+     it: Shift+Y or ?type. Shift+Y rather than its own Shift+T, because the
+     texture kit had that first and a page carrying both cannot give them the
+     same key. It finds randomize-studio/ from its own address, so it needs no
+     data-studio here - the two folders are siblings. -->
+<script src="../../type-kit/type-kit.js" data-key="Y" defer></script>
 <!-- The 87 pattern tiles Randomize can pick from, fetched into the cache once
      the page has finished loading - at low priority, after everything the
      page itself shows. -->

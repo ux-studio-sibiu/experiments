@@ -107,3 +107,4 @@ $('copyCss')?.addEventListener('click', async () => {
   catch { flash('Copy blocked — see console'); console.log(css); }
 });
 function flash(msg){ const b=$('copyCss'); if (!b) return; const t=b.textContent; b.textContent=msg; setTimeout(()=>b.textContent=t,1200); }
+

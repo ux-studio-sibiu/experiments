@@ -51,6 +51,10 @@ const Tip = (() => {
     // cannot be allowed to bring markup with it.
     card = document.createElement('div');
     card.className = 'nsc-tipcard';
+    // A tip the length of a prompt wraps into a column taller than the screen
+    // at the usual width. Told about it, the stylesheet gives it a wider
+    // measure, which is what makes it short enough to sit on the page at all.
+    if (tip.length > 400) card.classList.add('is-long');
     // Hidden from assistive tech: it is the title attribute, which is already
     // announced, and it exists only for a pointer.
     card.setAttribute('aria-hidden', 'true');

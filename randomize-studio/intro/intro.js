@@ -83,7 +83,7 @@ if (frame) {
 (async () => {
   const CYCLE_MS = 3000;
   const FOLDER = 'currated';
-  const button = document.querySelector('.cyclebtn');
+  const button = document.querySelector('.cycle-btn');
   if (!frame || !button) return;
 
   // Two sources: the folder's files, by path, and every scene in
@@ -116,7 +116,10 @@ if (frame) {
   // to zero on every swap so it cannot drift away from an interval that is not
   // a metronome. Pausing leaves it part-grown, which is what a held rotation
   // should look like.
-  const barEl = document.querySelector('.cyclebar');
+  // The fill, not the track: the track is the white line and keeps its width,
+  // the fill is the ink growing across it.
+  const barTrack = document.querySelector('.cycle-bar');
+  const barEl = barTrack && barTrack.querySelector('i');
   const bar = barEl && barEl.animate(
     [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
     { duration: CYCLE_MS, iterations: Infinity, easing: 'linear', fill: 'both' });
@@ -190,6 +193,9 @@ if (frame) {
   };
 
   button.hidden = false;
+  // Both the pause button and the clock appear only once there is a rotation to
+  // control - everything above this line has already given up when there is not.
+  if (barTrack) barTrack.hidden = false;
   // aria-pressed is the whole of the state: the stylesheet draws the mark from
   // it, and the label says the same thing to anyone who cannot see the mark.
   const label = () => {
@@ -227,4 +233,120 @@ if (frame) {
 
   label();
   start();
+})();
+
+/* ============================ the agent's errand, copied ============================
+   Step one of "any project" is a coding agent putting one of these tools into
+   a project of your own. Each bullet hands it the whole errand in one paste:
+   which files to take, where they are, and what to do with them.
+
+   The URLs are read off this page at the moment of the copy rather than
+   written into the markup, so a prompt copied from a laptop points at the
+   laptop and one copied from the deployed page points at the deployed page.
+   An agent that cannot reach the first has learned nothing useful.
+
+   Only the texture kit exists today. The other two buttons are here because
+   the list is the shape the thing is heading for, and they say so rather than
+   handing an agent a list of files that are not there yet. */
+(() => {
+  const buttons = [...document.querySelectorAll('[data-copy-prompt]')];
+  if (!buttons.length) return;
+
+  // The three tools, by the name the page lists them under. What the button
+  // hands over is a page to read, not the instructions themselves: those live
+  // in agent-setup.md beside the page, where they can be corrected without
+  // anyone re-copying a prompt they pasted last week.
+  const KITS = { texture: 'texture kit', typography: 'typography kit', effects: 'effects kit' };
+
+  // Short on purpose. An agent given a page and a name has everything it
+  // needs; a prompt that repeats the file list is a second copy of it, and the
+  // one in the clipboard is the copy that goes stale.
+  const promptFor = (title, page) => `Set up the Randomize Studio ${title} in this project.
+
+Start here: ${page}
+
+That page links its instructions as <link rel="help" href="agent-setup.md">.
+Fetch that file, follow the section headed "${title}", and resolve the paths in
+it against the page above.`;
+
+  // The deployed page, written out rather than read from location: the prompt
+  // is pasted into an agent that has no idea where it came from, and a copy
+  // taken here would send it to a localhost only this machine can reach.
+  const page = 'https://experiments-five-bice.vercel.app/randomize-studio/intro/index.html';
+
+  for (const button of buttons) {
+    const kit = KITS[button.dataset.copyPrompt];
+
+    // Texture and typography are built; effects is listed and is not, and the
+    // notes say so under its own heading - so the button can hand over the
+    // same errand either way, but there is nothing at the other end of it.
+    const built = button.dataset.copyPrompt !== 'effects';
+    if (!kit) continue;
+    if (!built) {
+      button.disabled = true;
+      button.title = 'Not built yet - the texture and typography kits are the ones that exist today.';
+      continue;
+    }
+
+    // The prompt itself is the tooltip: the card shows what the press will put
+    // on the clipboard rather than a description of it. Built once, because
+    // both uses want the same text.
+    const text = promptFor(kit, page);
+    button.title = text;
+
+    button.addEventListener('click', async () => {
+      const said = (msg) => {
+        button.dataset.said = msg;
+        clearTimeout(button.timer);
+        button.timer = setTimeout(() => delete button.dataset.said, 2200);
+      };
+      try {
+        await navigator.clipboard.writeText(text);
+        said('copied');
+      } catch {
+        // A clipboard write needs a secure context and permission; neither is
+        // guaranteed. The prompt is still worth having, so it goes somewhere
+        // it can be taken by hand.
+        console.log(text);
+        said('see console');
+      }
+    });
+  }
+})();
+
+/* ============================ letting the page be seen ============================
+   index.html covers the page before the first paint. It comes off once the
+   things that would otherwise be watched happening have happened:
+
+     the webfont   - Archivo arriving reflows every heading on the page
+     the textures  - texture-kit.js applying the scene the page opens with
+
+   Whichever is slower decides, and a deadline decides if either never
+   answers. That last part is the one that matters: a cover with no way off is
+   a blank page, and every reason it might get stuck - a font that 404s, a kit
+   that is not loaded at all, a scene file that is missing - is a reason to
+   show the page rather than to keep hiding it. */
+(() => {
+  const root = document.documentElement;
+  const DEADLINE = 1500;
+  const FADE_MS = 300;
+
+  const fonts = document.fonts ? document.fonts.ready : Promise.resolve();
+  const textures = new Promise(done => {
+    document.addEventListener('texture-kit:scene', done, { once: true });
+  });
+  const deadline = new Promise(done => setTimeout(done, DEADLINE));
+
+  let shown = false;
+  const show = () => {
+    if (shown) return;
+    shown = true;
+    root.classList.remove('is-settling');
+    root.classList.add('is-revealing');
+    // Off the document once it has faded, so nothing is left lying over the
+    // page - a pointer-events:none layer is still a layer.
+    setTimeout(() => root.classList.remove('is-revealing'), FADE_MS + 60);
+  };
+
+  Promise.race([Promise.all([fonts, textures]), deadline]).then(show);
 })();
