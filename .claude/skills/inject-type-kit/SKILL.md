@@ -1,7 +1,7 @@
 ---
 name: inject-type-kit
 description: >-
-  Add the randomize-studio typography editor (type-kit/type-kit.js - the
+  Add the randomize-studio typography editor (randomize-studio/type-kit/type-kit.js - the
   Shift+T panel that sets the face, weight, size, leading, tracking, case,
   alignment and colour of any text block, with previewed font rows and a
   two-face randomizer) to any other web project, whatever its stack: plain
@@ -31,16 +31,15 @@ on one page** at the end.
 ## 1. Copy the files - keep the folder shape
 
 The kit finds the studio relative to **its own script address**
-(`new URL('../randomize-studio/', document.currentScript.src)`), so the default
-shape is the two folders side by side. Copy into the project's **static /
-public** folder:
+(`new URL('../', document.currentScript.src)`), so the default shape is the kit
+in a folder inside the studio's. Copy into the project's **static / public**
+folder:
 
 ```
-type-kit/
-  type-kit.js                  the editor itself
-  kit-shell.css                the panel's chrome (tokens + the frames)
-
 randomize-studio/
+  type-kit/
+    type-kit.js                the editor itself
+    kit-shell.css              the panel's chrome (tokens + the frames)
   css/panel.css                the floating window
   css/controls.css             its controls
   css/tooltip.css              the hover card
@@ -56,22 +55,23 @@ in another project.
 
 Where "static / public" is, by stack:
 
-| Stack | Put both folders in | Served at |
+| Stack | Put the folder in | Served at |
 |---|---|---|
-| Plain HTML / any static host | next to the pages | `/type-kit/...` |
-| Next.js | `public/` | `/type-kit/...` |
-| Vite (React, Vue, Svelte, vanilla) | `public/` | `/type-kit/...` |
-| Nuxt | `public/` | `/type-kit/...` |
-| Astro | `public/` | `/type-kit/...` |
-| SvelteKit | `static/` | `/type-kit/...` |
-| Angular | `src/assets/` (or a folder listed in `assets` in `angular.json`) | `/assets/type-kit/...` |
-| WordPress | the theme folder | `<theme-url>/type-kit/...` |
-| Rails | `public/` | `/type-kit/...` |
+| Plain HTML / any static host | next to the pages | `/randomize-studio/type-kit/...` |
+| Next.js | `public/` | `/randomize-studio/type-kit/...` |
+| Vite (React, Vue, Svelte, vanilla) | `public/` | `/randomize-studio/type-kit/...` |
+| Nuxt | `public/` | `/randomize-studio/type-kit/...` |
+| Astro | `public/` | `/randomize-studio/type-kit/...` |
+| SvelteKit | `static/` | `/randomize-studio/type-kit/...` |
+| Angular | `src/assets/` (or a folder listed in `assets` in `angular.json`) | `/assets/randomize-studio/type-kit/...` |
+| WordPress | the theme folder | `<theme-url>/randomize-studio/type-kit/...` |
+| Rails | `public/` | `/randomize-studio/type-kit/...` |
 
-If the two folders cannot be siblings, say where the studio is instead:
+If the kit has to live somewhere other than inside the studio folder, say where
+the studio is instead:
 
 ```html
-<script src="/type-kit/type-kit.js" data-studio="/vendor/randomize-studio/" defer></script>
+<script src="/vendor/type-kit/type-kit.js" data-studio="/vendor/randomize-studio/" defer></script>
 ```
 
 ## 2. Add one script tag
@@ -81,7 +81,7 @@ module. Bundling breaks `document.currentScript`, which is how the kit finds
 its files, and a module has no `currentScript` at all.
 
 ```html
-<script src="/type-kit/type-kit.js" defer></script>
+<script src="/randomize-studio/type-kit/type-kit.js" defer></script>
 ```
 
 Put it before `</body>` on every page whose type should be editable. By stack:
@@ -89,12 +89,12 @@ Put it before `</body>` on every page whose type should be editable. By stack:
 - **Plain HTML, Astro, Rails views, WordPress `footer.php`:** the tag above, in
   the shared layout / footer.
 - **Next.js (App Router):** in `app/layout.tsx`, inside `<body>`:
-  `<Script src="/type-kit/type-kit.js" strategy="afterInteractive" />`
+  `<Script src="/randomize-studio/type-kit/type-kit.js" strategy="afterInteractive" />`
   (`import Script from "next/script"`). Pages Router: the same in `_app.tsx`
   or `_document.tsx`.
 - **Vite / React / Vue / Svelte SPA:** the plain tag in `index.html`.
 - **Nuxt:** `app.head.script` in `nuxt.config`:
-  `{ src: '/type-kit/type-kit.js', defer: true }`.
+  `{ src: '/randomize-studio/type-kit/type-kit.js', defer: true }`.
 - **SvelteKit:** the plain tag in `src/app.html`.
 - **Angular:** the plain tag in `src/index.html` (with the `assets/` path).
 
@@ -190,7 +190,7 @@ They coexist, with two adjustments:
 
    ```html
    <script src="/randomize-studio/intro/texture-kit.js" defer></script>
-   <script src="/type-kit/type-kit.js" data-key="Y" defer></script>
+   <script src="/randomize-studio/type-kit/type-kit.js" data-key="Y" defer></script>
    ```
 
 2. Nothing else. Each announces itself when it opens (`texture-kit:open` /

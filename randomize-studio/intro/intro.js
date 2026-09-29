@@ -18,25 +18,54 @@ const ARTBOARD_W = 1600;
 if (frame) {
   const box = frame.parentElement;
   const column = box.closest('.showcase');
+  // What the copy column lines itself up against: the whole group, not the
+  // frame inside it. The panel and the title both start on the group's top
+  // edge and the frame starts under the title, so measuring the frame would
+  // align the rule to a line that is no longer the column's first.
+  const group = box.closest('.part-body') || box;
+  const intro = document.querySelector('.copy > section:first-child');
   const wide = matchMedia('(min-width: 1000px)');
   const root = document.documentElement;
   const fit = () => {
     box.style.setProperty('--frame-scale', String(box.clientWidth / ARTBOARD_W));
-    // Where the frame's top falls in its column - it is centred in its half,
-    // so that moves with the window - handed to the page title, which starts
-    // on the same line (--frame-top in intro.css). Only while the columns sit
-    // side by side; stacked, the title keeps its own room. On the root, which
-    // the texture kit never touches, so closing it cannot put back a stale
-    // value.
-    if (wide.matches && column) {
-      const top = box.getBoundingClientRect().top - column.getBoundingClientRect().top;
-      root.style.setProperty('--frame-top', Math.round(top) + 'px');
-    } else root.style.removeProperty('--frame-top');
+    // The line under the page title on the top edge of the column beside it.
+    // The group is centred down that column, so where its top falls moves with
+    // the window; the rule is the bottom edge of the title's section, so what
+    // has to be pushed down is the section less that padding - its content and
+    // the 2rem under it, neither of which the padding above changes.
+    // --intro-pad in intro.css.
+    //
+    // The section's own height rather than the title's: the rule is drawn at
+    // the top of the section AFTER it (see .copy > section + section::before),
+    // which is the same line.
+    //
+    // Only while the columns sit side by side; stacked, the title keeps its
+    // own room. On the root, which the texture kit never touches, so closing
+    // it cannot put back a stale value.
+    if (wide.matches && column && intro) {
+      const top = group.getBoundingClientRect().top - column.getBoundingClientRect().top;
+      const rest = intro.getBoundingClientRect().height - parseFloat(getComputedStyle(intro).paddingTop);
+      // Not rounded: both measurements carry fractions, and rounding the
+      // difference put the rule half a pixel off the line it is there to meet.
+      root.style.setProperty('--intro-pad', Math.max(0, top - rest) + 'px');
+    } else root.style.removeProperty('--intro-pad');
   };
   const ro = new ResizeObserver(fit);
   ro.observe(box);
+  if (group !== box) ro.observe(group);
   if (column) ro.observe(column);
+  // The section too: its height is half the sum, and it changes on its own -
+  // Archivo arriving reflows the title, and a narrow column wraps it. Writing
+  // the padding changes that height as well, but `rest` is measured without
+  // it, so the second pass computes the same number and the observer stops.
+  if (intro) ro.observe(intro);
   wide.addEventListener('change', fit);
+  // Archivo and Lexend arriving reflow the title and the strapline, which is
+  // half of what --intro-pad is measured from. The observer above sees that
+  // too, but this is the moment itself rather than its consequence, and it is
+  // one of the two things the page's cover waits on - so the measurement is
+  // taken while the page is still hidden rather than a frame after.
+  document.fonts?.ready.then(fit);
   // A window that only changes height can leave both boxes the same size
   // while the frame's centring moves - nothing for the observer to see.
   addEventListener('resize', fit, { passive: true });
@@ -233,6 +262,29 @@ if (frame) {
 
   label();
   start();
+})();
+
+/* ============================ a kit is open ============================
+   html.has-kit-open while either the texture kit or the type kit is running.
+   What it is for today is the panel screenshot in the studio column, which
+   goes out of focus so that two panels on one screen cannot be mistaken for
+   each other (see .has-kit-open .panel-shot img in intro.css) - but it is the
+   page's own state rather than that one element's, so anything else that
+   should stand aside while a tool is up can ask for it.
+
+   A set, not a flag. Only one kit runs at a time and each closes the other
+   when it opens, which is exactly why a boolean does not work: opening the
+   type kit fires type-kit:open, the texture kit hears it and shuts, and its
+   texture-kit:close lands AFTER - so a flag would be cleared by the kit that
+   just stood down for the kit that is now open. Names in, names out, and the
+   class follows whether the set is empty. */
+(() => {
+  const open = new Set();
+  const mark = () => document.documentElement.classList.toggle('has-kit-open', open.size > 0);
+  for (const kit of ['texture', 'type']) {
+    document.addEventListener(`${kit}-kit:open`, () => { open.add(kit); mark(); });
+    document.addEventListener(`${kit}-kit:close`, () => { open.delete(kit); mark(); });
+  }
 })();
 
 /* ============================ the agent's errand, copied ============================

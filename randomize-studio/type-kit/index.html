@@ -6,7 +6,7 @@
 <title>Type Kit</title>
 <meta name="description" content="A floating panel for editing the typography of a page, in the page.">
 
-<link rel="icon" href="../randomize-studio/icon.svg" type="image/svg+xml">
+<link rel="icon" href="../icon.svg" type="image/svg+xml">
 
 <!-- The page's own two faces. Everything the kit sets afterwards is an inline
      style over the top of these, so closing the panel puts this back. -->
@@ -57,13 +57,14 @@
 </article>
 
 <!-- The kit itself. Opt-in: nothing happens until Shift+T, ?type in the URL,
-     or a press on the button below. data-studio says where randomize-studio
-     sits relative to this page - the kit takes its stylesheets and its font
-     catalogue from there. -->
+     or a press on the button below. No data-studio: this folder is inside
+     randomize-studio/, which is where the kit looks by default for the
+     stylesheets and the font catalogue it borrows. A project that keeps the
+     studio somewhere else says so with that attribute. -->
 <p class="actions">
   <button type="button" class="button" data-type-kit-open=".title">Edit the type</button>
 </p>
 
-<script src="type-kit.js" data-studio="../randomize-studio/" defer></script>
+<script src="type-kit.js" defer></script>
 </body>
 </html>

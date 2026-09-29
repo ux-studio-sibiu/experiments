@@ -24,19 +24,26 @@ body, pull quote — one of each job typography has to do.
     type-kit.js     the tool
     kit-shell.css   the panel's chrome inside its shadow root
 
-It reads three stylesheets and one script out of the studio beside it:
+It reads three stylesheets and one script out of the studio it sits in:
 
-    ../randomize-studio/css/panel.css        the floating window
-    ../randomize-studio/css/controls.css     the controls in it
-    ../randomize-studio/css/tooltip.css      the hover card
-    ../randomize-studio/js/fonts.js          41 families, their real weights
+    ../css/panel.css        the floating window
+    ../css/controls.css     the controls in it
+    ../css/tooltip.css      the hover card
+    ../js/fonts.js          41 families, their real weights
+
+One level up is where it looks by default, because this folder is inside
+`randomize-studio/`, beside `intro/`.
 
 ## Putting it on a page of your own
 
 1. Copy this folder, and keep `randomize-studio/` somewhere the page can reach.
-2. Add the script, with `data-studio` pointing at the studio:
+2. Add the script. Kept inside the studio folder it needs nothing said:
 
-       <script src="type-kit/type-kit.js" data-studio="/randomize-studio/" defer></script>
+       <script src="/randomize-studio/type-kit/type-kit.js" defer></script>
+
+   Kept anywhere else, `data-studio` says where the studio is:
+
+       <script src="/vendor/type-kit/type-kit.js" data-studio="/randomize-studio/" defer></script>
 
 3. Name the blocks you want listed:
 

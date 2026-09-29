@@ -30,7 +30,8 @@
 
   --gutter: clamp(20px, 3vw, 40px);
   /* The room above the page title: this on a narrow screen, and on a wide one
-     until intro.js has measured the frame's top (--frame-top) to match. */
+     until intro.js has measured the frame's top into --intro-pad, which puts
+     the rule under the title on the frame's line. */
   --head-room: clamp(48px, 7vw, 120px);
 
   /* The two marks on the cycle control, inlined as masks so they take
@@ -695,14 +696,53 @@ kbd {
     overflow: hidden;   /* anything taller than its half is cropped, not scrolled to */
   }
   .part { flex: 1 1 0; min-height: 0; }
-  /* The frame is sized by the height of its half as well as by the width
-     beside the steps: the half, less its padding, at 16:9 - nothing sits
-     above the frame any more. */
-  .part-studio .stage { max-width: calc((50svh - 2 * var(--gutter)) * 16 / 9); }
-  /* The page title starts on the frame's line: the frame is centred in its
-     half, so where its top falls depends on the window, and intro.js measures
-     it into --frame-top. The clamp is only until it has. */
-  .copy > section:first-child { padding-top: var(--frame-top, var(--head-room)); }
+  /* The frame is sized by the height it has as well as by the width: the
+     column, less its padding, less the room the title, the five steps and the
+     button need under it, at 16:9. It is nearly always the width that decides
+     - the panel is taking a third of the column - and this is the short-window
+     case, where the frame has to give the steps their space back rather than
+     push them off the bottom of a column that crops. 21rem is what the aside
+     measures at the sizes below. */
+  /* Half what it was - 19vw is the 50%-of-the-column it measured at, said as a
+     size of its own now that the column around it is no longer a fixed share
+     of the part (see .part-body's justify-self below: a percentage here would
+     be measuring itself against a width that is measuring itself against
+     this). The frame's height follows its width through --frame-scale, so the
+     16:9 needs no saying either way.
+
+     The max-width is the short-window guard it always was: the column, less
+     its padding, less the room the title, the five steps and the button need
+     under it. */
+  .part-studio .stage {
+    width: clamp(200px, 19vw, 420px);
+    max-width: calc((100svh - 2 * var(--gutter) - 21rem) * 16 / 9);
+  }
+  /* The panel's own short-window guard, said in svh now that its strip is the
+     height of the picture rather than the height of the part - a percentage
+     has nothing definite left to measure against. The column, less its
+     padding, which is as tall as anything in here may be before the column
+     (overflow: hidden) starts cropping instead of the box. */
+  .shot-box { max-height: calc(100svh - 2 * var(--gutter)); }
+  /* Centred in the column rather than filling it. A grid item that is not
+     stretched takes fit-content, so the body ends up the width of the panel,
+     the gap and the widest line under the frame - its real width - and the
+     column puts what is left over on both sides of it instead of all of it
+     down the right.
+
+     Only here. On one column the body is the page's width and there is nothing
+     to centre it in. */
+  .part-studio .part-body { justify-self: center; }
+  /* The line under the page title on the frame's line, rather than the title
+     itself: the rule is the edge the two columns share, and two columns that
+     start their content at the same height still look unaligned if the marks
+     across them do not meet.
+
+     The frame is centred down its column, so where its top falls depends on
+     the window; intro.js measures it, takes off the height of this section
+     below its own top padding, and writes what is left as --intro-pad. The
+     head-room is only until it has, and on one column, where there is no
+     second column to meet. */
+  .copy > section:first-child { padding-top: var(--intro-pad, var(--head-room)); }
   /* Sized by the height too, so both halves still fit a short window. */
   /* Under .showcase so they outrank the base rules further down the file. */
   .showcase .part-number { font-size: clamp(4rem, min(14vw, 24svh), 14rem); }
@@ -783,17 +823,138 @@ kbd {
 
 .part-body { grid-column: 2; min-height: 0; }
 
-/* Part 1: the frame and the steps side by side, the frame taking whatever the
-   steps leave. It has no title row of its own - the title heads the steps -
-   so its body takes the part's full height, beside the number. */
+/* The part's body: the panel down the left, and everything else beside it. It
+   has no title row of its own - the title heads the steps - so the body takes
+   the part's full height, beside the number.
+
+   Two axes rather than one. The frame and the steps were side by side, which
+   made the frame as wide as the steps let it be; with the steps under it the
+   frame answers to the column instead, and the panel gets a full-height strip
+   of its own to stand in - which is what it is, a tall thing docked down an
+   edge. */
+/* Both start on the same line. The panel and the cover are the two pictures
+   in the column and they are different heights, so centring them against each
+   other left the shorter one floating with the taller one's slack split above
+   and below it - two things at two different starting points, and no line
+   anywhere for the eye to hold.
+
+   Top-aligned inside a box that is itself centred down the part: the group
+   keeps the middle of the column (align-self, which also makes the body as
+   tall as what is in it rather than as tall as the row), and inside it the
+   panel and the frame begin together. */
 .part-studio .part-body {
   grid-row: 1 / 3;
+  align-self: center;
   display: flex;
-  align-items: center;
-  gap: clamp(32px, 5vw, 80px);
+  align-items: flex-start;
+  gap: clamp(24px, 3.5vw, 56px);
 }
+/* The frame with the steps under it, and no wider than they are. It used to
+   take whatever the panel left, which is not the same thing: the widest line
+   under the frame is THE STUDIO at about 334px, so filling the column left a
+   fifth of it blank off the right-hand edge of everything - the group looked
+   pushed against the panel rather than placed.
+
+   Content-width here, fit-content on the body, and .part-body centred in the
+   part: the three of them together find the group's real width and put the
+   slack on both sides of it. Capped at the cell, so a window narrow enough
+   that the title's own width will not fit gets a wrapped title rather than a
+   column that overflows.
+
+   min-width so it can be narrower than the frame's content wants - without it
+   the 1600px iframe inside sets the floor. */
+.part-main {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3.2vh, 44px);
+}
+/* ---- the panel, docked ----
+   A strip, not a picture in the flow: it stretches to the part's height and
+   the image sits centred in it, sized by whichever of the two runs out first.
+   The width is a share of the body rather than the image's own 357px, so a
+   narrow column gets a narrow panel instead of a panel and no frame.
+
+   The ink edge and the offset shadow every other box on this page wears, so a
+   flat screenshot reads as one of them rather than as an image dropped in. */
+.panel-shot {
+  flex: 0 1 auto;
+  /* 18vw is the 30%-of-the-body it measured at, as a size of its own: the body
+     is fit-content now, and a percentage of a width that is the sum of its
+     children cannot be one of them. */
+  width: clamp(120px, 18vw, 360px);
+  margin: 0;
+  display: grid;
+  place-items: start center;
+}
+/* The box the picture sits in: the ink edge and the offset shadow, and the
+   clip. The chrome is here rather than on the image because the image gets a
+   filter when a kit opens, and a filter applies to an element's border and
+   shadow as much as to its content - a blurred drop shadow at half opacity is
+   a grey cloud. Outside the filter they stay crisp, and the clip keeps the
+   blur from bleeding past the edge. */
+.shot-box {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  /* Something behind the picture. Blurring an image drops its opacity to .45,
+     and half of what then shows through is whatever texture the page happens
+     to be wearing - so the panel went from a screenshot to a window onto the
+     background. Paper, which is what the panel in the picture is standing on
+     anyway: the blur now reads as a thing out of focus rather than as a thing
+     fading out. It is also what the blur's edges sample into, where before
+     they sampled into nothing. */
+  background: var(--bg);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 5px #00000033;
+}
+/* Sized by the strip's width, with the shape it actually is, so the box is
+   the right size before a byte of it has arrived - width plus aspect-ratio is
+   definite, an unloaded `width: auto` image is 0 and the layout jumps when it
+   lands.
+
+   Not lazy, unlike the hidden figure in the copy column this file came from:
+   this one is at the top of the page. */
+.panel-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 357 / 557;
+  transition: filter .25s ease, opacity .25s ease, scale .25s ease;
+}
+/* ---- out of focus while a kit is open ----
+   Two panels on the screen at once, one of them a photograph of the other and
+   both at about the same size: the question "why is this one not answering
+   the pointer" is a fair one and the page should not make anybody ask it. So
+   the picture stands down while a real panel is up - out of focus, colourless
+   and half there, which is not a state anything you can use is ever in.
+
+   Set on the root by intro.js, from each kit's own open and close events,
+   because either kit can be the one running - see the note by has-kit-open
+   there for why it is not a boolean.
+
+   Scaled a hair as well: a blur samples past the element's edges, where there
+   is nothing, and the picture would go translucent around its own rim. The
+   overflow on the box takes the difference. */
+.has-kit-open .panel-shot img {
+  filter: blur(5px) grayscale(1);
+  opacity: .45;
+  scale: 1.05;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-shot img { transition: none; }
+}
+/* The title's own bottom margin, dropped: it was the space between a title and
+   the steps under it, and here the column's gap is already that space. Both
+   and the title would sit further from the cover it names than the steps sit
+   from the cover they follow. Said last-wins over .part-title's margin and the
+   wide-screen one below, which both weigh less than this pair of classes. */
+.part-main > .part-title { margin-bottom: 0; }
 .part-aside { flex: none; }
-.stage { flex: 1 1 0; min-width: 0; max-width: 900px; }
+/* The width is the column's now, not a share of a flex row it no longer sits
+   in - and in a column flex a `flex: 1 1 0` would have been a height of 0. */
+.stage { width: 100%; min-width: 0; max-width: 900px; }
 
 /* ---- the frame ----
    The studio inside is laid out at its artboard's own size, 1600 x 900, and
@@ -1006,8 +1167,16 @@ kbd {
   .showcase { order: -1; }
   .part-studio { padding-top: clamp(32px, 6vw, 56px); }
   .copy > section:first-child { padding-top: clamp(32px, 5vw, 56px); }
-  /* No room for the steps beside the frame: under it instead. */
+  /* No room for the panel beside the frame: under everything instead, at its
+     own size and centred, so a picture of a docked panel is not stretched to
+     the width of a phone to prove it used to be docked. */
   .part-studio .part-body { flex-direction: column; align-items: stretch; }
+  .part-main { gap: clamp(20px, 5vw, 40px); }
+  .panel-shot {
+    order: 1;
+    align-self: center;
+    width: min(100%, 280px);
+  }
   /* The plate took its grid placement from a wrapper that held two of them;
      with one there is no grid to place it in on a single-column page. */
   .part-use .plate { grid-column: auto; grid-row: auto; }

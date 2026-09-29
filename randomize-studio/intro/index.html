@@ -79,7 +79,7 @@
       <h2 class="section-title" data-type-kit="section title (demo)">Demo</h2>
       <p class="lede">This page runs both kits, try them out below</p>
       <p class="actions pair">
-        <button type="button" class="button randomize-page" data-texture-kit-open=".part-use">Randomize this page</button>
+        <button type="button" class="button randomize-page" data-texture-kit-open=".part-studio">Randomize this page</button>
         <button type="button" class="button explore-type" data-type-kit-open=".title">Explore typography</button>
       </p>
     </section>
@@ -183,11 +183,45 @@
   <!-- Column 2: the studio itself, held still while the copy goes by. -->
   <div class="showcase">
 
-    <!-- Part 1, the upper half of the column: what the studio is - the live
-         cover, and beside it the five steps of using it. -->
+    <!-- The whole of the column now: what the studio is - the panel that makes
+         a cover, the cover it is making, and the five steps of using it.
+
+         Three regions across two axes. The panel is docked down the left, the
+         way it is docked on the right in the studio itself; beside it the
+         frame, with the steps under it rather than next to it. The Demo part
+         that used to take the lower half of the column is gone - its two
+         buttons live in the reading column, where they were already repeated
+         (see .aside-part in intro.css). -->
     <section class="part part-studio">
     <span class="part-number" aria-hidden="true" hidden>1</span>
     <div class="part-body">
+
+    <!-- The edit panel, as a picture.
+
+         A placeholder. The real panel is a live thing, opened with Shift+T on
+         this very page; this is the still of it the portfolio lays over the
+         studio's thumbnail, borrowed until there is something better to stand
+         here. Same file the hidden figure further up the copy column points
+         at, which is where it came into this folder. -->
+    <figure class="panel-shot">
+      <!-- The box the picture is in, rather than the picture itself carrying
+           its own edge: while either kit is open the image is blurred, and a
+           filter takes an element's border and shadow with it. Here they are
+           on the box outside the filter, which also clips the blur's bleed at
+           the edges. -->
+      <span class="shot-box">
+        <img src="../assets/randomize-panel.jpg" width="357" height="557"
+             alt="The edit panel: Background, Typography, Web elements and Scene as collapsible
+                  layer sections, each row with an eye, a dice and a lock.">
+      </span>
+    </figure>
+
+    <!-- The title, the frame and the steps, stacked: everything that is not
+         the panel. -->
+    <div class="part-main">
+    <!-- Over the cover rather than under it. It is the name of the thing in
+         the frame, and a name read after the thing it names is a caption. -->
+    <h2 class="part-title" data-type-kit="part title">The studio</h2>
     <div class="stage">
     <!-- 16:9 because the artboard is 1600x900 and the cover scales by
          max(vw/w, vh/h): at exactly that ratio the visible region is the whole
@@ -211,10 +245,10 @@
     </div>
     </div>
 
-    <!-- The title heads the steps rather than the part, so the frame can take
-         the part's full height. -->
+    <!-- The steps and the way in. The part has no title row of its own - the
+         title is up there, inside the body - so the body takes its full
+         height. -->
     <div class="part-aside">
-    <h2 class="part-title" data-type-kit="part title">The studio</h2>
     <ol class="steps" data-type-kit="steps">
       <li>1. Randomize design elements</li>
       <li>2. Get inspired</li>
@@ -225,43 +259,9 @@
     <p class="actions"><a class="button open-studio" href="../index.html" target="_blank" rel="noopener">Open studio <span class="arrow" aria-hidden="true">&rarr;</span></a></p>
     </div>
     </div>
+
+    </div>
     </section>
-
-    <!-- Part 2, the lower half: the same layers on a page of your own. It is
-         plain HTML, CSS and JS with no build, so bringing it in is copying a
-         folder and adding a script tag - and this page is the demo of it. -->
-    <section class="part part-use">
-      <span class="part-number" aria-hidden="true" hidden>2</span>
-      <!-- One box, the width of the part: the demo of the kits running on the
-           page you are reading. The steps that stood beside it are in the
-           reading column now (see .aside-part in intro.css), where there is
-           room to read them - this half of the studio column is for pressing
-           things rather than for following instructions.
-
-           Being real content it sits over the texture kit's layers, which are
-           behind it at z-index -1 - there is no stacking to arrange. -->
-      <div class="plate demo">
-      <h2 class="part-title">Demo</h2>
-
-      <p class="lede">This page runs both kits, try them out below</p>
-
-      <!-- Two tools, two buttons, and they are separate things: the first is
-           the texture kit (Shift+T), the second the type kit (Shift+Y). Each
-           closes the other when it opens - both take clicks on the page to
-           choose what they are editing, so only one can have them.
-
-           The skills a coding agent follows to put either kit into a project
-           of its own are not linked here: the copy-prompt buttons beside the
-           steps in the reading column already hand an agent the whole errand,
-           and a person reading this page is being offered the tools, not their
-           setup. -->
-      <p class="actions pair">
-        <button type="button" class="button randomize-page" data-texture-kit-open=".part-use">Randomize this page</button>
-        <button type="button" class="button explore-type" data-type-kit-open=".title">Explore typography</button>
-      </p>
-      </div>
-    </section>
-
 
   </div>
 
@@ -283,9 +283,10 @@
 <!-- Opt-in type editor, the texture kit's sister and entirely separate from
      it: Shift+Y or ?type. Shift+Y rather than its own Shift+T, because the
      texture kit had that first and a page carrying both cannot give them the
-     same key. It finds randomize-studio/ from its own address, so it needs no
-     data-studio here - the two folders are siblings. -->
-<script src="../../type-kit/type-kit.js" data-key="Y" defer></script>
+     same key. It finds the studio from its own address, so it needs no
+     data-studio here - type-kit/ sits inside randomize-studio/, beside this
+     folder. -->
+<script src="../type-kit/type-kit.js" data-key="Y" defer></script>
 <!-- The 87 pattern tiles Randomize can pick from, fetched into the cache once
      the page has finished loading - at low priority, after everything the
      page itself shows. -->

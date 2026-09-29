@@ -41,9 +41,10 @@
   const SELF = document.currentScript;
   // Where the studio is, from this script's own address rather than from the
   // page's - so the kit works from any page that loads it, whatever folder
-  // that page is in. data-studio overrides it for a project that keeps the
-  // studio somewhere else.
-  const STUDIO = new URL(SELF?.dataset.studio || '../randomize-studio/', SELF?.src || location.href).href;
+  // that page is in. One level up, because this folder lives inside the
+  // studio's, beside intro/. data-studio overrides it for a project that keeps
+  // the studio somewhere else, or nowhere near this.
+  const STUDIO = new URL(SELF?.dataset.studio || '../', SELF?.src || location.href).href;
   const HERE = new URL('.', SELF?.src || location.href).href;
   // No tooltip.css: this kit builds no hover card, so every title on it is the
   // browser's own tooltip. The sheet was loaded here for a card that was never
@@ -1523,6 +1524,12 @@ family in the font stack.${params.text ? '\n\n"text" is the copy as it now reads
     document.querySelectorAll("[data-type-kit-style]").forEach(n => n.remove());
     ui.host.remove();
     ui = null;
+    // The other half of type-kit:open, for a page that wants to know the
+    // words are its own again - the intro page blurs a screenshot of a panel
+    // while a real one is open, and has to be told when to stop. Last, after
+    // the teardown, so a listener that reads the page reads the page as it
+    // has been put back.
+    document.dispatchEvent(new CustomEvent('type-kit:close'));
   }
 
   /* ============================ the ways in ============================ */

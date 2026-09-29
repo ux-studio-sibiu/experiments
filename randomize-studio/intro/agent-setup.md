@@ -75,28 +75,29 @@ CSS or as a JSON brief.
 
 ### 1. Fetch these
 
-    ../../type-kit/type-kit.js     the tool itself
-    ../../type-kit/kit-shell.css   the panel's chrome
+    ../type-kit/type-kit.js     the tool itself
+    ../type-kit/kit-shell.css   the panel's chrome
 
-    css/panel.css                  the panel's look
-    css/controls.css               its controls
-    css/tooltip.css                the hover card
+    css/panel.css               the panel's look
+    css/controls.css            its controls
+    css/tooltip.css             the hover card
 
-    js/fonts.js                    41 Google families and their real weights
+    js/fonts.js                 41 Google families and their real weights
 
-Note the first two: the type kit is a sibling folder of `randomize-studio/`,
-not a folder inside it. Keep that shape — `type-kit/` and `randomize-studio/`
-beside each other — and it finds the studio on its own.
+Note the first two: the type kit is a folder inside `randomize-studio/`, beside
+this one. Keep that shape — `type-kit/` within the studio folder — and it finds
+the studio on its own, one level up from itself.
 
 ### 2. Load it
 
 On every page whose type should be editable:
 
-    <script src="/type-kit/type-kit.js" defer></script>
+    <script src="/randomize-studio/type-kit/type-kit.js" defer></script>
 
-If `randomize-studio/` is somewhere else, say where:
+If the kit is kept somewhere other than inside the studio folder, say where the
+studio is:
 
-    <script src="/type-kit/type-kit.js" data-studio="/vendor/randomize-studio/" defer></script>
+    <script src="/vendor/type-kit/type-kit.js" data-studio="/vendor/randomize-studio/" defer></script>
 
 ### 3. Name the blocks
 

@@ -48,8 +48,7 @@
     ['page', 'body'],
     ['left column', '.copy'],
     ['right column', '.showcase'],
-    ['\u00a0\u00a01. the studio', '.part-studio'],
-    ['\u00a0\u00a02. any project', '.part-use'],
+    ['\u00a0\u00a0the studio', '.part-studio'],
   ];
   // Every section of the copy column gets an entry of its own, listed under
   // the column. Read off the page each time, so a section added to index.html
@@ -2607,7 +2606,7 @@ textarea[hidden] { display: none; }
   // Shift+T toggles it.
   document.addEventListener('click', (ev) => {
     const opener = ev.target.closest?.('[data-texture-kit-open]');
-    // The attribute can name the element to open on: data-texture-kit-open=".part-use".
+    // The attribute can name the element to open on: data-texture-kit-open=".part-studio".
     // The kit has no idea what is on the page, so the page says which element
     // the button is about — empty means the one the kit would pick anyway.
     if (!ui && opener) open({ randomizeFirst: true, select: opener.getAttribute('data-texture-kit-open') || null });
