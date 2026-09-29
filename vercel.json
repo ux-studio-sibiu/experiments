@@ -1,20 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
 
-  "//": [
-    "trailingSlash keeps a folder URL a folder. Without it Vercel serves",
-    "/randomize-studio/intro (no slash), and a browser reads that last segment",
-    "as a FILE - so every relative URL on the page resolves one directory too",
-    "high: intro.css becomes /randomize-studio/intro.css, ../css/panel.css",
-    "becomes /css/panel.css, and the page loads nothing. With it, that URL",
-    "redirects to /randomize-studio/intro/ and relative paths mean what they",
-    "say. Every page here is an index.html in a folder of its own, so this is",
-    "the right shape for all of them.",
-    "",
-    "The redirects are from the rename of font-experiments to randomize-studio,",
-    "so old links and bookmarks still land."
-  ],
-
   "trailingSlash": true,
 
   "redirects": [
