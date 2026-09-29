@@ -30,7 +30,18 @@ panel, exported as plain CSS.
     js/overlay-patterns.js        the pattern catalogue
     js/static-background.js       the grain
 
-    overlay-patterns/             the pattern svgs themselves (a folder)
+    overlay-patterns/             the pattern svgs themselves (87 files)
+
+The last one is a folder, and **a folder cannot be listed over HTTP** — asking
+this site for `overlay-patterns/` is a 404. Two ways to get the names:
+
+- `js/overlay-patterns.js`, which you are fetching anyway, is the catalogue of
+  exactly those 87 tiles. Each entry's `n` is the filename without `.svg`.
+- Or take the whole folder from the public repo in one request:
+
+      curl -fsSL https://api.github.com/repos/ux-studio-sibiu/experiments/contents/randomize-studio/overlay-patterns \
+        | grep '"download_url"' | cut -d'"' -f4 \
+        | while read -r u; do curl -fsSL "$u" -O; done
 
 ### 2. Keep the layout
 

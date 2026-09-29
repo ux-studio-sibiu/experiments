@@ -32,7 +32,7 @@ on one page** at the end.
 
 The kit finds the studio relative to **its own script address**
 (`new URL('../', document.currentScript.src)`), so the default shape is the kit
-in a folder inside the studio's. Copy into the project's **static / public**
+in a folder inside the studio's. Put these in the project's **static / public**
 folder:
 
 ```
@@ -52,6 +52,34 @@ the panel is opened.
 
 `demo.css`, `index.html` and `README.md` are the demo page; they are not needed
 in another project.
+
+### Getting them
+
+The source is a public repo, so this works from any machine, with no checkout
+of the studio anywhere:
+
+```bash
+REPO=https://raw.githubusercontent.com/ux-studio-sibiu/experiments/main
+DEST=public            # the project's static folder - see the table below
+
+for f in type-kit/type-kit.js type-kit/kit-shell.css \
+         css/panel.css css/controls.css css/tooltip.css js/fonts.js; do
+  mkdir -p "$DEST/randomize-studio/$(dirname "$f")"
+  curl -fsSL "$REPO/randomize-studio/$f" -o "$DEST/randomize-studio/$f"
+done
+```
+
+Six files, no directory listing needed - which is why this one is a plain loop
+where the texture kit's needs the contents API for its 87 tiles.
+
+**Pin it if the project is going to keep the kit.** Replace `main` in `REPO`
+with a commit SHA and the files stop moving under the project:
+`.../experiments/<sha>/randomize-studio/...`.
+
+If `effects-collection/` happens to be on the same machine, copying from
+`effects-collection/randomize-studio/` is the same bytes without the network.
+A local checkout on Windows may have CRLF line endings where the raw files have
+LF; nothing here reads them, so it does not matter.
 
 Where "static / public" is, by stack:
 
@@ -197,7 +225,25 @@ They coexist, with two adjustments:
    `type-kit:open`) and closes the other, because both take clicks on the page
    to choose what they are editing and only one can have them.
 
-`randomize-studio/intro/index.html` is the worked example of both together.
+Both also fire on the way out — `texture-kit:close` and `type-kit:close`, on
+`document` — so a page can stand something aside while a tool is up:
+
+```js
+const open = new Set();
+for (const kit of ['texture', 'type']) {
+  document.addEventListener(`${kit}-kit:open`, () => { open.add(kit); mark(); });
+  document.addEventListener(`${kit}-kit:close`, () => { open.delete(kit); mark(); });
+}
+```
+
+A **set rather than a flag**, and this is the part that bites: opening one kit
+closes the other, so `type-kit:open` is followed by `texture-kit:close`. A
+boolean would be cleared by the kit that just stood down for the kit that is
+now running.
+
+`randomize-studio/intro/index.html` is the worked example of both together —
+it uses exactly this to blur a screenshot of the panel while a real panel is
+open.
 
 ## What it cannot take back
 

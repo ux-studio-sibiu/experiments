@@ -28,9 +28,8 @@ project's own CSS, markup or build.
 
 The kit finds everything relative to **its own script address**
 (`new URL('../', document.currentScript.src)` at the top of
-`intro/texture-kit.js`), so the folder must keep this shape. Copy these from
-`effects-collection/randomize-studio/` into the project's **static / public**
-folder, under a `randomize-studio/` directory:
+`intro/texture-kit.js`), so the folder must keep this shape. Put these in the
+project's **static / public** folder, under a `randomize-studio/` directory:
 
 ```
 randomize-studio/
@@ -52,6 +51,49 @@ download the first time the panel is opened, not on page load.
 
 Copying the whole `randomize-studio/` folder also works (the studio app comes
 along, which is harmless); the list above is the minimum.
+
+### Getting them
+
+The source is a public repo, so this works from any machine, with no checkout
+of the studio anywhere:
+
+```bash
+REPO=https://raw.githubusercontent.com/ux-studio-sibiu/experiments/main
+API=https://api.github.com/repos/ux-studio-sibiu/experiments/contents
+DEST=public            # the project's static folder - see the table below
+
+for f in intro/texture-kit.js js/svg-backgrounds-data.js js/palettes.js \
+         js/overlay-patterns.js js/static-background.js css/panel.css \
+         css/controls.css css/svg-background.css patterns/diagonal.svg; do
+  mkdir -p "$DEST/randomize-studio/$(dirname "$f")"
+  curl -fsSL "$REPO/randomize-studio/$f" -o "$DEST/randomize-studio/$f"
+done
+
+# The 87 pattern tiles. Listed rather than named: the folder is the catalogue.
+mkdir -p "$DEST/randomize-studio/overlay-patterns"
+curl -fsSL "$API/randomize-studio/overlay-patterns" \
+  | grep '"download_url"' | cut -d'"' -f4 \
+  | while read -r u; do
+      curl -fsSL "$u" -o "$DEST/randomize-studio/overlay-patterns/$(basename "$u")"
+    done
+```
+
+Takes about a minute on a normal connection, nearly all of it the 87 tiles.
+
+**Why the repo and not the deployed site.** Both serve every individual file,
+but the site has no directory listings - `/randomize-studio/overlay-patterns/`
+is a 404 - so fetching the tiles from it means parsing their names out of
+`js/overlay-patterns.js` first. The repo hands the whole folder over in one
+request.
+
+**Pin it if the project is going to keep the kit.** Replace `main` in `REPO`
+with a commit SHA and the files stop moving under the project:
+`.../experiments/<sha>/randomize-studio/...`.
+
+If `effects-collection/` happens to be on the same machine, copying from
+`effects-collection/randomize-studio/` is the same bytes without the network.
+A local checkout on Windows may have CRLF line endings where the raw files have
+LF; nothing here reads them, so it does not matter.
 
 Where "static / public" is, by stack:
 
@@ -172,8 +214,9 @@ Tell the user how to drive it once it is in:
 
 ## Keeping a look: Copy CSS
 
-**Copy CSS** writes what is on screen as `::before` / `::after` rules to
-paste into the project's stylesheet. Two things to fix when pasting:
+**Copy CSS** writes what is on screen as `::before` / `::after` rules, plus a
+rule on the element itself for the few things a pseudo-element cannot carry, to
+paste into the project's stylesheet. Three things to check when pasting:
 
 - Pattern rules point at `url("../overlay-patterns/<name>.svg")`, which is
   right for `randomize-studio/intro/intro.css` and nowhere else. Change the
@@ -182,6 +225,15 @@ paste into the project's stylesheet. Two things to fix when pasting:
 - Static FX (the grain) is a canvas and has no CSS form; the export leaves a
   comment with the `createStaticBackground({...})` settings from
   `js/static-background.js` if the user wants it permanently.
+- **`overflow: hidden` on the element**, when a Dynamic SVG has been rotated or
+  zoomed or a pattern has been rotated. A turned layer is drawn on an oversized
+  square so its corners still cover the box, and something has to cut it back
+  to the edges. Live that is the kit's own host div; in exported CSS there is
+  no host, so the element does the clipping — and it will then clip anything
+  else it was letting through, a dropdown, a sticky child, an outset shadow.
+  Check the element for those before keeping the line. If one is found, keep
+  the texture but put the rotation back to 0, or move the rule onto a wrapper
+  that has nothing to spill.
 
 ## Check it works
 
@@ -203,5 +255,6 @@ paste into the project's stylesheet. Two things to fix when pasting:
   loads them inside a shadow root, which is what keeps them off the page.
 - Don't rename or flatten the `randomize-studio/` folders - the kit's paths
   are relative to its own location.
-- Don't edit the original in `effects-collection/randomize-studio/` for one
-  project's targets - change the project's copy.
+- Don't change the studio's own copy - the repo, or a local
+  `effects-collection/randomize-studio/` - to suit one project's targets. Every
+  project that installs the kit pulls from it. Change the project's copy.
