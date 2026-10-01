@@ -1,0 +1,343 @@
+@-webkit-keyframes pulse {
+  0% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0.1;
+  }
+}
+@-moz-keyframes pulse {
+  0% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0.1;
+  }
+}
+@-o-keyframes pulse {
+  0% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0.1;
+  }
+}
+@keyframes pulse {
+  0% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0.1;
+  }
+}
+html, body {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+}
+
+body.fullscreen .container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+body.fullscreen .container #tv {
+  display: none;
+}
+body.fullscreen .container .gif, body.fullscreen .container #static {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+body.fullscreen .play-button {
+  top: calc(50% - 60px);
+  left: calc(50% - 60px);
+}
+body.fullscreen .stop-button {
+  top: unset;
+  left: unset;
+  bottom: 60px;
+  right: 60px;
+}
+
+.container {
+  position: relative;
+  margin-right: auto;
+  margin-left: auto;
+  width: 800px;
+  height: 560px;
+  transform: scale(1);
+  transform-origin: 50% 50%;
+}
+.container.not_loaded {
+  opacity: 0.1;
+  transform: scale(0.01);
+}
+.container .play-button {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  top: calc(50% - 95px);
+  left: calc(50% - 130px);
+  background: red;
+  background: rgb(177, 0, 0);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.container .play-button:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 55%;
+  transform: translate(-50%, -50%);
+  border-style: solid;
+  border-width: 20px 0 20px 35px;
+  border-color: transparent transparent transparent white;
+}
+.container .play-button:hover {
+  background: rgb(219, 0, 0);
+}
+.container .stop-button {
+  display: none;
+  transform: scale(0.5);
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  top: calc(50% - 95px);
+  left: calc(50% - 130px);
+  top: calc(50% + 50px);
+  left: calc(50% + 68px);
+  background: red;
+  background: rgb(177, 0, 0);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.container .stop-button:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 41%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 55px;
+  background: white;
+  box-shadow: 23px 0 0 white;
+}
+.container .stop-button:hover {
+  background: rgb(219, 0, 0);
+}
+.container #static {
+  position: absolute;
+  top: 50px;
+  left: 53px;
+  width: 530px;
+  height: 400px;
+  filter: grayscale(0.9);
+  background-size: cover;
+  pointer-events: none;
+}
+.container #tv {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-repeat: norepeat;
+  pointer-events: none;
+}
+.container .gif {
+  position: absolute;
+  top: 50px;
+  left: 53px;
+  width: 530px;
+  height: 400px;
+  background-position: center center;
+  background-size: cover;
+}
+.container #ytplayer {
+  position: absolute;
+  top: 50px;
+  left: 53px;
+  width: 530px;
+  height: 400px;
+}
+.container #mp3_list {
+  display: none;
+  margin: 0;
+  padding: 25px;
+  position: absolute;
+  top: 50px;
+  left: 53px;
+  width: 480px;
+  height: 400px;
+  font-size: 12px;
+  background-color: rgba(0, 0, 0, 0.92);
+  color: #999;
+  list-style-type: none;
+  text-align: left;
+}
+.container #mp3_list.active {
+  display: block;
+}
+.container #mp3_list li {
+  display: inline;
+  padding: 0 4px;
+  text-align: center;
+  font-size: 13px;
+}
+.container #mp3_list li a {
+  text-decoration: none;
+  color: inherit;
+  padding: 2px;
+}
+.container #mp3_list li a:visited {
+  color: inherit;
+}
+.container #mp3_list li a:hover {
+  background-color: #aaa;
+  color: #333;
+}
+.container #mp3_list_toggle {
+  background: red;
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  opacity: 0.35;
+  top: 275px;
+  right: 134px;
+  border-radius: 50%;
+  cursor: pointer;
+  animation-name: pulse;
+  animation-duration: 1s;
+  animation-iteration-count: infinite;
+}
+.container #mp3_list_toggle.active {
+  animation: none;
+  background: green;
+  opacity: 0.35;
+}
+
+.vertical-center {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+em {
+  color: #9838D5;
+}
+
+.underline {
+  margin-bottom: 0.5em;
+  padding-bottom: 0.25em;
+  border-bottom: 0.25em solid;
+}
+
+.boxed {
+  background: rgba(10, 10, 10, 0.8);
+}
+
+hr {
+  border-top: 1px dashed #eeeeee;
+}
+
+.bk-main {
+  background-image: url("bootstrap-custom/images/bk6.jpg");
+}
+
+.bk-secondary {
+  background-image: url("img/sky.jpg");
+  background-size: cover;
+}
+
+.bk-1 {
+  background-image: url("bootstrap-custom/images/bk6.jpg");
+  background-image: url("../VISUALS/static.gif");
+}
+
+#preload-01 {
+  position: absolute;
+  background-image: url("");
+  background-position: -9999px -9999px;
+  background-repeat: norepeat;
+  height: 1px;
+  width: 1px;
+  top: 0;
+  left: 0;
+}
+
+#preload-02 {
+  background: url("") no-repeat -9999px -9999px;
+}
+
+#preload-03 {
+  background: url("") no-repeat -9999px -9999px;
+}
+
+#signiture {
+  position: absolute;
+  top: 180px;
+  right: 38px;
+}
+#signiture a {
+  color: #d6d2c6;
+  line-height: 33px;
+  font-size: 35px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 800;
+  text-shadow: 3px 3px 2px #000;
+  pointer: normal;
+}
+
+#social {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+}
+#social .icon {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.7);
+  font-size: 30px;
+  line-height: 30px;
+  width: 40px;
+  height: 40px;
+  display: inline-block;
+  text-align: center;
+  /* box-shadow: 0px 0px 0px #FFF; */
+  color: #424242;
+  cursor: pointer;
+}
+#social .icon:before {
+  display: block;
+  width: 100%;
+  text-align: center;
+  line-height: 40px;
+  width: 100%;
+  height: 100%;
+}
+#social .icon:hover {
+  background-color: rgb(255, 255, 255);
+}
+
+/*# sourceMappingURL=bootstrap.css.map */

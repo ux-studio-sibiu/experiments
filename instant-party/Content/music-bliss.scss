@@ -1,0 +1,229 @@
+
+
+@-webkit-keyframes NAME-YOUR-ANIMATION {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+@-moz-keyframes NAME-YOUR-ANIMATION {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+@-o-keyframes NAME-YOUR-ANIMATION {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes NAME-YOUR-ANIMATION {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+
+/*!
+ * Bootstrap v3.3.5 (http://getbootstrap.com)
+ * Copyright 2011-2015 Twitter, Inc.
+ * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+ */
+
+@import "bootstrap/normalize";
+
+
+
+
+
+//3rd party
+//@import "jasny-bootstrap/css/jasny-bootstrap";
+
+html, body{
+	width:100%;
+	height:100vh;
+	overflow:hidden;
+
+}
+
+.container{
+	position:relative;
+	//left:0;
+	//right:0;
+	margin-right:auto;
+	margin-left: auto;
+	width:800px;
+	height:560px;
+	transition: all .2s cubic-bezier(.4,.5,1,.23);
+	transform: scale(1);
+	transform-origin: 50% 50%;
+
+	&.not_loaded{
+		opacity:0.1;
+		transform: scale(0.01);
+
+	
+	}
+
+
+#static{
+	position:absolute;
+	top: 50px;
+	left: 53px;
+	width: 530px;
+	height: 400px;
+	
+
+	background-size:cover;
+	//background-repeat:norepeat;
+	pointer-events:none;
+}
+
+
+#tv{
+	position:absolute;
+	left:0;
+	right:0;
+	width:100%;
+	height:100%;
+	//background: url("img/tv.png");
+	background-size:contain;
+	background-repeat:norepeat;
+	pointer-events:none;}
+
+	.gif{
+		position:absolute;
+		top: 50px;
+		left: 53px;
+		width: 530px;
+		height: 400px;
+		//background-image:url("../VISUALS/static.gif");
+		background-position:center center;
+		background-size:cover;
+		//z-index:-1;
+
+		
+	}
+
+	#ytplayer{
+		position:absolute;
+		top: 50px;
+		left: 53px;
+		width: 530px;
+		height: 400px;
+		//z-index:-1;
+	
+	}
+
+	#mp3_list{
+		display:none;
+		margin:0;
+		padding:25px;
+		position:absolute;
+		top: 50px;
+		left: 53px;
+		width: 480px;
+		height: 400px;
+		//z-index:-1;
+		font-size:12px;
+		background-color: rgba(0,0,0,0.92);
+		color: #999;
+		list-style-type: none;
+		text-align:justify;
+
+		&.active{
+			display:block;
+		}
+
+		li{
+			display:inline;
+			padding: 0 4px;
+			text-align:center;
+			a{text-decoration:none; color: inherit;}
+			a:visited{color:inherit;}
+			a:hover{background-color:#aaa; color:#333;}
+			}
+	}
+
+
+	#mp3_list_toggle{
+		
+		background: green;
+		position: absolute;
+		width: 22px;
+		height: 22px;
+		opacity: 0.15;
+		top: 275px;
+		right: 134px;
+		border-radius: 50%;
+		cursor:pointer;
+
+		&.active{
+			background: red;
+			opacity: 0.35;
+		}
+
+	}
+
+}
+
+
+.vertical-center {
+    height:100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+em{
+color: #9838D5;
+}
+
+.underline{
+	margin-bottom:0.5em;
+	padding-bottom:0.25em;
+	border-bottom: 0.25em solid;
+}
+
+.boxed{
+	background: rgba(10,10,10,0.8);
+	//border: 2px solid #48c0a4;
+}
+
+hr{
+	border-top: 1px dashed #eeeeee;
+}
+
+.bk-main{
+	background-image:url("bootstrap-custom/images/bk6.jpg");
+	
+}
+
+.bk-secondary{
+	background-image:url("img/sky.jpg");
+	background-size:cover;
+	
+}
+
+.bk-1{
+	background-image:url("bootstrap-custom/images/bk6.jpg");
+	background-image:url("../VISUALS/static.gif");
+	//background-size:cover;
+	//background-repeat: no-repeat;
+	//background-origin:left top;
+	//background-position: 0 0;
+}
+
+.bk-2{
+	
+}
+
+//PRELOAD IMG
+#preload-01 {     
+	position: absolute;
+    background-image: url("");
+	//background-size:cover;
+	background-position: -9999px -9999px;
+	background-repeat: norepeat;
+    height: 1px;
+    width: 1px;
+    top: 0;
+	left:0;
+	}
+
+#preload-02 { background: url("") no-repeat -9999px -9999px; }
+#preload-03 { background: url("") no-repeat -9999px -9999px; }

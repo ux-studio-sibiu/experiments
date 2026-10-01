@@ -1,0 +1,9 @@
+{
+	"version": 3,
+	"file": "components.css",
+	"sources": [
+		"components.scss"
+	],
+	"mappings": "AAGA,AACC,EADC,AAAA,QAAQ,CACT,EAAE,AAAA,CACD,OAAO,CAAC,MAAO,CAEf",
+	"names": []
+}
