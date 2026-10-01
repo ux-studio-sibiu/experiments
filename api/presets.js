@@ -9,13 +9,13 @@
      POST /api/presets/  { action: 'save', kind, name, data }
      POST /api/presets/  { action: 'delete', kind, name }
 
-   Writes need the x-preset-key header to match PRESET_KEY. That is a shared
-   password, not real auth - enough to keep a stranger who finds the URL from
-   writing to the dataset.
+   When PRESET_KEY is set, writes need the x-preset-key header to match it.
+   That is a shared password, not real auth - enough to keep a stranger who
+   finds the URL from writing to the dataset. Unset, anyone can write.
 
    Environment (Vercel -> Settings -> Environment Variables):
      SANITY_WRITE_TOKEN   an Editor token for the project
-     PRESET_KEY           any long random string; the panel asks for it once
+     PRESET_KEY           optional; any long random string, the panel asks for it once
      SANITY_PROJECT_ID    optional, defaults to the project below
      SANITY_DATASET       optional, defaults to production
 
@@ -75,7 +75,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
-    if (!process.env.PRESET_KEY || req.headers['x-preset-key'] !== process.env.PRESET_KEY) return res.status(401).json({ error: 'wrong or missing preset key' });
+    // Open while PRESET_KEY is unset; set it on Vercel to lock writes again.
+    if (process.env.PRESET_KEY && req.headers['x-preset-key'] !== process.env.PRESET_KEY) return res.status(401).json({ error: 'wrong or missing preset key' });
 
     const { action, kind, name, data } = req.body || {};
     if (!KINDS.includes(kind)) return res.status(400).json({ error: `kind must be one of ${KINDS.join(', ')}` });

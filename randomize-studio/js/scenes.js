@@ -362,7 +362,8 @@ const localScenes = () => ({ ...fileStore, ...readStore() });
    call goes through that function - from the deployed page itself, or across
    to it from Live Server on this machine.
 
-   Writes ask for the preset key once and keep it in this browser. Unreachable
+   Writes ask for the preset key only if the server has one set, once, and
+   keep it in this browser. Unreachable
    (off the disk, offline, not deployed yet) just means no cloud group. */
 const CLOUD_SITE = 'https://experiments-five-bice.vercel.app';
 const CLOUD_API = (location.hostname.endsWith('.vercel.app') ? '' : CLOUD_SITE) + '/api/presets/';
@@ -386,17 +387,22 @@ function presetKey(ask) {
   }
   return key;
 }
-async function cloudWrite(body) {
-  const key = presetKey(true);
-  if (!key) throw new Error('no preset key');
+// The key is only asked for when the server wants one (PRESET_KEY set on
+// Vercel): the first try goes without, and a 401 asks and tries once more.
+async function cloudWrite(body, ask = false) {
+  const key = presetKey(ask);
+  if (ask && !key) throw new Error('no preset key');
   const r = await fetch(CLOUD_API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-preset-key': key },
+    headers: { 'Content-Type': 'application/json', ...(key && { 'x-preset-key': key }) },
     body: JSON.stringify({ kind: 'scene', ...body })
   });
   const j = await r.json().catch(() => ({}));
-  // A wrong key is forgotten, so the next press asks again.
-  if (r.status === 401) try { localStorage.removeItem(KEY_LS); } catch {}
+  if (r.status === 401) {
+    // A wrong key is forgotten, so the retry asks for it again.
+    try { localStorage.removeItem(KEY_LS); } catch {}
+    if (!ask) return cloudWrite(body, true);
+  }
   if (!r.ok) throw new Error(j.error || `${r.status} ${r.statusText}`);
   return j;
 }

@@ -56,8 +56,8 @@ cover: it is anchored to the screen, so its numbers are screen pixels.
   sources appear in one dropdown. The cloud button saves it to Sanity through
   [`api/presets.js`](../api/presets.js) on the deployed site, so it shows up
   in every browser (and from Live Server too); `?scene=cloud:<name>` opens one.
-  Needs `SANITY_WRITE_TOKEN` and `PRESET_KEY` set on Vercel, and asks for the
-  key on the first save.
+  Needs `SANITY_WRITE_TOKEN` set on Vercel. Setting `PRESET_KEY` too locks
+  saving behind that key, which the panel then asks for once.
 - **Opening on a cover** — a refresh opens on a random scene from
   [`scenes/initial-load/`](scenes/initial-load), and the URL can name one instead:
   `?scene=lemon-lines` (a name, wherever it lives), `?scene=currated/lemon-lines.json`
