@@ -147,6 +147,7 @@ button.primary:hover { background: var(--bg); color: var(--ink); }
 [data-mark="refresh"]   { --mark: var(--icon-refresh); }
 [data-mark="trash"]     { --mark: var(--icon-trash); }
 [data-mark="star"]      { --mark: var(--icon-star); }
+[data-mark="cloud"]     { --mark: var(--icon-cloud); }
 [data-mark="undo"]      { --mark: var(--icon-undo); }
 [data-mark="redo"]      { --mark: var(--icon-redo); }
 /* The plate's dice fits the plate to the text rather than rolling it, and the

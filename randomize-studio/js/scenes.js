@@ -355,6 +355,52 @@ async function readLocalFile() {
 }
 const localScenes = () => ({ ...fileStore, ...readStore() });
 
+/* ---- scenes in the cloud ----
+   Sanity, through api/presets.js on the deployed site: the one place a scene
+   can be saved to from any browser and found again on another, without a trip
+   through scenes/ and a redeploy. A page cannot hold the write token, so every
+   call goes through that function - from the deployed page itself, or across
+   to it from Live Server on this machine.
+
+   Writes ask for the preset key once and keep it in this browser. Unreachable
+   (off the disk, offline, not deployed yet) just means no cloud group. */
+const CLOUD_SITE = 'https://experiments-five-bice.vercel.app';
+const CLOUD_API = (location.hostname.endsWith('.vercel.app') ? '' : CLOUD_SITE) + '/api/presets/';
+const KEY_LS = 'randomizeStudio.presetKey';
+let cloudStore = {};
+let cloudUp = false;
+async function readCloud() {
+  try {
+    const r = await fetch(`${CLOUD_API}?kind=scene`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    cloudStore = Object.fromEntries((await r.json()).presets.map(p => [p.name, p.data]));
+    cloudUp = true;
+  } catch { cloudStore = {}; cloudUp = false; }
+}
+function presetKey(ask) {
+  let key = '';
+  try { key = localStorage.getItem(KEY_LS) || ''; } catch {}
+  if (!key && ask) {
+    key = (prompt('Preset key (PRESET_KEY on Vercel):') || '').trim();
+    if (key) try { localStorage.setItem(KEY_LS, key); } catch { /* this visit only */ }
+  }
+  return key;
+}
+async function cloudWrite(body) {
+  const key = presetKey(true);
+  if (!key) throw new Error('no preset key');
+  const r = await fetch(CLOUD_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-preset-key': key },
+    body: JSON.stringify({ kind: 'scene', ...body })
+  });
+  const j = await r.json().catch(() => ({}));
+  // A wrong key is forgotten, so the next press asks again.
+  if (r.status === 401) try { localStorage.removeItem(KEY_LS); } catch {}
+  if (!r.ok) throw new Error(j.error || `${r.status} ${r.statusText}`);
+  return j;
+}
+
 /* ---- the list: both sources, open ----
    Every scene on screen under a heading for where it lives, rather than behind
    a dropdown that has to be opened before it says how much is in there.
@@ -406,10 +452,10 @@ function foldOnClick(list) {
 
 async function refreshScenes(selectValue) {
   const list = $('sceneList');
-  const [{ scenes: files, folders, source }] = await Promise.all([listScenes(), readLocalFile()]);
-  const stored = readStore();
+  const [{ scenes: files, folders, source }] = await Promise.all([listScenes(), readLocalFile(), readCloud()]);
   const local = Object.keys(localScenes()).sort((a, b) => a.localeCompare(b));
-  const total = local.length + files.length;
+  const cloud = Object.keys(cloudStore);
+  const total = local.length + cloud.length + files.length;
 
   list.replaceChildren();
   const group = (label, entries, showEmpty = false) => {
@@ -444,6 +490,9 @@ async function refreshScenes(selectValue) {
   };
   // This browser first: it is where the one you saved a minute ago is.
   group(`local · ${SCENES_DIR}${LOCAL_FILE}`, local.map(n => [n, 'local:' + n]), true);
+  // The cloud next, when it answered: shared between browsers, so it sits
+  // beside this browser's rather than among the project's folders.
+  if (cloudUp) group('cloud · sanity', cloud.map(n => [n, 'cloud:' + n]), true);
   // Then a heading per folder under scenes/, in name order, with whatever sits
   // loose in scenes/ itself first — a folder is how a set of covers is kept
   // together, so it is how they are listed. Folders come from the listing
@@ -466,7 +515,7 @@ async function refreshScenes(selectValue) {
   }
   if (selectValue) picked = selectValue;
   markScene();
-  return { local: local.length, files: files.length, folders: folders.length, total, source };
+  return { local: local.length, cloud: cloud.length, files: files.length, folders: folders.length, total, source };
 }
 
 function markScene() {
@@ -485,11 +534,12 @@ function markScene() {
   syncSceneButtons();
 }
 
-// Only a browser scene can be deleted from here; a file in scenes/ - the local
-// scenes file included - is not ours to remove, and nothing in a web page
-// should pretend otherwise.
+// Only a browser or cloud scene can be deleted from here; a file in scenes/ -
+// the local scenes file included - is not ours to remove, and nothing in a web
+// page should pretend otherwise.
 function syncSceneButtons() {
-  $('sceneDelete').disabled = !(picked.startsWith('local:') && picked.slice(6) in readStore());
+  $('sceneDelete').disabled = !((picked.startsWith('local:') && picked.slice(6) in readStore()) ||
+                                (picked.startsWith('cloud:') && picked.slice(6) in cloudStore));
 }
 
 // Per segment, so a scene inside a folder keeps its slash: encoding the whole
@@ -552,6 +602,8 @@ async function loadInitialScene() {
      ?scene=random                      any scene at all
      ?scene=local:high-office           a scene in scenes/local-scenes.json
      ?scene=local                       one of those, at random
+     ?scene=cloud:high-office           a scene saved to the cloud (Sanity)
+     ?scene=cloud                       one of those, at random
 
    Forgiving on purpose: the name in the URL is written by hand, and a URL that
    half-works is worse than one that takes what you meant. Case is ignored, as
@@ -592,6 +644,19 @@ async function loadNamedScene(spec) {
     if (!data) { sceneMiss = `No local scene called "${spec}" — `; return false; }
     applyScene(data);
     picked = 'local:' + name;          // so the list opens with it marked
+    markScene();
+    return true;
+  }
+  // cloud:<name>, or plain "cloud" for any one of them.
+  const cl = String(spec).trim().match(/^cloud(?::(.+))?$/i);
+  if (cl) {
+    if (!cloudUp) await readCloud();
+    const names = Object.keys(cloudStore);
+    const name = cl[1] ?? names[Math.floor(Math.random() * names.length)];
+    const data = name != null && cloudStore[name];
+    if (!data) { sceneMiss = `No cloud scene called "${spec}" — `; return false; }
+    applyScene(data);
+    picked = 'cloud:' + name;
     markScene();
     return true;
   }
@@ -726,6 +791,11 @@ async function loadScene(value) {
       if (!scene) throw new Error('it is no longer in the local scenes');
       applyScene(scene);
       sceneNote(`Loaded "${id}" from ${id in readStore() ? 'this browser' : LOCAL_FILE}.`);
+    } else if (value.startsWith('cloud:')) {
+      const scene = cloudStore[id];
+      if (!scene) throw new Error('it is no longer in the cloud');
+      applyScene(scene);
+      sceneNote(`Loaded "${id}" from the cloud.`);
     } else {
       applyScene(await getJSON(sceneUrl(id)));
       sceneNote(`Loaded ${id}.`);
@@ -774,7 +844,37 @@ $('sceneStore').addEventListener('click', () => {
   sceneNote(`${replacing ? 'Replaced' : 'Saved'} "${name}" in this browser.`);
 });
 
-$('sceneDelete').addEventListener('click', () => {
+// Into the cloud under the name in the field, replacing one of the same name.
+$('sceneCloud').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const name = nameField() || sceneStamp();
+  const replacing = name in cloudStore;
+  if (replacing && !confirm(`Replace "${name}" in the cloud?`)) return;
+  btn.disabled = true;
+  try {
+    await cloudWrite({ action: 'save', name, data: serializeScene() });
+    $('sceneName').value = name;
+    await refreshScenes('cloud:' + name);
+    sceneNote(state.bg.kind === 'upload'
+      ? `Saved "${name}" to the cloud - but an uploaded background is not stored; it will fall back to a gradient.`
+      : `${replacing ? 'Replaced' : 'Saved'} "${name}" in the cloud.`);
+  } catch (err) {
+    sceneNote(`Could not save to the cloud: ${err.message}`);
+  } finally { btn.disabled = false; }
+});
+
+$('sceneDelete').addEventListener('click', async () => {
+  if (picked.startsWith('cloud:')) {
+    const name = picked.slice(6);
+    if (!confirm(`Delete "${name}" from the cloud? Every browser loses it.`)) return;
+    try {
+      await cloudWrite({ action: 'delete', name });
+      picked = '';
+      await refreshScenes();
+      sceneNote(`Deleted "${name}" from the cloud.`);
+    } catch (err) { sceneNote(`Could not delete: ${err.message}`); }
+    return;
+  }
   if (!picked.startsWith('local:')) return;
   const name = picked.slice(6);
   const map = readStore();
@@ -790,14 +890,14 @@ $('sceneDelete').addEventListener('click', () => {
 });
 
 $('sceneRefresh').addEventListener('click', async () => {
-  const { local, files, folders, total, source } = await refreshScenes();
+  const { local, cloud, files, folders, total, source } = await refreshScenes();
   // A rescan that finds nothing has two very different reasons — the folder is
   // empty, or nothing could read it — and only one of them is yours to fix.
   if (source === 'none')
     sceneNote(`Cannot read ${SCENES_DIR}: this page is served without directory listings. ` +
               `Run "node tools/build-scenes-index.js" to write ${SCENES_DIR}index.json, then rescan.`);
   else
-    sceneNote(`${local} local, ${files} in ${SCENES_DIR}` +
+    sceneNote(`${local} local, ${cloudUp ? `${cloud} in the cloud, ` : 'cloud unreachable, '}${files} in ${SCENES_DIR}` +
               (folders ? ` across ${folders} folder${folders > 1 ? 's' : ''}` : '') +
               // The manifest is a snapshot, so a scene added since it was
               // written is not in it — which looks exactly like a scene that

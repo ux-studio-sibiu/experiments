@@ -1,0 +1,3 @@
+# Secrets for api/ (vercel env pull / vercel dev) and the Vercel CLI's link
+.env*
+.vercel

@@ -387,7 +387,7 @@
         <span></span>
         <button id="sceneRefresh" class="iconbtn" data-mark="refresh" title="Rescan"></button>
         <button id="sceneDumpAll" class="iconbtn" data-mark="db-export" title="Download every local scene as one local-scenes.json, for scenes/"></button>
-        <button id="sceneDelete" class="iconbtn" data-mark="trash" title="Delete the selected browser scene"></button>
+        <button id="sceneDelete" class="iconbtn" data-mark="trash" title="Delete the selected browser or cloud scene"></button>
       </div>
       <!-- Open, not a dropdown: a saved scene is something you browse, and a
            list you have to open first hides how much is in there. Grouped by
@@ -399,6 +399,7 @@
       <div class="row"><label>save</label>
         <input id="sceneName" type="text" placeholder="name" spellcheck="false">
         <button id="sceneStore" class="iconbtn" data-mark="star" title="Save in this browser"></button>
+        <button id="sceneCloud" class="iconbtn" data-mark="cloud" title="Save to the cloud (Sanity), for every browser"></button>
         <button id="sceneSave" class="iconbtn" data-mark="download" title="Export a .json file for scenes/"></button>
         <label class="uploadbtn iconbtn" data-mark="upload" title="Import a scene file"><input id="sceneLoad" type="file" accept=".json,application/json" hidden></label>
       </div>

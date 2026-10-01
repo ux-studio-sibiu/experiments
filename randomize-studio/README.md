@@ -53,7 +53,11 @@ cover: it is anchored to the screen, so its numbers are screen pixels.
   re-roll; "Randomize fonts only" keeps your sizing.
 - **Scenes** — save the whole composition. **Save here** keeps it in this
   browser, **Export** writes a `.json` file for [`scenes/`](scenes), and both
-  sources appear in one dropdown.
+  sources appear in one dropdown. The cloud button saves it to Sanity through
+  [`api/presets.js`](../api/presets.js) on the deployed site, so it shows up
+  in every browser (and from Live Server too); `?scene=cloud:<name>` opens one.
+  Needs `SANITY_WRITE_TOKEN` and `PRESET_KEY` set on Vercel, and asks for the
+  key on the first save.
 - **Opening on a cover** — a refresh opens on a random scene from
   [`scenes/initial-load/`](scenes/initial-load), and the URL can name one instead:
   `?scene=lemon-lines` (a name, wherever it lives), `?scene=currated/lemon-lines.json`
