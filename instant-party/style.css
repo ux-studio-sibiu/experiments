@@ -1,36 +1,3 @@
-@-webkit-keyframes pulse {
-  0% {
-    opacity: 0.1;
-  }
-  50% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 0.1;
-  }
-}
-@-moz-keyframes pulse {
-  0% {
-    opacity: 0.1;
-  }
-  50% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 0.1;
-  }
-}
-@-o-keyframes pulse {
-  0% {
-    opacity: 0.1;
-  }
-  50% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 0.1;
-  }
-}
 @keyframes pulse {
   0% {
     opacity: 0.1;
@@ -85,12 +52,6 @@ body.fullscreen .stop-button {
   margin-left: auto;
   width: 800px;
   height: 560px;
-  transform: scale(1);
-  transform-origin: 50% 50%;
-}
-.container.not_loaded {
-  opacity: 0.1;
-  transform: scale(0.01);
 }
 .container .play-button {
   position: absolute;
@@ -98,7 +59,6 @@ body.fullscreen .stop-button {
   height: 120px;
   top: calc(50% - 95px);
   left: calc(50% - 130px);
-  background: red;
   background: rgb(177, 0, 0);
   border-radius: 50%;
   cursor: pointer;
@@ -122,11 +82,8 @@ body.fullscreen .stop-button {
   position: absolute;
   width: 120px;
   height: 120px;
-  top: calc(50% - 95px);
-  left: calc(50% - 130px);
   top: calc(50% + 50px);
   left: calc(50% + 68px);
-  background: red;
   background: rgb(177, 0, 0);
   border-radius: 50%;
   cursor: pointer;
@@ -162,7 +119,7 @@ body.fullscreen .stop-button {
   width: 100%;
   height: 100%;
   background-size: contain;
-  background-repeat: norepeat;
+  background-repeat: no-repeat;
   pointer-events: none;
 }
 .container .gif {
@@ -173,13 +130,6 @@ body.fullscreen .stop-button {
   height: 400px;
   background-position: center center;
   background-size: cover;
-}
-.container #ytplayer {
-  position: absolute;
-  top: 50px;
-  left: 53px;
-  width: 530px;
-  height: 400px;
 }
 .container #mp3_list {
   display: none;
@@ -243,101 +193,12 @@ body.fullscreen .stop-button {
   align-items: center;
 }
 
-em {
-  color: #9838D5;
-}
-
-.underline {
-  margin-bottom: 0.5em;
-  padding-bottom: 0.25em;
-  border-bottom: 0.25em solid;
-}
-
-.boxed {
-  background: rgba(10, 10, 10, 0.8);
-}
-
-hr {
-  border-top: 1px dashed #eeeeee;
-}
-
-.bk-main {
-  background-image: url("bootstrap-custom/images/bk6.jpg");
-}
-
-.bk-secondary {
-  background-image: url("img/sky.jpg");
-  background-size: cover;
-}
-
-.bk-1 {
-  background-image: url("bootstrap-custom/images/bk6.jpg");
-  background-image: url("../VISUALS/static.gif");
-}
-
 #preload-01 {
   position: absolute;
-  background-image: url("");
   background-position: -9999px -9999px;
-  background-repeat: norepeat;
+  background-repeat: no-repeat;
   height: 1px;
   width: 1px;
   top: 0;
   left: 0;
 }
-
-#preload-02 {
-  background: url("") no-repeat -9999px -9999px;
-}
-
-#preload-03 {
-  background: url("") no-repeat -9999px -9999px;
-}
-
-#signiture {
-  position: absolute;
-  top: 180px;
-  right: 38px;
-}
-#signiture a {
-  color: #d6d2c6;
-  line-height: 33px;
-  font-size: 35px;
-  text-align: center;
-  text-decoration: none;
-  font-weight: 800;
-  text-shadow: 3px 3px 2px #000;
-  pointer: normal;
-}
-
-#social {
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-}
-#social .icon {
-  position: relative;
-  background-color: rgba(255, 255, 255, 0.7);
-  font-size: 30px;
-  line-height: 30px;
-  width: 40px;
-  height: 40px;
-  display: inline-block;
-  text-align: center;
-  /* box-shadow: 0px 0px 0px #FFF; */
-  color: #424242;
-  cursor: pointer;
-}
-#social .icon:before {
-  display: block;
-  width: 100%;
-  text-align: center;
-  line-height: 40px;
-  width: 100%;
-  height: 100%;
-}
-#social .icon:hover {
-  background-color: rgb(255, 255, 255);
-}
-
-/*# sourceMappingURL=bootstrap.css.map */
