@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Move-Resize Kit</title>
+<meta name="description" content="A floating panel for moving and resizing the elements of a page, in the page.">
+
+<link rel="icon" href="../randomize-studio/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+
+<!-- A small landing page, because a layout tool needs a layout to push
+     around: a header, a hero with a picture beside it, and three cards.
+
+     Each block carries a data-move-resize-kit name: that is what the panel lists
+     it under. Anything else on the page is still reachable by clicking it. -->
+<main class="nsc-move-resize-demo">
+
+  <header class="top" data-move-resize-kit="header">
+    <b class="brand">Move-Resize Kit</b>
+    <nav class="links"><a href="#">Work</a><a href="#">About</a><a href="#">Contact</a></nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy" data-move-resize-kit="hero copy">
+      <h1 class="title" data-move-resize-kit="title">Move it until it looks right</h1>
+      <p class="deck">Drag any block to move it, drag a corner to resize it, and copy the result out as CSS when the page finally sits the way you meant it to.</p>
+      <p class="actions"><button type="button" class="button" data-move-resize-kit-open=".title">Edit the layout</button></p>
+    </div>
+    <div class="hero-art" data-move-resize-kit="hero art" aria-hidden="true"></div>
+  </section>
+
+  <section class="cards">
+    <article class="card" data-move-resize-kit="card one"><h2 class="card-title">Drag</h2><p>The whole box is the handle. Arrow keys nudge by a pixel, with Shift by ten.</p></article>
+    <article class="card" data-move-resize-kit="card two"><h2 class="card-title">Resize</h2><p>Eight squares on the frame scale the block and everything in it, proportions kept. A double-click on one puts the box back.</p></article>
+    <article class="card" data-move-resize-kit="card three"><h2 class="card-title">Copy</h2><p>Copy CSS for every change, or Copy params to brief a coding agent.</p></article>
+  </section>
+
+</main>
+
+<!-- The kit itself. Opt-in: nothing happens until Shift+L, ?move-resize in the URL,
+     or a press on the button above. No data-studio: this folder sits beside
+     randomize-studio/, which is where the kit looks by default for the
+     stylesheets it borrows. -->
+<script src="move-resize-kit.js" defer></script>
+</body>
+</html>

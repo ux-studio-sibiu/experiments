@@ -103,7 +103,10 @@ function render() {
   const { scrim } = state;
   // Everything else about the layer — cover, centred, no repeat — is fixed, so
   // it lives in the stylesheet and only the picture itself changes here.
-  bgLayer.style.backgroundImage = (state.bg.enabled && bgUrl) ? `url("${bgUrl}")` : 'none';
+  // A photo still loading leaves the layer as it was - see bgReady() in
+  // background.js - so a roll never flashes the previous picture.
+  if (!state.bg.enabled) bgLayer.style.backgroundImage = 'none';
+  else if (bgReady()) bgLayer.style.backgroundImage = `url("${bgUrl}")`;
   // Treatment, applied to the layer rather than baked into the picture, so a
   // re-roll of the photograph keeps it. A blur on a box that ends exactly at
   // the artboard's edge fades the edge out with it, so the layer is grown by

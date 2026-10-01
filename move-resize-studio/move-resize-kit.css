@@ -1,0 +1,51 @@
+/* move-resize-kit - what a layout frame needs that the type kit's does not.
+
+   Everything else - the tokens, the panel's chrome, the dashed frame and the
+   eight square handles - comes from the studio's type-kit/kit-shell.css,
+   loaded just before this inside the same shadow root. */
+
+/* The whole frame is the move handle. The type kit's frame stands off the
+   words and only its ring can be grabbed, because the words have a caret in
+   them; here nothing inside the box is being typed into, and the box itself
+   is the thing being moved. Drawn first, so the squares win where the two
+   overlap. */
+.outline .grip.move.fill {
+  inset: 0;
+  cursor: move;
+}
+
+/* The box's size, and how far it has moved, hung under the frame's bottom
+   left corner in the black band the toast and the titlebar are. Read while
+   dragging, so it is never in the way of the pointer: below the box, not on
+   it. */
+.outline .size-tag {
+  position: absolute;
+  left: -1.5px;
+  top: calc(100% + 6px);
+  padding: 3px 6px;
+  background: var(--ink);
+  color: var(--bg);
+  font: 700 9px/1.3 var(--ui-mono);
+  letter-spacing: .08em;
+  white-space: pre;
+  pointer-events: none;
+}
+.outline .size-tag:empty { display: none; }
+
+/* While Select element is on, the frame is a preview of the pick and not a
+   selection: nothing on it can be grabbed. */
+.kit.is-picking .outline .grip { display: none; }
+
+/* Nothing selected: what acts on one element goes quiet. The list, Select
+   element, Copy CSS and the titlebar Randomize all still work. */
+.kit.is-unselected .grp[data-section="box"],
+.kit.is-unselected #kit-clear,
+.kit.is-unselected #kit-params { opacity: .35; pointer-events: none; }
+
+/* The rendered size beside the scale, in the panel's figures. */
+.row > span.readout { flex: 1 1 auto; font-variant-numeric: tabular-nums; }
+
+/* parent / child and the reset button: text buttons in a row of controls,
+   at the row's own height. */
+.row > button:not(.iconbtn) { height: var(--ctl); padding: 0 8px; }
+.row > button:disabled { opacity: .35; pointer-events: none; }

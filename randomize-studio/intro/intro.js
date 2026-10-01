@@ -265,7 +265,7 @@ if (frame) {
 })();
 
 /* ============================ a kit is open ============================
-   html.has-kit-open while either the texture kit or the type kit is running.
+   html.has-kit-open while the texture kit, the type kit or the move-resize kit is running.
    What it is for today is the panel screenshot in the studio column, which
    goes out of focus so that two panels on one screen cannot be mistaken for
    each other (see .has-kit-open .panel-shot img in intro.css) - but it is the
@@ -280,9 +280,19 @@ if (frame) {
    class follows whether the set is empty. */
 (() => {
   const open = new Set();
-  const mark = () => document.documentElement.classList.toggle('has-kit-open', open.size > 0);
-  for (const kit of ['texture', 'type']) {
-    document.addEventListener(`${kit}-kit:open`, () => { open.add(kit); mark(); });
+  // Which kit is the one running, for the demo buttons: the one that opened
+  // last. The kit it replaced closes a moment AFTER it opens (see above), so
+  // the last name in is the answer, not the last one still in the set.
+  let active = null;
+  const mark = () => {
+    const root = document.documentElement;
+    root.classList.toggle('has-kit-open', open.size > 0);
+    if (!open.has(active)) active = [...open].pop() || null;
+    if (active) root.dataset.kitOpen = active;
+    else delete root.dataset.kitOpen;
+  };
+  for (const kit of ['texture', 'type', 'move-resize']) {
+    document.addEventListener(`${kit}-kit:open`, () => { open.add(kit); active = kit; mark(); });
     document.addEventListener(`${kit}-kit:close`, () => { open.delete(kit); mark(); });
   }
 })();
@@ -304,11 +314,11 @@ if (frame) {
   const buttons = [...document.querySelectorAll('[data-copy-prompt]')];
   if (!buttons.length) return;
 
-  // The three tools, by the name the page lists them under. What the button
+  // The four tools, by the name the page lists them under. What the button
   // hands over is a page to read, not the instructions themselves: those live
   // in agent-setup.md beside the page, where they can be corrected without
   // anyone re-copying a prompt they pasted last week.
-  const KITS = { texture: 'texture kit', typography: 'typography kit', effects: 'effects kit' };
+  const KITS = { texture: 'texture kit', typography: 'typography kit', 'move-resize': 'move-resize kit', effects: 'effects kit' };
 
   // Short on purpose. An agent given a page and a name has everything it
   // needs; a prompt that repeats the file list is a second copy of it, and the
@@ -329,14 +339,14 @@ it against the page above.`;
   for (const button of buttons) {
     const kit = KITS[button.dataset.copyPrompt];
 
-    // Texture and typography are built; effects is listed and is not, and the
+    // Texture, typography and move-resize are built; effects is listed and is not, and the
     // notes say so under its own heading - so the button can hand over the
     // same errand either way, but there is nothing at the other end of it.
     const built = button.dataset.copyPrompt !== 'effects';
     if (!kit) continue;
     if (!built) {
       button.disabled = true;
-      button.title = 'Not built yet - the texture and typography kits are the ones that exist today.';
+      button.title = 'Not built yet - the texture, typography and move-resize kits are the ones that exist today.';
       continue;
     }
 

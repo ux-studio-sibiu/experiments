@@ -90,7 +90,8 @@ $('panelShow').addEventListener('click', () => document.body.classList.remove('p
 })();
 document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'r' && !e.metaKey && !e.ctrlKey && !typingInto()) {
-    e.preventDefault(); randomizeRoles(false);
+    // The titlebar Randomize, key and all - including the backdrop pick.
+    e.preventDefault(); pickBackdrop(); randomizeRoles(false);
   }
 });
 

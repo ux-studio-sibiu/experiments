@@ -43,6 +43,7 @@ const bgByName = (n) => (BG_PRESETS.find(p => p.name === n) || BG_PRESETS[0]).ur
    state.bg says WHAT the background is; bgUrl is the URL that says so today.
    Only the descriptor is ever saved. */
 let bgUrl = null;
+let bgFor = null;                  // the photo seed bgUrl shows - see bgReady()
 let bgObjectUrl = null;            // an upload's blob: url — deliberately not persisted
 
 // /seed/ rather than ?random=: picsum treats the query as a cache-buster and
@@ -67,11 +68,32 @@ function applyBg(patch) {
   // Preload so a dead network shows a gradient rather than the bare backdrop
   // colour. The DESCRIPTOR is left alone: the scene still says which photo it
   // wants, and saving it offline records that rather than the stand-in.
+  //
+  // Decoded before it is handed over, so the swap is one painted frame: a
+  // loaded but undecoded picture set as a background shows the layer empty for
+  // a frame or two while the browser decodes it, which reads as a flicker.
+  // Only the newest request lands - a slow photo from two rolls ago arriving
+  // late must not replace the one asked for since.
   const im = new Image();
-  im.onload  = () => { bgUrl = url; render(); };
-  im.onerror = () => { bgUrl = bgByName(null); render(); };
+  const asked = state.bg.seed;
+  const land = (u) => { if (state.bg.kind === 'photo' && state.bg.seed !== asked) return; bgUrl = u; bgFor = asked; render(); };
+  // Capped: decode() waits indefinitely in a hidden tab, and a photo that
+  // never lands is worse than one frame of decoding.
+  const decoded = () => Promise.race([
+    (im.decode ? im.decode() : Promise.resolve()).catch(() => {}),
+    new Promise(r => setTimeout(r, 200)),
+  ]);
+  im.onload  = () => decoded().then(() => land(url));
+  im.onerror = () => land(bgByName(null));
   im.src = url;
 }
+
+/* Which photo bgUrl is, so render() can tell a picture that is ready from one
+   still on its way. Until the new one has arrived the layer is left as it is:
+   still showing the last photo if it was showing one, and still empty if it
+   was not - rather than flashing up the PREVIOUS photo for the moment between
+   a roll turning the layer on and the new picture landing. */
+const bgReady = () => !!bgUrl && (state.bg.kind !== 'photo' || bgFor === state.bg.seed);
 
 let lastGrad = -1;
 $('bgGradient').addEventListener('click', () => randomGradient());

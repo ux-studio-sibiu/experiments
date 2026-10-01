@@ -648,12 +648,88 @@ kbd {
    but no texture of its own: the textured button is the texture kit saying
    what it does, and a second patterned button beside it would say nothing
    except that there are two patterns. */
-.button.explore-type {
+.button.explore-type,
+.button.explore-move-resize {
   border-color: var(--bg);
   box-shadow: 0 0 0 2px var(--ink), 3px 5px #00000033;
   transition: background-color .12s ease;
 }
-.button.explore-type:hover { background: #262626; }
+/* A clear lift on hover: ink to a mid charcoal, enough to read as a change at
+   a glance rather than a shade only noticed side by side. The Randomize button
+   takes it too, round its colour tile. */
+.button.explore-type:hover, .button.explore-move-resize:hover, .button.randomize-page:hover { background: #4d4d4d; }
+
+/* Each tool's mark in front of its label: the type frame with its corner
+   handles, and the four-way move arrow. Drawn in currentColor, so they are
+   paper on ink like the label and follow it on hover. The label wraps beside
+   the mark rather than under it. */
+.button.explore-type,
+.button.explore-move-resize {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.button.explore-type .icon,
+.button.explore-move-resize .icon { flex: none; width: 32px; height: 32px; }
+
+/* The mark sits on a square tile of its own with the colours turned round:
+   ink lines on paper, in front of a paper label on ink. The tile keeps its
+   paper on hover, so only the label's ground changes. */
+.button.explore-type .icon,
+.button.explore-move-resize .icon { background: var(--bg); color: var(--ink); }
+
+/* Flush in the button rather than padded inside it: the tile is the button's
+   full inner height on the left, so the 32px mark sets the height instead of
+   adding the padding to it. More specific than .actions.pair .button, which
+   sets the padding every button in the row has. */
+.actions.pair .button.explore-type,
+.actions.pair .button.explore-move-resize { padding: 0 10px 0 0; justify-content: flex-start; }
+/* The mark stays against the left edge however wide the row makes the
+   button; the label takes the rest and centres itself in it. */
+.actions.pair .button.explore-type .label,
+.actions.pair .button.explore-move-resize .label { flex: 1 1 auto; min-width: 0; text-align: center; }
+
+/* Randomize this page, built the same way as its two neighbours: the label on
+   ink, and the colour only in a square at the left where their marks sit. The
+   same circles, scaled down to the tile (600x100 to 192x32), so the hover roll
+   steps a circle at a time at the new size - 32px rather than 100. */
+.actions.pair .button.randomize-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px 0 41px;   /* the 32px tile, its 2px rule and the 7px gap the marks have */
+}
+/* The tile is closed off from the label by the same 2px paper rule that runs
+   inside the button's ink edge, so the colour reads as a square set into the
+   button rather than a stain at its end. */
+.actions.pair .button.randomize-page::before {
+  inset: 0 auto 0 0;
+  box-sizing: content-box;
+  width: 32px;
+  border-right: 2px solid var(--bg);
+  /* At rest the tile is framed on the coral-red circle, with the blue, pink,
+     violet and orange ones round its edges - the warm end of the palette
+     rather than the teal corner the row starts on. */
+  background-position: -48px 0;
+  background-size: 192px 32px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .actions.pair .button.randomize-page:hover::before { animation-name: randomize-roll-tile; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .actions.pair .button.randomize-page:hover::before { animation: none; }
+}
+
+/* From the resting frame, so the roll starts where the tile already is. */
+@keyframes randomize-roll-tile {
+  0%     { background-position: -48px 0; }
+  16.66% { background-position: -80px 0; }
+  33.33% { background-position: -112px 0; }
+  50%    { background-position: -144px 0; }
+  66.66% { background-position: -176px 0; }
+  83.33% { background-position: -16px 0; }
+}
 
 /* The second tool's row, under the first: one gap between the two buttons of
    a pair, a smaller one between the pairs, so each reads as a tool with its
@@ -945,6 +1021,43 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .panel-shot img { transition: none; }
 }
+
+/* The demo buttons, the same way: while a kit is open, the buttons for the
+   other two go out of focus like the picture does, so the one still sharp is
+   the tool that is running. html[data-kit-open] is set by intro.js.
+
+   Less blur than the picture - a button is small and 5px takes it past
+   recognising. And out of reach as well as out of focus: the pointer passes
+   straight through, so the running kit has to be closed before another one
+   can be opened from here. */
+.actions.pair .button { transition: filter .2s ease, opacity .2s ease, background-color .12s ease; }
+
+/* Each button in a box of its own, the way the picture is in .shot-box: the
+   box carries the ink ring and the drop shadow and clips what is inside it,
+   so a blurred button goes soft inside a hard black edge instead of smearing
+   out past it. Paper behind, for the same reason the picture has it - the
+   blur and the .45 then read as out of focus, not as see-through.
+
+   The flex share moves to the box, and the button fills it. */
+.actions.pair .button-box {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 0 0 2px var(--ink), 3px 5px #00000033;
+}
+.actions.pair .button-box > .button { flex: 1 1 auto; box-shadow: none; }
+[data-kit-open="texture"] .actions.pair .button:not(.randomize-page),
+[data-kit-open="type"] .actions.pair .button:not(.explore-type),
+[data-kit-open="move-resize"] .actions.pair .button:not(.explore-move-resize) {
+  filter: blur(2.5px) grayscale(1);
+  opacity: .45;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .actions.pair .button { transition: none; }
+}
 /* The title's own bottom margin, dropped: it was the space between a title and
    the steps under it, and here the column's gap is already that space. Both
    and the title would sit further from the cover it names than the steps sit
@@ -1151,7 +1264,7 @@ kbd {
 /* A shade up from ink under the pointer, the answer the quiet version gave a
    shade down from paper. Not an invert: the white rule is the shape of the
    button, and a paper face would take it away at the moment of the press. */
-.button.open-studio:hover { background: #262626; }
+.button.open-studio:hover { background: #4d4d4d; }
 .open-studio .arrow {
   display: inline-block; margin-left: .4em;
   font-size: 1.45em; line-height: 0; vertical-align: -.08em;
@@ -1240,10 +1353,11 @@ kbd {
    them, so this row sets its own: a step down in type, tighter tracking and
    half the side padding.
 
-   Each at its own label's width rather than half the row: filling the row
-   made two slabs the size of the plate, and these are two things to press,
-   not a navigation bar. They can still give way - flex-shrink stays on - so a
-   narrow column squeezes them rather than pushing one out of the row.
+   The row is filled: each button starts at its own label's width and the
+   space left over is shared out equally between them (flex-grow 1 on an auto
+   basis), so the three end the line together without becoming three equal
+   slabs. They can still give way - flex-shrink stays on - so a narrow column
+   squeezes them rather than pushing one out of the row.
 
    The labels wrap rather than hold one line. Held to one line they fit this
    window and clip in a narrower one, which is the worst of the three
@@ -1251,13 +1365,16 @@ kbd {
    that takes two lines to do that is still one button beside another. Both
    halves are the same width, so a wrap makes the pair taller and never
    lopsided. */
-.actions.pair { flex-wrap: nowrap; gap: 8px; }
+.actions.pair { flex-wrap: nowrap; gap: 16px; }
 .actions.pair .button {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   padding: 9px 6px;
-  font-size: 10px;
-  letter-spacing: .06em;
+  /* A size up and bold: at 10px and 500 the mono labels went grey on the ink
+     and read as a texture rather than as words. */
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
   line-height: 1.3;
   text-align: center;
 }

@@ -1560,6 +1560,8 @@ family in the font stack.${params.text ? '\n\n"text" is the copy as it now reads
      click that only one of them gets. Each announces itself when it opens and
      stands down when it hears the other. */
   document.addEventListener('texture-kit:open', () => close());
+  // And the same for the move-resize kit (move-resize-studio/move-resize-kit.js).
+  document.addEventListener('move-resize-kit:open', () => close());
 
   if (/[?&]type\b/.test(location.search)) open();
 })();

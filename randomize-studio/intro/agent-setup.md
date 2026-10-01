@@ -144,6 +144,71 @@ what the page looks like, and not what a roll should start from.
 - Closing the panel puts the page back: every `style` attribute restored and
   the original copy with it.
 
+---
+
+## move-resize kit
+
+Move and resize any element on the page, in the same floating panel, exported
+as plain CSS or as a JSON brief.
+
+### 1. Fetch these
+
+    ../../move-resize-studio/move-resize-kit.js    the tool itself
+    ../../move-resize-studio/move-resize-kit.css   its frame styles
+
+    css/panel.css                 the panel's look
+    css/controls.css              its controls
+    type-kit/kit-shell.css        the tokens, the frame and its handles
+
+Note the first two: the move-resize kit is a folder **beside** `randomize-studio/`,
+not inside it. Keep that shape — `move-resize-studio/` next to the studio
+folder — and it finds the studio on its own, one level up and across.
+
+### 2. Load it
+
+On every page whose layout should be editable:
+
+    <script src="/move-resize-studio/move-resize-kit.js" defer></script>
+
+If the kit is kept anywhere else, say where the studio is:
+
+    <script src="/vendor/move-resize-kit/move-resize-kit.js" data-studio="/vendor/randomize-studio/" defer></script>
+
+### 3. Name the blocks (optional)
+
+    <section class="hero" data-move-resize-kit="hero">…</section>
+
+That name is what the panel lists it under, and what its titlebar Randomize
+rolls. Any other element is still reachable by clicking it.
+
+To limit what can be moved at all, give the script a selector:
+
+    <script src="/move-resize-studio/move-resize-kit.js" data-select=".can-move-and-resize" defer></script>
+
+Then only elements matching it can be selected, walked to or rolled; a click
+elsewhere takes the nearest matching element around it.
+
+### 4. Using it
+
+- `Shift+L` opens and closes the panel; `?move-resize` in the URL opens it. Another
+  letter: `data-key="M"` on the script tag. The three kits close each other,
+  so only one is ever taking clicks on the page.
+- Any element with `data-move-resize-kit-open` becomes a button that opens it, and
+  can name the element to start on: `data-move-resize-kit-open=".hero"`.
+- Click to select; drag the selected box to move it, drag a square to resize
+  it - a uniform scale of the element and its contents, proportions kept -
+  double-click a square to put the box back. A click inside the selection
+  goes one level in; **parent** goes one level out.
+- Arrow keys nudge by 1px, with Shift by 10; **snap** rounds to 4, 8 or 16px.
+- **Copy CSS** writes out every element moved or resized (`translate`, `scale`
+  with `transform-origin: top left`). **Copy params** does the selected element
+  alone as JSON with an `offset` and a `scale` factor — that one is written for
+  you to act on: express the move in the project's own layout, and the scale as
+  real sizes where the layout should reflow, rather than adding transforms.
+- Closing the panel puts the page back: every `style` attribute restored.
+
+---
+
 ## effects kit
 
 Not built yet. The grain that the texture kit carries is the whole of it today,

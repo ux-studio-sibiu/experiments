@@ -1,0 +1,111 @@
+/* The demo page's own layout - the thing the kit edits. */
+
+:root {
+  --ink: #111;
+  --paper: #f6f4ef;
+  --accent: #f2ab27;
+  --sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.55 var(--sans);
+}
+
+.nsc-move-resize-demo {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 32px 64px;
+
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 24px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .brand { font-weight: 800; letter-spacing: .02em; }
+
+  .links {
+    display: flex;
+    gap: 20px;
+    font: 400 13px/1 var(--mono);
+
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 40px;
+    align-items: center;
+    padding: 56px 0;
+  }
+
+  .title {
+    margin: 0 0 16px;
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -.02em;
+  }
+
+  .deck { margin: 0 0 24px; max-width: 46ch; font-size: 18px; }
+
+  .actions { margin: 0; }
+
+  .button {
+    padding: 11px 18px;
+    border: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    font: 700 12px/1 var(--mono);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    box-shadow: 3px 5px #00000033;
+    cursor: pointer;
+  }
+  .button:hover { background: #262626; }
+
+  .hero-art {
+    aspect-ratio: 4 / 3;
+    border: 2px solid var(--ink);
+    background:
+      radial-gradient(circle at 70% 35%, var(--accent) 0 22%, transparent 22.5%),
+      repeating-linear-gradient(45deg, transparent 0 10px, #00000014 10px 11px),
+      #2d7dec;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .card {
+    padding: 20px;
+    border: 2px solid var(--ink);
+    background: #fff;
+
+    p { margin: 0; font-size: 14px; }
+  }
+
+  .card-title { margin: 0 0 8px; font-size: 20px; }
+}
+
+@media (max-width: 760px) {
+  .nsc-move-resize-demo {
+    padding: 16px;
+
+    .hero { grid-template-columns: 1fr; padding: 32px 0; }
+    .title { font-size: 38px; }
+    .cards { grid-template-columns: 1fr; }
+  }
+}

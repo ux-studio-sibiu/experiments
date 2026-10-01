@@ -2623,6 +2623,8 @@ textarea[hidden] { display: none; }
      down for this kit's texture-kit:open; this is the other half of that
      bargain, and it costs nothing on a page that has no type kit. */
   document.addEventListener('type-kit:open', () => close());
+  // And the same for the move-resize kit (move-resize-studio/move-resize-kit.js).
+  document.addEventListener('move-resize-kit:open', () => close());
 
   if (/[?&]texture\b/.test(location.search)) open();
 

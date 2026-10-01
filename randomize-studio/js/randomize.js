@@ -175,7 +175,28 @@ function randomizeSection(key) {
   syncInputs(); render();
 }
 
-$('randomize').addEventListener('click', () => randomizeRoles(false));
+/* ---- the main Randomize also chooses what the backdrop is made of ----
+   The one exception to "a roll never touches enabled" above, and only for the
+   titlebar button: the start-over roll. A dice on a layer or a section still
+   rolls looks and leaves the eyes alone.
+
+   Every background layer goes off, then ONE of image, dynamic svg or pattern
+   comes on - a backdrop that is one idea rather than three stacked - and the
+   grain joins it 7% of the time. A locked layer, or a locked Background
+   section, keeps whatever its eye says: the lock is how you keep one. */
+const BACKDROPS = ['bg', 'svgbg', 'pattern'];
+const FX_CHANCE = 0.07;
+
+function pickBackdrop() {
+  const free = Object.keys(SUBLAYERS).filter(k => SUBLAYERS[k].of === 'background' && rollable(k));
+  free.forEach(k => { state[k].enabled = false; });
+  const pool = BACKDROPS.filter(k => free.includes(k));
+  if (pool.length) state[rand(pool)].enabled = true;
+  if (free.includes('fx')) state.fx.enabled = Math.random() < FX_CHANCE;
+  if (typeof syncEyes === 'function') syncEyes();
+}
+
+$('randomize').addEventListener('click', () => { pickBackdrop(); randomizeRoles(false); });
 $('randFonts').addEventListener('click', () => randomizeRoles(true));
 document.querySelectorAll('[data-rand]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); randomizeSection(b.dataset.rand); }));
 $('helpToggle').addEventListener('click', e => {

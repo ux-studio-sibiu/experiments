@@ -152,6 +152,31 @@ body.panel-hidden .panel {
 .phead button.primary:hover { background: transparent; color: var(--bg); }
 .phead :focus-visible { outline-color: var(--bg); }
 
+/* ---- the titlebar, a size up ----
+   Every panel: the studio's, and the texture, type and move-resize kits', which
+   load this same sheet inside their shadow roots - so the intro page's panels
+   too. `.panel .phead` rather than the bare class so these outrank both the
+   compact rules above and each kit's own shell, which sizes its titlebar
+   buttons with `.phead .iconbtn`.
+
+   Taller, with the title a step larger, and the buttons in it bigger and
+   bolder: at 18-22px tall with a hairline edge the marks were the faintest
+   thing on the panel, in the one band every edit starts from. Randomize, the
+   button each tool is named for, is the largest of them. */
+.panel .phead { height: 48px; gap: 10px; padding: 0 12px; }
+.panel .phead b { font-size: 13px; letter-spacing: .2em; }
+.panel .phead button {
+  height: 30px; min-width: 30px;
+  /* 2, not 1.5: a browser snaps a border to whole device pixels, and on a
+     1x screen 1.5px comes out as the 1px hairline this is replacing. */
+  border-width: 2px;
+  font-size: 11px;
+}
+.panel .phead button[data-mark]::before { width: 16px; height: 16px; }
+.panel .phead #randomize { padding: 0 14px; font-size: 12px; letter-spacing: .14em; }
+.panel .phead .infobtn { border-color: transparent; }
+.panel .phead .infobtn::before { width: 18px; height: 18px; }
+
 /* ---- floating button to bring the panel back ----
    Bottom right, where the panel is not: minimized, the whole top of the cover
    is what you want to look at, and a control sitting over the heading is the
