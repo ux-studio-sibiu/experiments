@@ -283,7 +283,7 @@ be drawn bigger without reflowing, keep it as \`scale\` with
   </div>
   <aside class="panel" id="panel">
     <div class="phead">
-      <b>Move &amp; resize</b>
+      <b>Edit</b>
       <span class="spacer"></span>
       <button id="randomize" class="primary" title="Nudge and resize every element in the list">Randomize</button>
       <button id="panelToggle" class="iconbtn" data-mark="minus" title="Minimize"></button>
@@ -292,7 +292,7 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     <div class="pbody">
 
     <div class="grp" data-section="element">
-      <h3><span class="chev"></span><span class="head-label">Element</span><button class="infobtn" data-mark="info" title="Hover to frame an element, click to select it. Drag the selected element to move it. Drag a square to resize it - the element and its contents scale together, in the proportion they started in, and the opposite edge stays put. Double-click a square to put its box back. Click inside the selection to go one level in; Parent goes one level out. Arrow keys nudge by 1px, with Shift by 10. Ctrl/Cmd or Shift gives the click back to the page. Esc backs out: out of Select element, out of the selection, then the panel minimizes." aria-label="What you can do here"></button></h3>
+      <h3><span class="chev"></span><span class="head-label">Element</span><button class="infobtn" data-mark="info" title="Hover to frame an element, click to select it. Drag the selected element to move it. Drag a square to resize it - the element and its contents scale together, in the proportion they started in, and the opposite edge stays put. Double-click a square to put its box back. Click inside the selection to go one level in; Parent goes one level out. Ctrl/Cmd-click adds an element to the selection, or takes it out; every edit then goes to all of them. Arrow keys nudge by 1px, with Shift by 10. Shift or Alt gives the click back to the page. Esc backs out: out of Select element, out of the selection, then the panel minimizes." aria-label="What you can do here"></button></h3>
       <div class="grp-body">
       <div class="row"><label>target</label><select id="kit-target"></select><button id="kit-pick" title="Click an element on the page">Select element</button></div>
       <div class="row"><label>walk</label>
@@ -352,6 +352,15 @@ be drawn bigger without reflowing, keep it as \`scale\` with
   const $ = (id) => ui.root.getElementById(id);
   const cur = () => ui.current ? entryFor(ui.current) : null;
 
+  /* ---- more than one ----
+     Ctrl/Cmd-click adds an element to the selection, or takes it out again.
+     ui.current is the one clicked last - the one with the handles, the one
+     the panel's readouts show - and ui.also the rest. Every edit, from a drag
+     to a slider to the dice, goes to all of them: moved by the same distance,
+     scaled by the same factor. */
+  const chosen = () => ui.current ? [ui.current, ...ui.also].filter(el => el.isConnected) : [];
+  const all = () => chosen().map(entryFor);
+
   function note(text) {
     const n = $('kit-note');
     n.textContent = text || '';
@@ -404,7 +413,31 @@ be drawn bigger without reflowing, keep it as \`scale\` with
 
   function select(el) {
     ui.current = el || null;
+    ui.also.clear();
     if (el) { entryFor(el); listIfNew(el); }
+    markTarget();
+    watchBox();
+    sync();
+    reframe();
+  }
+
+  // In or out of the selection. One added becomes the one with the handles;
+  // taking that one out hands them to the one added before it.
+  function toggleSelect(el) {
+    if (!el) return;
+    if (!ui.current) return select(el);
+    if (el === ui.current) {
+      const rest = [...ui.also];
+      ui.current = rest.pop() || null;
+      ui.also = new Set(rest);
+    } else if (ui.also.has(el)) {
+      ui.also.delete(el);
+    } else {
+      ui.also.add(ui.current);
+      ui.current = el;
+      entryFor(el);
+      listIfNew(el);
+    }
     markTarget();
     watchBox();
     sync();
@@ -435,7 +468,7 @@ be drawn bigger without reflowing, keep it as \`scale\` with
       ui.root.querySelector(`[data-lock="${key}"]`).setAttribute('aria-pressed', String(held));
     }
     if (!e) { note('Nothing selected — click an element on the page, or pick one from the list.'); return; }
-    if (!ui.picking) note('');
+    if (!ui.picking) note(ui.also.size ? `${ui.also.size + 1} selected — every edit goes to all of them; the readouts are the framed one's.` : '');
     ranges(e);
     $('ly-x').value = e.dx; $('ly-xV').value = Math.round(e.dx - e.baseX) + 'px';
     $('ly-y').value = e.dy; $('ly-yV').value = Math.round(e.dy - e.baseY) + 'px';
@@ -445,10 +478,10 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     $('kit-child').disabled = !childOf(ui.current);
   }
 
+  // The same change to every selected element.
   const edit = (fn) => {
-    const e = cur(); if (!e) return;
-    fn(e);
-    paint(e);
+    if (!ui.current) return;
+    for (const e of all()) { fn(e); paint(e); }
     sync();
     reframe();
   };
@@ -484,23 +517,29 @@ be drawn bigger without reflowing, keep it as \`scale\` with
       catch { console.log(css); toast('css in console'); }
     });
     $('kit-params').addEventListener('click', async () => {
-      const e = cur(); if (!e) return;
-      const brief = paramsFor(e);
+      if (!ui.current) return;
+      const brief = all().map(paramsFor).join('\n\n---\n\n');
       try { await navigator.clipboard.writeText(brief); toast('params copied'); }
       catch { console.log(brief); toast('params in console'); }
     });
     $('kit-clear').addEventListener('click', () => {
-      const e = cur(); if (!e) return;
-      const el = e.el;
-      reset(e);
-      select(el);   // read afresh, from the page as it now is
-      toast('element reset');
+      if (!ui.current) return;
+      const [first, ...rest] = chosen();
+      all().forEach(reset);
+      // Read afresh, from the page as it now is, and still all selected.
+      select(first);
+      rest.forEach(el => { ui.also.add(el); entryFor(el); });
+      watchBox(); sync(); reframe();
+      toast(rest.length ? `${rest.length + 1} elements reset` : 'element reset');
     });
 
-    $('ly-x').addEventListener('input', (ev) => edit(e => { e.dx = snap(+ev.target.value - e.baseX) + e.baseX; }));
-    $('ly-y').addEventListener('input', (ev) => edit(e => { e.dy = snap(+ev.target.value - e.baseY) + e.baseY; }));
-    // The slider scales from the top left corner, which stays put.
-    $('ly-s').addEventListener('input', (ev) => edit(e => { e.s = r3(Math.max(minScale(e), e.baseS * +ev.target.value / 100)); }));
+    // The sliders show the framed element; the others move by the same
+    // distance it does, and scale by the same factor.
+    const by = (fn) => { const e = cur(); return e ? fn(e) : 0; };
+    $('ly-x').addEventListener('input', (ev) => { const d = by(e => snap(+ev.target.value - e.baseX) + e.baseX - e.dx); edit(e => { e.dx += d; }); });
+    $('ly-y').addEventListener('input', (ev) => { const d = by(e => snap(+ev.target.value - e.baseY) + e.baseY - e.dy); edit(e => { e.dy += d; }); });
+    // The slider scales from each one's top left corner, which stays put.
+    $('ly-s').addEventListener('input', (ev) => { const k = by(e => e.baseS * +ev.target.value / 100 / e.s); edit(e => { e.s = r3(Math.max(minScale(e), e.s * k)); }); });
     $('ly-sReset').addEventListener('click', () => edit(e => { e.s = e.baseS; }));
     $('ly-snap').addEventListener('change', (ev) => { ui.snap = +ev.target.value; });
 
@@ -509,20 +548,25 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     ui.root.addEventListener('click', (ev) => {
       const die = ev.target.closest?.('[data-rand]');
       if (die) {
-        const e = cur(); if (!e) return;
+        if (!ui.current) return;
         const key = die.dataset.rand;
-        if (key === 'all') rollEntry(e);
-        else if (!e.locks[key]) { ROLL[key](e); paint(e); }
+        for (const e of all()) {
+          if (key === 'all') rollEntry(e);
+          else if (!e.locks[key]) { ROLL[key](e); paint(e); }
+        }
         sync();
         reframe();
         return;
       }
+      // A lock follows the framed element: pressed, every selected one takes
+      // the state it is switching to.
       const lock = ev.target.closest?.('[data-lock]');
       if (lock) {
         const e = cur(); if (!e) return;
         const key = lock.dataset.lock;
-        if (key === 'all') { const on = !GROUPS.every(g => e.locks[g]); GROUPS.forEach(g => { e.locks[g] = on; }); }
-        else e.locks[key] = !e.locks[key];
+        const keys = key === 'all' ? GROUPS : [key];
+        const on = !keys.every(g => e.locks[g]);
+        for (const x of all()) keys.forEach(g => { x.locks[g] = on; });
         sync();
       }
     });
@@ -672,12 +716,23 @@ be drawn bigger without reflowing, keep it as \`scale\` with
   function reframe() {
     if (!ui) return;
     placeBox(ui.outline, ui.picking ? ui.pickHover : ui.current);
-    placeBox(ui.hoverBox, ui.hover && ui.hover !== ui.current ? ui.hover : null);
+    placeBox(ui.hoverBox, ui.hover && !chosen().includes(ui.hover) ? ui.hover : null);
+    // The rest of the selection: the same dashes, no handles - the framed one
+    // is where a drag starts, and it takes these along.
+    const also = ui.picking ? [] : [...ui.also].filter(el => el.isConnected);
+    while (ui.alsoBoxes.length < also.length) {
+      const b = document.createElement('div');
+      b.className = 'outline is-also';
+      ui.root.querySelector('.kit').append(b);
+      ui.alsoBoxes.push(b);
+    }
+    ui.alsoBoxes.forEach((b, i) => placeBox(b, also[i] || null));
     const e = ui.current && !ui.picking ? cur() : null;
     const tag = ui.root.querySelector('.size-tag');
     if (e) {
       const r = frameRect(e.el);
-      tag.textContent = `${Math.round(r.width)} × ${Math.round(r.height)}`
+      tag.textContent = (also.length ? `${also.length + 1} selected  ·  ` : '')
+        + `${Math.round(r.width)} × ${Math.round(r.height)}`
         + (scaled(e) ? `  ·  ${pct(e)}%` : '')
         + (moved(e) ? `  ·  ${Math.round(e.dx - e.baseX)}, ${Math.round(e.dy - e.baseY)}` : '');
     } else tag.textContent = '';
@@ -715,6 +770,12 @@ be drawn bigger without reflowing, keep it as \`scale\` with
       const from = { x: ev.clientX, y: ev.clientY, dx: e.dx, dy: e.dy, s: e.s,
                      w: fr.width - pad * 2, h: fr.height - pad * 2,
                      ox: fr.left + pad - box.left, oy: fr.top + pad - box.top };
+      // The rest of the selection, as it stood at the press: each one's own
+      // offset and scale, and its top left corner on screen.
+      const rest = all().filter(x => x !== e).map(x => {
+        const r = x.el.getBoundingClientRect();
+        return { x, dx: x.dx, dy: x.dy, s: x.s, left: r.left, top: r.top };
+      });
       grip.setPointerCapture(ev.pointerId);
 
       let dragging = false;
@@ -727,6 +788,7 @@ be drawn bigger without reflowing, keep it as \`scale\` with
         if (how === 'move') {
           e.dx = from.dx + mx;
           e.dy = from.dy + my;
+          for (const g of rest) { g.x.dx = g.dx + mx; g.x.dy = g.dy + my; paint(g.x); }
         } else {
           /* A resize is a scale: the element and its contents together, in
              the proportion they started in. Each handle says how much bigger
@@ -749,6 +811,17 @@ be drawn bigger without reflowing, keep it as \`scale\` with
           const ay = how.includes('n') ? from.oy + from.h : from.oy;
           e.dx = from.dx + ax * (1 - kk);
           e.dy = from.dy + ay * (1 - kk);
+          // The others scale by the same factor about the same fixed point,
+          // so the group grows as one: each corner moves away from that point
+          // in proportion, and the spacing between them scales too.
+          const fx = box.left + ax, fy = box.top + ay;
+          for (const g of rest) {
+            g.x.s = r3(Math.max(minScale(g.x), g.s * kk));
+            const k2 = g.x.s / g.s;
+            g.x.dx = g.dx + (fx - g.left) * (1 - k2);
+            g.x.dy = g.dy + (fy - g.top) * (1 - k2);
+            paint(g.x);
+          }
         }
         paint(e);
         sync();
@@ -760,6 +833,8 @@ be drawn bigger without reflowing, keep it as \`scale\` with
         frame.removeEventListener('pointercancel', done);
         kit.classList.remove('is-dragging-block');
         if (grip.hasPointerCapture(m.pointerId)) grip.releasePointerCapture(m.pointerId);
+        // Ctrl/Cmd-click on the framed one takes it out of the selection.
+        if (!dragging && m.type === 'pointerup' && how === 'move' && (m.ctrlKey || m.metaKey)) { toggleSelect(e.el); return; }
         if (!dragging && m.type === 'pointerup' && how === 'move') {
           // A press that never became a drag: whatever is under it, found with
           // the frame out of the way - elementFromPoint returns the topmost
@@ -778,12 +853,9 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     frame.addEventListener('dblclick', (ev) => {
       const grip = ev.target.closest('.grip');
       if (!grip || grip.dataset.grip === 'move') return;
-      const e = cur(); if (!e) return;
+      if (!ui.current) return;
       ev.preventDefault(); ev.stopPropagation();
-      Object.assign(e, { dx: e.baseX, dy: e.baseY, s: e.baseS });
-      paint(e);
-      sync();
-      reframe();
+      edit(e => Object.assign(e, { dx: e.baseX, dy: e.baseY, s: e.baseS }));
       toast('box reset');
     });
   }
@@ -818,7 +890,7 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     if (typeof ResizeObserver !== 'function') return;
     ui.boxRO?.disconnect();
     ui.boxRO = new ResizeObserver(() => reframe());
-    if (ui.current) ui.boxRO.observe(ui.current);
+    chosen().forEach(el => ui.boxRO.observe(el));
     ui.boxRO.observe(document.body);
   }
 
@@ -852,6 +924,8 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     const t = targetAt(ev.target);
     if (!t) return;
     ev.preventDefault(); ev.stopPropagation();
+    // Ctrl/Cmd keeps picking, adding each one clicked.
+    if (adds(ev)) { toggleSelect(t); return; }
     togglePick(false);
     select(t);
   }
@@ -869,9 +943,10 @@ be drawn bigger without reflowing, keep it as \`scale\` with
 
   /* ---- hover to frame, click to select ----
      The click is taken rather than passed on - a click meant to choose an
-     element should not follow a link out of the page. Ctrl / Cmd or Shift
-     lets the page have it back. */
-  const passes = (ev) => ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey;
+     element should not follow a link out of the page. Ctrl / Cmd adds to the
+     selection (or takes out); Shift or Alt lets the page have the click back. */
+  const passes = (ev) => ev.shiftKey || ev.altKey;
+  const adds = (ev) => ev.ctrlKey || ev.metaKey;
 
   function onEditMove(ev) {
     if (!ui || ui.picking) return;
@@ -889,7 +964,7 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     const t = targetAt(ev.target);
     if (!t) return;
     ev.preventDefault(); ev.stopPropagation();
-    select(t);
+    adds(ev) ? toggleSelect(t) : select(t);
     setHover(null);
   }
 
@@ -940,7 +1015,7 @@ be drawn bigger without reflowing, keep it as \`scale\` with
     sheet.textContent = CURSOR_SHEET;
     document.head.append(sheet);
 
-    ui = { host, root, sheet, picking: false, hover: null, pickHover: null, targets: [], current: null, snap: 1 };
+    ui = { host, root, sheet, picking: false, hover: null, pickHover: null, targets: [], current: null, also: new Set(), alsoBoxes: [], snap: 1 };
     ui.outline = root.querySelector('.outline');
     ui.hoverBox = root.querySelector('.hover');
     wire();

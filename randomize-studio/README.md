@@ -33,7 +33,7 @@ cover: it is anchored to the screen, so its numbers are screen pixels.
   gradient generated offline, or your own upload), a **dynamic SVG** backdrop,
   a **scrim**, an SVG **pattern** overlay tinted and blended over it, and
   animated **grain**. Each layer has its own show / re-roll / lock.
-- **Dynamic SVG** — 44 backgrounds from the free
+- **Dynamic SVG** — 43 backgrounds from the free
   [SVGBackgrounds.com](https://www.svgbackgrounds.com/set/free-svg-backgrounds-and-patterns/)
   set as a layer of its own: filter the library by tag, recolour it swatch by
   swatch or from any of 300 palettes (matched by lightness, so the drawing keeps
@@ -93,7 +93,7 @@ file may only call into the ones above it while it is loading.
 | | |
 |---|---|
 | `js/fonts.js`, `js/overlay-patterns.js`, `js/static-background.js` | catalogues and the grain effect — no dependencies |
-| `js/svg-backgrounds-data.js`, `js/palettes.js` | the 44 backgrounds and the 300 palettes, copied from `../svg-backgrounds` |
+| `js/svg-backgrounds-data.js`, `js/palettes.js` | the 43 backgrounds and the 300 palettes, copied from `../svg-backgrounds` |
 | `js/state.js` | what a cover is made of: the model and the lists derived from it |
 | `js/artboard.js` | the fixed design space and the cover-scale transform |
 | `js/text.js` | the sample copy |

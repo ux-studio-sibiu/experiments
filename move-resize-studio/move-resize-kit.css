@@ -49,3 +49,8 @@
    at the row's own height. */
 .row > button:not(.iconbtn) { height: var(--ctl); padding: 0 8px; }
 .row > button:disabled { opacity: .35; pointer-events: none; }
+
+/* The rest of a Ctrl/Cmd-click selection: the same dashes as the framed one,
+   lighter and with no handles - a drag starts on the framed one and takes
+   these along. */
+.outline.is-also { opacity: .55; }

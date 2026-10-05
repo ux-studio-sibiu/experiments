@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pencil Still Life</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="nsc-lighting-lab">
+    <div class="stage"></div>
+
+    <section class="panel">
+      <h1 class="panel-title">Light with your phone</h1>
+      <ol class="steps">
+        <li>Click below and allow the camera.</li>
+        <li>Use phone's flashlight.</li>
+        <li>Point it at the webcam: it's now the sun for the scene.</li>
+      </ol>
+      <button class="cam-button" type="button">Use your phone as the light</button>
+      <select class="cam-select" aria-label="Camera" hidden></select>
+      <button class="calibrate-button" type="button" hidden>Re-learn the room (phone light off)</button>
+      <p class="cam-status" role="status" hidden></p>
+    </section>
+
+    <figure class="cam-preview">
+      <video class="cam-feed" playsinline muted></video>
+      <canvas class="cam-overlay" width="160" height="120"></canvas>
+    </figure>
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

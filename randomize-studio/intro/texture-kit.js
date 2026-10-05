@@ -11,7 +11,7 @@
 
    Opt-in and self-removing. Nothing happens until it is opened, with ?texture
    in the URL or Shift+T. Opening loads the studio's catalogues from ../js/
-   (the 44 backgrounds, the 300 palettes, the 87 pattern tiles, the grain);
+   (the 43 backgrounds, the 300 palettes, the 87 pattern tiles, the grain);
    closing it takes every trace back out:
 
    - each textured element gets ONE child, a [data-texture-kit] host holding
@@ -197,7 +197,7 @@
     const sizes = tileSizes(bg);
     if (sizes && s.scale !== 1)
       css['background-size'] = sizes.map(([w,h]) => `${+(w*s.scale).toFixed(1)}px ${+(h*s.scale).toFixed(1)}px`).join(', ');
-    // 27 of the 44 come with `background-attachment: fixed`, which on a page
+    // 26 of the 43 come with `background-attachment: fixed`, which on a page
     // that scrolls pins the drawing to the window while the element moves past
     // it. Here it moves with the element unless "fixed to the window" is on -
     // and that box then pins any of them, not only the ones drawn that way.
@@ -338,7 +338,7 @@
       if (sv.enabled) {
         applyCss(svTile, editedCss(sv));
         // Unturned, the drawing paints in the element's own box. That matters:
-        // a good half of the 44 are sized in percentages or to cover, and an
+        // a good half of the 43 are sized in percentages or to cover, and an
         // oversized box would quietly rescale them - so the big square is only
         // taken when there is a rotation that needs it, and the layer looks
         // exactly as it always did at 0.

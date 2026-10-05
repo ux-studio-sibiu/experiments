@@ -25,7 +25,7 @@ panel, exported as plain CSS.
     css/svg-background.css        the dynamic-svg layer's controls
     css/tooltip.css               the hover card
 
-    js/svg-backgrounds-data.js    44 svg backgrounds
+    js/svg-backgrounds-data.js    43 svg backgrounds
     js/palettes.js                300 palettes
     js/overlay-patterns.js        the pattern catalogue
     js/static-background.js       the grain

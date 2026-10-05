@@ -949,7 +949,7 @@ kbd {
 /* ---- the panel, docked ----
    A strip, not a picture in the flow: it stretches to the part's height and
    the image sits centred in it, sized by whichever of the two runs out first.
-   The width is a share of the body rather than the image's own 357px, so a
+   The width is a share of the body rather than the image's own 442px, so a
    narrow column gets a narrow panel instead of a panel and no frame.
 
    The ink edge and the offset shadow every other box on this page wears, so a
@@ -985,10 +985,11 @@ kbd {
   border: 2px solid var(--ink);
   box-shadow: 3px 5px #00000033;
 }
-/* Sized by the strip's width, with the shape it actually is, so the box is
-   the right size before a byte of it has arrived - width plus aspect-ratio is
-   definite, an unloaded `width: auto` image is 0 and the layout jumps when it
-   lands.
+/* Sized by the strip's width, with the shape it actually is. No aspect-ratio
+   here: the width/height attributes give the box its shape before a byte has
+   arrived (an unloaded `width: auto` image is 0 and the layout jumps when it
+   lands), and once the file is in, its own proportions take over - so a new
+   screenshot of a different shape is never stretched to the old one.
 
    Not lazy, unlike the hidden figure in the copy column this file came from:
    this one is at the top of the page. */
@@ -996,7 +997,6 @@ kbd {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 357 / 557;
   transition: filter .25s ease, opacity .25s ease, scale .25s ease;
 }
 /* ---- out of focus while a kit is open ----

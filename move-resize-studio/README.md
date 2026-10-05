@@ -63,8 +63,11 @@ It reads three stylesheets out of the studio beside it:
   different letter: `data-key="M"` on the script tag.
 - Anything marked `data-move-resize-kit-open` opens it, and can name the element to
   start on: `data-move-resize-kit-open=".hero"`.
-- While it is open, hover frames an element and a click selects it. `Ctrl` /
-  `Cmd` or `Shift` gives the click back to the page.
+- While it is open, hover frames an element and a click selects it.
+  `Ctrl` / `Cmd`-click adds an element to the selection or takes it out, and
+  every edit (drag, resize, sliders, dice, arrows, reset) then goes to all of
+  them; a group resize scales the spacing between them too. `Shift` or `Alt`
+  gives the click back to the page.
 - **The whole selected box is the move handle.** The eight squares resize it
   by **scaling** it: the element and everything inside it - type, images,
   spacing - grow or shrink together, always in the proportion they started
