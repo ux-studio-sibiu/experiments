@@ -899,7 +899,7 @@
       state.t2 = setTimeout(() => requestAnimationFrame(step),
         betweenPasses ? 520
           : s.d ? s.d + Math.random() * s.d
-          : s.over ? 17 + Math.random() * 20
+          : s.over ? 12 + Math.random() * 14    // 17 + 20, over 1.4
           : 20 + Math.random() * 30);
     };
     state.t1 = setTimeout(() => requestAnimationFrame(step), 400);
