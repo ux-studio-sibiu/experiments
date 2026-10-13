@@ -11,7 +11,8 @@
       --muted: #8a847a;
       --line: #dcd6cc;
       /* the left nav: light on dark gray */
-      --nav-bg: #2b2b29;
+      --nav-bg: #1f1f1d;
+      --nav-top: 240px; /* how far down the nav (and its expand tab) sits */
       --nav-ink: #f1eee8;
       --nav-muted: #9a958c;
     }
@@ -30,21 +31,89 @@
       font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     }
 
-    /* Two columns: the project list, and the selected project in an iframe. */
+    /* The selected project fills the whole window in an iframe; the project list floats over its left edge,
+       only as tall as its links (at least 300px). */
     .nsc-motion-index {
-      display: grid;
-      grid-template-columns: 200px minmax(0, 1fr);
+      position: relative;
       height: 100vh;
       height: 100dvh;
 
+      /* Against the browser's left edge, var(--nav-top) down. */
       .sidebar {
+        position: absolute;
+        top: var(--nav-top);
+        left: 0;
+        z-index: 2;
         display: flex;
         flex-direction: column;
         gap: 18px;
+        width: 200px;
+        min-height: 300px;
+        max-height: calc(100% - var(--nav-top) - 12px);
         padding: 20px 16px;
         overflow-y: auto;
         background: var(--nav-bg);
         color: var(--nav-ink);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        transition: translate 0.35s cubic-bezier(0.33, 0, 0.2, 1), opacity 0.25s ease;
+      }
+
+      /* Collapsed: the nav slides out past the left edge and only the expand tab is left. */
+      &.is-collapsed .sidebar {
+        translate: -100% 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .nav-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      /* Collapse (in the nav) and expand (left behind when it is collapsed): square, light on dark. */
+      .collapse,
+      .expand {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        border: 1px solid var(--nav-muted);
+        background: transparent;
+        color: var(--nav-ink);
+        font: 400 16px/1 ui-sans-serif, system-ui, sans-serif;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+        &:hover { background: var(--nav-ink); color: var(--nav-bg); border-color: var(--nav-ink); }
+      }
+
+      .collapse { margin: -4px -4px 0 0; }
+
+      .expand {
+        position: absolute;
+        top: var(--nav-top);
+        left: 0;
+        z-index: 2;
+        width: 32px;
+        height: 32px;
+        border-color: var(--nav-bg);
+        background: var(--nav-bg);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0s linear 0.2s, background 0.15s ease, color 0.15s ease;
+      }
+
+      &.is-restoring .sidebar,
+      &.is-restoring .expand { transition: none; }
+
+      &.is-collapsed .expand {
+        opacity: 1;
+        visibility: visible;
+        transition-delay: 0.2s, 0s, 0s, 0s;
       }
 
       .title {
@@ -68,7 +137,6 @@
           line-height: 1.3;
           color: var(--nav-ink);
           text-decoration: none;
-          border-radius: 4px;
           transition: background 0.15s ease;
 
           &:hover { background: rgba(255, 255, 255, 0.08); }
@@ -84,12 +152,24 @@
         &:hover { color: var(--nav-ink); }
       }
 
+      /* Two stacked frames for the cross-fade: the new project loads, hidden, in the one at the back, and fades in
+         over the old one only once it is ready (see script). */
       .frame {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
         border: 0;
         display: block;
         background: #fff;
+        z-index: 0;
+        opacity: 0;
+        transition: opacity 0.45s ease;
+
+        /* the one on screen, fading in on top */
+        &.is-shown { z-index: 1; opacity: 1; }
+        /* the one it replaces stays solid underneath until the fade is done, so nothing dips toward white */
+        &.is-leaving { opacity: 1; transition: none; }
       }
     }
   </style>
@@ -98,23 +178,30 @@
   <div class="nsc-motion-index">
     <!-- One link per project folder in motion/. Add a line here when a new one is added. -->
     <nav class="sidebar" aria-label="Projects">
-      <p class="title">Motion</p>
+      <div class="nav-head">
+        <p class="title">Scroll Driven:</p>
+        <button type="button" class="collapse" aria-label="Hide the project list" title="Hide">&lsaquo;</button>
+      </div>
       <ul class="projects">
-        <li><a href="rotate-sectors/" target="project">Rotate sectors</a></li>
-        <li><a href="infinete-zoom/" target="project">Infinite zoom</a></li>
-        <li><a href="zoom-navigation/" target="project">Zoom navigation</a></li>
+        <li><a href="rotate-sectors/">Scroll effect</a></li>
+        <li><a href="infinite-zoom/">Infinite zoom scroll</a></li>
+        <li><a href="zoom-navigation/">Zoom based navigation</a></li>
       </ul>
+
+      <p class="title">Other:</p>
+
       <a class="open-tab" href="rotate-sectors/" target="_blank" rel="noopener">Open in new tab &#8599;</a>
     </nav>
+    <button type="button" class="expand" aria-label="Show the project list" title="Show projects">&rsaquo;</button>
 
-    <iframe class="frame" name="project" title="Project preview" src="rotate-sectors/"></iframe>
+    <iframe class="frame" title="Project preview"></iframe>
+    <iframe class="frame" title="Project preview"></iframe>
   </div>
 
   <script>
-    // Keeps the current project marked, in the address (#infinete-zoom) so a reload or a shared link opens it,
+    // Keeps the current project marked, in the address (#infinite-zoom) so a reload or a shared link opens it,
     // and in focus, so its keys and wheel work straight away.
     const links = [...document.querySelectorAll('.projects a')];
-    const frame = document.querySelector('.frame');
     const openTab = document.querySelector('.open-tab');
     const slug = (a) => a.getAttribute('href').replace(/\/$/, '');
 
@@ -125,12 +212,75 @@
       history.replaceState(null, '', `#${slug(link)}`);
     }
 
-    links.forEach((a) => a.addEventListener('click', () => select(a)));
-    frame.addEventListener('load', () => frame.focus());
+    /* Cross-fade between projects. The new one loads in the hidden frame while the current one stays on screen;
+       it fades in only when it is really ready: the frame's load event (the page, its styles, scripts and images),
+       then its web fonts (same origin, so the wrapper can wait on document.fonts), then two animation frames so
+       its own start-up code has drawn. The old frame stays solid underneath during the fade, then is emptied,
+       which stops its loops.
+       A click before that finishes simply wins: only the latest request is shown. */
+    const frames = [...document.querySelectorAll('.frame')];
+    let shown = null;
+    let request = 0;
 
+    function show(href) {
+      const ticket = ++request;
+      const incoming = frames.find((f) => f !== shown);
+      incoming.dataset.ticket = ticket;
+      incoming.classList.remove('is-shown', 'is-leaving');
+      incoming.addEventListener('load', async function ready() {
+        incoming.removeEventListener('load', ready);
+        try { await incoming.contentDocument?.fonts?.ready; } catch {}
+        // two frames so its start-up code has drawn - capped, since a background tab never runs them
+        await Promise.race([
+          new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+          new Promise((r) => setTimeout(r, 100)),
+        ]);
+        if (ticket !== request) return; // a later click took over
+        const outgoing = shown;
+        shown = incoming;
+        incoming.classList.add('is-shown');
+        incoming.focus();
+        if (outgoing) {
+          const leaving = outgoing.dataset.ticket;
+          outgoing.classList.replace('is-shown', 'is-leaving');
+          setTimeout(() => {
+            // not if it has since been picked up to load another project
+            if (outgoing === shown || outgoing.dataset.ticket !== leaving) return;
+            outgoing.classList.remove('is-leaving');
+            outgoing.src = 'about:blank';
+          }, 500);
+        }
+      });
+      incoming.src = href;
+    }
+
+    links.forEach((a) => a.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // new tab / window as usual
+      e.preventDefault();
+      if (a.classList.contains('is-current')) return;
+      select(a);
+      show(a.getAttribute('href'));
+    }));
+
+    // Collapse / expand the nav, remembered for next time.
+    const wrapper = document.querySelector('.nsc-motion-index');
+    const KEY = 'motion-index-collapsed';
+    const setCollapsed = (on) => {
+      wrapper.classList.toggle('is-collapsed', on);
+      try { localStorage.setItem(KEY, on ? '1' : ''); } catch {}
+    };
+    document.querySelector('.collapse').addEventListener('click', () => { setCollapsed(true); document.querySelector('.expand').focus(); });
+    document.querySelector('.expand').addEventListener('click', () => { setCollapsed(false); document.querySelector('.collapse').focus(); });
+    // Restored without the slide, so a reload doesn't show the nav leaving.
+    try {
+      if (localStorage.getItem(KEY)) {
+        wrapper.classList.add('is-restoring', 'is-collapsed');
+        requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.remove('is-restoring')));
+      }
+    } catch {}
     const start = links.find((a) => `#${slug(a)}` === location.hash) || links[0];
-    if (frame.getAttribute('src') !== start.getAttribute('href')) frame.src = start.getAttribute('href');
     select(start);
+    show(start.getAttribute('href'));
   </script>
 </body>
 </html>

@@ -103,6 +103,9 @@ body {
     grid-template-rows: subgrid;
   }
 
+  /* hidden until the fonts are in (script.js adds .is-ready), then shown as is */
+  &:not(.is-ready) .copy { visibility: hidden; }
+
   .slide {
     display: contents;
     visibility: hidden;

@@ -138,9 +138,10 @@ const placeCenter = () => {
 new ResizeObserver(placeCenter).observe(rotor);
 placeCenter();
 
+// The first season is simply there on load - no intro animation. Its text waits for the web fonts (at most a
+// second) so it appears once, in its real face, rather than reflowing from a fallback.
 slides[0].classList.add('is-active');
-gsap.from(slides[0].querySelector('.title-band .mover'), { yPercent: 100 * subtlety, autoAlpha: 0, duration: 1, ease: 'power2.out', delay: 0.2 });
-gsap.from(slides[0].querySelector('.note-band .mover'), { autoAlpha: 0, duration: 0.9, ease: 'sine.inOut', delay: 0.3 });
+Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1000))]).then(() => rotor.classList.add('is-ready'));
 
 // The move-resize kit (Shift+L) and type kit (Shift+T) take clicks, drags and arrow keys while open, so the wheel stands aside.
 // A set, not a flag: opening one kit closes the other, and its close event lands after the new one's open.
