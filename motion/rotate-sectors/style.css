@@ -1,0 +1,235 @@
+:root {
+  --bg: #f7ecec; /* overwritten per season from each slide's data-bg */
+  --ink: #1d1b18;
+  --muted: #8a847a;
+  --accent: #ffd966;
+  --r: min(54vmin, 540px);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* The four quarters of the page around the disc center, each a shade of the season tint.
+     They follow --bg, so they fade with it on every turn. */
+  --bg-top-left: color-mix(in oklab, var(--bg), #fff 45%);
+  --bg-top-right: var(--bg);
+  --bg-bottom-left: color-mix(in oklab, var(--bg), #000 8%);
+  --bg-bottom-right: color-mix(in oklab, var(--bg), #000 4%);
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.nsc-rotor {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: var(--r) minmax(0, 1fr);
+  /* Row 1 is the wheel; row 2 is the strip under it, below the line where the background splits. */
+  grid-template-rows: var(--r) auto;
+  align-items: end;
+  align-content: center;
+  justify-content: center;
+  column-gap: clamp(24px, 5vw, 72px);
+  padding: 16px clamp(16px, 6vw, 96px);
+  touch-action: none;
+  user-select: none;
+  /* --cx / --cy (the disc center, i.e. the window's bottom-right corner) are measured by script.js. */
+  background: conic-gradient(
+    from 0deg at var(--cx, 50%) var(--cy, 50%),
+    var(--bg-top-right) 0deg 90deg,
+    var(--bg-bottom-right) 90deg 180deg,
+    var(--bg-bottom-left) 180deg 270deg,
+    var(--bg-top-left) 270deg 360deg
+  );
+
+  /* The mask: a quarter circle whose center is the disc center (bottom-right corner). */
+  .window {
+    position: relative;
+    width: var(--r);
+    height: var(--r);
+    overflow: hidden;
+    border-top-left-radius: 100%;
+    background: var(--accent);
+  }
+
+  .disc {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--r) * 2);
+    height: calc(var(--r) * 2);
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+
+  .sector {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--r);
+    height: var(--r);
+    transform-origin: 100% 100%;
+    transform: rotate(calc(var(--i) * 90deg));
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  }
+
+  .window { grid-row: 1; }
+
+  /* The copy spans both rows: titles sit in the wheel's row, the column text in the strip below the line.
+     A slide is display: contents, so its two bands land in those rows directly, and every slide's bands
+     stack in the same two cells; only the active slide is visible. */
+  .copy {
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    display: grid;
+    grid-template-rows: subgrid;
+  }
+
+  .slide {
+    display: contents;
+    visibility: hidden;
+
+    &.is-active { visibility: visible; }
+  }
+
+  /* Each band clips vertically only, so its text slides in and out between that band's own top and bottom
+     edges (the wheel's top and the line for the title, the line and the strip's end for the columns) while a
+     wide title can still run past the column. */
+  .title-band,
+  .note-band {
+    position: relative;
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    clip-path: inset(0 -100vw 0 -100vw);
+  }
+
+  .title-band {
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .note-band {
+    grid-row: 2;
+    padding-top: 24px;
+  }
+
+  .mover { will-change: transform; }
+
+  .season {
+    font-family: "Libre Baskerville", serif;
+    font-size: 120px;
+    font-weight: 700;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    padding-bottom: 0.06em;
+    /* Lifted off the line and nudged right so the serif's side bearing lines up optically. */
+    margin: 0 0 83px 9px;
+  }
+
+  .subheading {
+    max-width: 757px;
+    columns: 2;
+    column-gap: 32px;
+    font-family: "Open Sans", sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  /* Browser-style scrollbar, drawn like Chrome's classic one on Windows: a 15px light gutter and a grey thumb
+     that darkens under the pointer. The thumb is one season tall; --at (in thumbs) is set by
+     script.js, and the second thumb one rail-length behind makes the loop. */
+  .browser-bar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    display: flex;
+    width: 15px;
+    background: #f1f1f1;
+    border-left: 1px solid #e6e6e6;
+
+    .rail {
+      position: relative;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .thumb {
+      position: absolute;
+      top: 0;
+      left: 2px;
+      right: 2px;
+      height: calc(100% / var(--count, 4));
+      border-radius: 4px;
+      background: #c1c1c1;
+      translate: 0 calc(var(--at, 0) * 100%);
+      cursor: grab;
+      transition: background 0.12s ease;
+    }
+
+    &:hover .thumb { background: #a8a8a8; }
+    .rail:active .thumb,
+    .rail.is-dragging .thumb { background: #787878; cursor: grabbing; }
+  }
+
+  .controls {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .tool-button {
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.15s var(--ease);
+
+    &:hover { background: rgba(0, 0, 0, 0.05); }
+  }
+}
+
+@media (max-width: 720px) {
+  .nsc-rotor {
+    --r: min(80vw, 38vh);
+    grid-template-columns: var(--r);
+    grid-template-rows: auto;
+    row-gap: 24px;
+    padding-bottom: 64px;
+
+    .season { font-size: min(16vw, 11vh); margin: 0; }
+    .copy { grid-row: auto; grid-template-rows: auto auto; }
+    .note-band { padding-top: 12px; }
+    .subheading { columns: 1; }
+  }
+}

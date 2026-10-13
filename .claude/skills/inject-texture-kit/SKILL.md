@@ -26,6 +26,14 @@ project's own CSS, markup or build.
 
 ## 1. Copy the files - keep the folder shape
 
+**Always make a local copy - never link to the studio's files by a relative
+path out of the project** (`../../randomize-studio/...`), including for an
+effect folder inside `effects-collection/` (it gets its own `vendor/` copy).
+A link out of the folder breaks when the page is served from another root
+(VS Code Live Server serves only the open folder), and a local copy can be
+adjusted for that one page without touching the original kit. Test with the
+effect folder itself as the server root.
+
 The kit finds everything relative to **its own script address**
 (`new URL('../', document.currentScript.src)` at the top of
 `intro/texture-kit.js`), so the folder must keep this shape. Put these in the

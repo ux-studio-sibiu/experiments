@@ -1,0 +1,559 @@
+:root {
+  --bg: #e1dcd2;
+  --ink: #1b1a17;
+  --muted: #77726a;
+  --card: #f6f3ee;
+  --card-hover: #fffdf9;
+  --gap: 10px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* The zoom's timing, shared by Zoomooz (script.js reads it) and the title so they move as one. */
+  --zoom-time: 0.9s;
+  --zoom-ease: cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+.nsc-zoom-site {
+  position: relative;
+  width: calc(100vw - 15px); /* clear of the scrollbar gutter */
+  height: 100vh;
+  overflow: hidden;
+
+  .zoomContainer {
+    width: 100%;
+    height: 100%;
+    transition-property: transform;
+  }
+
+  /* The partition from vue-playground/app/pages/zoom.vue, unchanged. */
+  .grid {
+    display: grid;
+    grid-template-columns: 2.2fr 0.8fr 1.4fr;
+    grid-template-rows: 1.8fr 0.7fr 1.5fr;
+    gap: var(--gap);
+    padding: var(--gap);
+    width: 100%;
+    height: 100%;
+  }
+
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gap);
+    min-height: 0;
+  }
+
+  /* Everything inside a section is sized in cqmin (percent of the section's shorter side), so it scales with
+     the zoom and reads the same in a tall narrow cell as in a wide short one. */
+  .section {
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+    container-type: size;
+    background: var(--card);
+    cursor: pointer;
+    transition: background 0.6s ease, opacity 0.4s var(--ease);
+
+    &:hover { background: var(--card-hover); }
+  }
+
+  /* The open section keeps the hover colour rather than a tint of its own. */
+  .section.is-zoomed { background: var(--card-hover); cursor: default; }
+
+  /* While one section is open, the others step back. */
+  &.is-open .section:not(.is-zoomed) { opacity: 0.35; }
+
+  /* The title always sits, at its open size, in the top-left corner. Closed, script.js moves it to the center and
+     scales it up (--title-x / --title-y / --title-scale, measured per section), so opening only animates a
+     transform - no re-layout per frame - together with the zoom, on its timing and curve, as one movement. --title-open and --title-big
+     are the default open and closed sizes; their ratio is the scale, so a font-size set with the type kit
+     resizes the title in both states rather than being scaled back to the default. */
+  .section-title {
+    --title-open: min(7cqw, 8cqmin);
+    --title-big: min(12cqw, 26cqmin);
+
+    position: absolute;
+    left: 7cqmin;
+    top: 7cqmin;
+    font-size: var(--title-open);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-transform: uppercase;
+    opacity: 0.8;
+    white-space: nowrap;
+    transform-origin: 0 0;
+    translate: var(--title-x, 0) var(--title-y, 0);
+    scale: var(--title-scale, 1);
+    will-change: translate, scale;
+    transition: translate var(--zoom-time) var(--zoom-ease), scale var(--zoom-time) var(--zoom-ease);
+  }
+
+  /* Section textures, picked with the texture kit: shown on every section at rest, faded out while the pointer is
+     on it and on the open section.
+     A ::before behind the content (isolation keeps z-index -1 above the section's own background), set per
+     section by --texture (tile), --texture-size, --texture-opacity and, for turned patterns, --texture-turn. */
+  .section { isolation: isolate; }
+
+  .section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: #000;
+    -webkit-mask: var(--texture) 0 0 / var(--texture-size) repeat;
+    mask: var(--texture) 0 0 / var(--texture-size) repeat;
+    opacity: var(--texture-opacity, 0.2);
+    transition: opacity 0.6s ease;
+  }
+
+  .section:hover::before,
+  .section.is-zoomed::before { opacity: 0; }
+
+  .projects { --texture: url("patterns/graph-paper.svg"); --texture-size: 100px 100px; --texture-opacity: 0.35; }
+  .services { --texture: url("patterns/bamboo.svg"); --texture-size: 24px 48px; --texture-opacity: 0.15; }
+  .journal { --texture: url("patterns/diagonal-lines.svg"); --texture-size: 6px 6px; --texture-opacity: 0.35; }
+  .about { --texture: url("patterns/bank-note.svg"); --texture-size: 50px 10px; --texture-opacity: 0.2; }
+  .awards { --texture: url("patterns/topography.svg"); --texture-size: 300px 300px; --texture-opacity: 0.2; }
+  .team { --texture: url("patterns/diagonal-lines.svg"); --texture-size: 9px 9px; --texture-opacity: 0.15; --texture-turn: 135deg; }
+  .studio { --texture: url("patterns/tic-tac-toe.svg"); --texture-size: 32px 32px; --texture-opacity: 0.2; }
+  .press { --texture: url("patterns/diagonal-lines.svg"); --texture-size: 6px 6px; --texture-opacity: 0.35; --texture-turn: 90deg; }
+  .contact { --texture: url("patterns/rails.svg"); --texture-size: 10px 5px; --texture-opacity: 0.2; --texture-turn: 135deg; }
+
+  /* Turned patterns: a centered square past the diagonal, so the turn never shows an edge. */
+  .team::before,
+  .press::before,
+  .contact::before {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    aspect-ratio: 1;
+    min-width: 142%;
+    min-height: 142%;
+    transform-origin: 50% 50%;
+    transform: translate(-50%, -50%) rotate(var(--texture-turn));
+  }
+
+  /* Each section's title face, picked with the type kit. */
+  .projects .section-title { font-family: "Poppins", sans-serif; font-weight: 800; }
+  .services .section-title,
+  .awards .section-title,
+  .studio .section-title,
+  .contact .section-title { font-family: "Raleway", sans-serif; font-weight: 300; }
+  .about .section-title,
+  .team .section-title { font-family: "Space Grotesk", sans-serif; font-weight: 600; }
+  .journal .section-title,
+  .press .section-title { font-family: "Merriweather", serif; font-weight: 400; }
+
+  .is-zoomed .section-title {
+    translate: 0 0;
+    scale: 1;
+  }
+
+  /* Before script.js has placed the titles they're hidden; while it places them they don't animate. */
+  &:not(.is-placed) .section-title { visibility: hidden; }
+  &.is-placing .section-title { transition: none; }
+
+  /* The content: hidden until the section opens, then each piece cross-fades in, in order - no movement. */
+  .section-body {
+    position: absolute;
+    inset: 25cqmin 7cqmin 7cqmin;
+    display: flex;
+    flex-direction: column;
+    gap: 4cqmin;
+    font-size: 3.6cqmin;
+    line-height: 1.55;
+    pointer-events: none;
+
+    > * {
+      opacity: 0;
+      transition: opacity 0.35s var(--ease);
+    }
+  }
+
+  .is-zoomed .section-body {
+    pointer-events: auto;
+
+    > * {
+      opacity: 1;
+      transition-duration: 0.6s;
+    }
+    /* as the zoom settles */
+    > :nth-child(1) { transition-delay: 0.45s; }
+    > :nth-child(2) { transition-delay: 0.55s; }
+    > :nth-child(3) { transition-delay: 0.65s; }
+    > :nth-child(4) { transition-delay: 0.75s; }
+  }
+
+  .lead {
+    font-size: 5.4cqmin;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  p { color: var(--muted); }
+  .lead { color: var(--ink); }
+
+  .stats {
+    display: flex;
+    gap: 6cqmin;
+    list-style: none;
+    margin-top: auto;
+    color: var(--muted);
+
+    strong {
+      display: block;
+      font-size: 6cqmin;
+      font-weight: 600;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+  }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 2.5cqmin;
+    height: 100%;
+    list-style: none;
+
+    li {
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    span {
+      position: absolute;
+      left: 2.2cqmin;
+      bottom: 1.8cqmin;
+      color: #fff;
+      font-weight: 600;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+    }
+
+    em {
+      display: block;
+      font-style: normal;
+      font-weight: 400;
+      font-size: 0.8em;
+      opacity: 0.85;
+    }
+  }
+
+  .list {
+    list-style: none;
+    counter-reset: item;
+
+    li {
+      display: grid;
+      grid-template-columns: 30cqmin 1fr;
+      gap: 3cqmin;
+      padding: 2.4cqmin 0;
+      border-top: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+    }
+
+    strong { font-weight: 600; }
+    span { color: var(--muted); }
+  }
+
+  .posts {
+    display: grid;
+    gap: 3cqmin;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: 22cqmin 1fr;
+      align-items: center;
+      gap: 4cqmin;
+    }
+
+    img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+    }
+
+    span {
+      font-size: 3.2cqmin;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    em {
+      display: block;
+      margin-bottom: 0.6cqmin;
+      font-style: normal;
+      font-size: 2.2cqmin;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+  }
+
+  .photo {
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    object-fit: cover;
+    display: block;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4cqmin;
+
+    dt {
+      margin-bottom: 0.8cqmin;
+      font-size: 2.1cqmin;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    dd { font-weight: 500; }
+  }
+
+  .contact .facts { margin-top: auto; }
+
+  /* Tall, narrow cells: label above its line. */
+  .services .list li { grid-template-columns: 1fr; gap: 0.6cqmin; }
+
+  /* Wide, short cells: content runs across in columns. */
+  /* About now sits in a wide, short cell: its text and stats run side by side. */
+  .about .section-body {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr auto;
+    grid-template-rows: auto 1fr;
+    column-gap: 7cqmin;
+    align-content: start;
+    font-size: 6cqmin; /* a short cell: type sized up against its height */
+  }
+  .about .lead { font-size: 8.5cqmin; }
+  .about .stats strong { font-size: 10cqmin; }
+  .about .lead { grid-column: 1; grid-row: 1 / span 2; }
+  .about .section-body > p:not(.lead) { grid-column: 2; grid-row: 1 / span 2; }
+  .about .stats { grid-column: 3; grid-row: 1 / span 2; flex-direction: column; gap: 3cqmin; margin-top: 0; }
+
+  .people {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4cqmin;
+    list-style: none;
+    color: var(--muted);
+
+    li { border-top: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); padding-top: 3cqmin; }
+    strong { display: block; color: var(--ink); font-size: 6cqmin; font-weight: 600; line-height: 1.2; }
+  }
+
+  /* Short lists: a bold line with a muted label. */
+  .mini {
+    display: grid;
+    gap: 2.6cqmin;
+    list-style: none;
+    color: var(--muted);
+
+    strong { display: block; color: var(--ink); font-weight: 600; }
+  }
+
+  .quote {
+    font-size: 6cqmin;
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .source { margin-top: -2cqmin; }
+  /* Awards spans the middle column's bottom two rows; auto-placement fills in around it. */
+  .awards { grid-row: span 2; }
+  .awards .lead { margin-top: auto; }
+  .studio .facts { grid-template-columns: 1fr 1fr; }
+
+  .cta {
+    align-self: flex-start;
+    padding: 2cqmin 4cqmin;
+    background: var(--ink);
+    color: var(--card);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s var(--ease);
+
+    &:hover { background: #3a3832; }
+  }
+}
+
+/* The tool buttons: appended to <html> by script.js, outside everything Zoomooz transforms. */
+.zoom-tool {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  font: 600 13px/1 "Manrope", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  color: #1b1a17;
+  background: #fff;
+  border: 1px solid #1b1a17;
+  cursor: pointer;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s, background 0.2s ease, color 0.2s ease;
+
+  &:hover { background: #1b1a17; color: #fff; }
+}
+
+
+.zoom-tools {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 2147483647;
+  display: flex;
+  gap: 8px;
+}
+
+/* The 'fake' scrollbar (script.js), drawn like Chrome's classic one on Windows: a 15px light gutter and a grey
+   thumb, one section tall, that darkens under the pointer. --at (in thumbs) is set by script.js; the second
+   thumb one rail-length behind makes the loop. Dimmed while no section is open. */
+.zoom-scrollbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483646;
+  display: flex;
+  width: 15px;
+  /* the rail stops short of the screen edges, so the thumb never touches them (it is clipped to the rail) */
+  padding: 6px 0;
+  background: #f1f1f1;
+  border-left: 1px solid #e6e6e6;
+
+  .rail {
+    position: relative;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .thumb {
+    position: absolute;
+    top: 0;
+    left: 2px;
+    right: 2px;
+    height: calc(100% / var(--count, 9));
+    border-radius: 4px;
+    background: #c1c1c1;
+    opacity: 0.6;
+    translate: 0 calc(var(--at, 0) * 100%);
+    cursor: grab;
+    transition: background 0.12s ease, opacity 0.3s ease;
+  }
+
+  &.is-open .thumb { opacity: 1; }
+  &:hover .thumb { background: #a8a8a8; opacity: 1; }
+  .rail:active .thumb,
+  &.is-dragging .thumb { background: #787878; cursor: grabbing; }
+}
+
+/* Zoomooz puts transform-origin: 0 0 on every element (*), which it needs for its own zoom maths but which makes
+   the texture kit's rotated and scaled layers turn around their top-left corner and swing out of the element.
+   Its layers turn around their centres again. */
+[data-texture-kit],
+[data-texture-kit] * { transform-origin: 50% 50%; }
+
+/* Mini-map (script.js): a copy of the grid just beside the scrollbar, shown while a section is open (.is-open);
+   script.js moves it up and down with the thumb (top).
+   Cells are positioned in percent of the grid, on a box with the grid's own proportions (--ratio). */
+.zoom-map {
+  position: fixed;
+  top: 6px;
+  right: calc(15px + 6px); /* 6px from the gutter */
+  z-index: 2147483647;
+  width: 150px;
+  padding: 8px 8px 6px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #1b1a17;
+  backdrop-filter: blur(6px);
+  font: 600 11px/1 "Manrope", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1b1a17;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+
+  &.is-open {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .cells {
+    position: relative;
+    aspect-ratio: var(--ratio, 16 / 9);
+  }
+
+  /* each cell is inset a hair so neighbours read as separate, like the grid's gaps */
+  .cell {
+    position: absolute;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, #1b1a17 40%, transparent);
+    background: transparent;
+    background-clip: padding-box;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+
+    &:hover { background: color-mix(in srgb, #1b1a17 18%, transparent); }
+    &.is-current { background: #1b1a17; border-color: #1b1a17; cursor: default; }
+  }
+
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 6px;
+    min-height: 18px;
+  }
+
+  /* Close: back out to all sections. Only while a section is open. */
+  .close {
+    display: none;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid #1b1a17;
+    background: #fff;
+    color: #1b1a17;
+    font: 400 14px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover { background: #1b1a17; color: #fff; }
+  }
+
+  &.is-open .close { display: block; }
+}

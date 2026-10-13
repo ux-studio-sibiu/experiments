@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Motion</title>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --ink: #1b1a17;
+      --muted: #8a847a;
+      --line: #dcd6cc;
+      /* the left nav: light on dark gray */
+      --nav-bg: #2b2b29;
+      --nav-ink: #f1eee8;
+      --nav-muted: #9a958c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    /* Two columns: the project list, and the selected project in an iframe. */
+    .nsc-motion-index {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      height: 100vh;
+      height: 100dvh;
+
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 20px 16px;
+        overflow-y: auto;
+        background: var(--nav-bg);
+        color: var(--nav-ink);
+      }
+
+      .title {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--nav-muted);
+      }
+
+      .projects {
+        display: grid;
+        gap: 2px;
+        list-style: none;
+
+        a {
+          display: block;
+          padding: 7px 8px;
+          margin: 0 -8px;
+          font-size: 14px;
+          line-height: 1.3;
+          color: var(--nav-ink);
+          text-decoration: none;
+          border-radius: 4px;
+          transition: background 0.15s ease;
+
+          &:hover { background: rgba(255, 255, 255, 0.08); }
+          &.is-current { background: var(--nav-ink); color: var(--nav-bg); }
+        }
+      }
+
+      .open-tab {
+        margin-top: auto;
+        font-size: 12px;
+        color: var(--nav-muted);
+
+        &:hover { color: var(--nav-ink); }
+      }
+
+      .frame {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+        background: #fff;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="nsc-motion-index">
+    <!-- One link per project folder in motion/. Add a line here when a new one is added. -->
+    <nav class="sidebar" aria-label="Projects">
+      <p class="title">Motion</p>
+      <ul class="projects">
+        <li><a href="rotate-sectors/" target="project">Rotate sectors</a></li>
+        <li><a href="infinete-zoom/" target="project">Infinite zoom</a></li>
+        <li><a href="zoom-navigation/" target="project">Zoom navigation</a></li>
+      </ul>
+      <a class="open-tab" href="rotate-sectors/" target="_blank" rel="noopener">Open in new tab &#8599;</a>
+    </nav>
+
+    <iframe class="frame" name="project" title="Project preview" src="rotate-sectors/"></iframe>
+  </div>
+
+  <script>
+    // Keeps the current project marked, in the address (#infinete-zoom) so a reload or a shared link opens it,
+    // and in focus, so its keys and wheel work straight away.
+    const links = [...document.querySelectorAll('.projects a')];
+    const frame = document.querySelector('.frame');
+    const openTab = document.querySelector('.open-tab');
+    const slug = (a) => a.getAttribute('href').replace(/\/$/, '');
+
+    function select(link) {
+      links.forEach((a) => a.classList.toggle('is-current', a === link));
+      links.forEach((a) => a.toggleAttribute('aria-current', a === link));
+      openTab.href = link.getAttribute('href');
+      history.replaceState(null, '', `#${slug(link)}`);
+    }
+
+    links.forEach((a) => a.addEventListener('click', () => select(a)));
+    frame.addEventListener('load', () => frame.focus());
+
+    const start = links.find((a) => `#${slug(a)}` === location.hash) || links[0];
+    if (frame.getAttribute('src') !== start.getAttribute('href')) frame.src = start.getAttribute('href');
+    select(start);
+  </script>
+</body>
+</html>

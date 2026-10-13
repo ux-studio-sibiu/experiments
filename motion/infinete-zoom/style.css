@@ -1,0 +1,401 @@
+:root {
+  --bg: #141311;
+  --ink: #f6f3ec;
+  --muted: rgba(246, 243, 236, 0.6);
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Open Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.nsc-zoom {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+
+  .stage {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* Every frame is a full-viewport picture scaled down around the center; the next one sits inside it at 1 / ratio. */
+  .frame {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform-origin: 50% 50%;
+    will-change: transform, opacity;
+    /* Feathered edges, so each picture melts into the one around it instead of sitting in a hard box.
+       --feather is set on .nsc-zoom by the settings panel. */
+    mask-image:
+      linear-gradient(to right, transparent, #000 var(--feather, 14%), #000 calc(100% - var(--feather, 14%)), transparent),
+      linear-gradient(to bottom, transparent, #000 var(--feather, 14%), #000 calc(100% - var(--feather, 14%)), transparent);
+    mask-composite: intersect;
+  }
+
+  /* Settings panel, drawn like the collection's other tools (type / move-resize kits): white face, 2px ink
+     edge, one solid black titlebar, a hatched offset shadow instead of a blur, mono caps, square controls. */
+  .panel {
+    --p-bg: #ffffff;
+    --p-ink: #000000;
+    --p-muted: #6b6b6b;
+    --p-faint: #d4d4d4;
+    --p-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+    max-height: calc(100% - 50px);
+    background: var(--p-bg);
+    color: var(--p-ink);
+    border: 2px solid var(--p-ink);
+    font-family: var(--p-mono);
+    font-size: 11px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+
+    /* The lift: an L of hatch outside the border box, down the right edge and along the bottom. */
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      background: url("patterns/diagonal.svg") repeat;
+      background-size: 5px 5px;
+    }
+    &::before { top: 10px; bottom: -10px; right: -12px; width: 10px; }
+    &::after { left: 10px; right: -12px; bottom: -12px; height: 10px; }
+
+    /* Minimized: not a fade in place - it shrinks along a vector into .panel-show (--dock-x/y are measured by
+       script.js when it goes), and grows back out of it on the same curve. visibility goes on a delay so a hidden
+       window also leaves the tab order. */
+    --dock-x: 0px;
+    --dock-y: 0px;
+    transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.33, 0, 0.2, 1);
+
+    &.is-minimized {
+      opacity: 0;
+      transform: translate(var(--dock-x), var(--dock-y)) scale(0.12);
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.33, 0, 0.2, 1), visibility 0s linear 0.24s;
+    }
+
+    :focus-visible { outline: 2px solid var(--p-ink); outline-offset: 2px; }
+  }
+
+  /* The way back: a solid ink tab bottom right, shown only while the panel is minimized. */
+  .panel-show {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 100;
+    height: 26px;
+    padding: 0 12px;
+    font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: #000000;
+    border: 1px solid #000000;
+    border-radius: 0;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, background-color 0.12s ease, color 0.12s ease;
+
+    &.is-visible { opacity: 1; visibility: visible; transition-delay: 0.18s, 0s, 0s; }
+    &:hover { background: #ffffff; color: #000000; }
+  }
+
+  .panel-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    padding: 0 12px;
+    background: var(--p-ink);
+    color: var(--p-bg);
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--p-faint) transparent;
+  }
+
+  /* Section headers run the full width with an ink rule above, like the kits' groups. */
+  .group {
+    margin: 0;
+    padding: 12px 14px 6px;
+    border-top: 1px solid var(--p-ink);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+
+    &:first-child { border-top: 0; }
+  }
+
+  .param,
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 22px;
+    margin: 4px 14px;
+  }
+
+  .param-name {
+    flex: 0 0 96px;
+    color: var(--p-muted);
+  }
+
+  .param select {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 22px;
+    padding: 0 6px;
+    font: inherit;
+    color: var(--p-ink);
+    background: var(--p-bg);
+    border: 1px solid var(--p-ink);
+    border-radius: 0;
+    cursor: pointer;
+  }
+
+  .param input[type="color"] {
+    flex: 1 1 auto;
+    height: 22px;
+    padding: 0;
+    border: 1px solid var(--p-ink);
+    border-radius: 0;
+    background: var(--p-bg);
+    cursor: pointer;
+  }
+
+  .param output {
+    flex: 0 0 auto;
+    min-width: 52px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  /* Hairline track, square ink thumb that grows a step under the pointer. */
+  .param input[type="range"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 18px;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+
+    &::-webkit-slider-runnable-track { height: 1px; background: var(--p-ink); }
+    &::-webkit-slider-thumb { appearance: none; width: 8px; height: 14px; margin-top: -6.5px; background: var(--p-ink); border: 0; border-radius: 0; cursor: grab; }
+    &:hover::-webkit-slider-thumb { width: 10px; height: 16px; margin-top: -7.5px; }
+    &::-moz-range-track { height: 1px; background: var(--p-ink); }
+    &::-moz-range-thumb { width: 8px; height: 14px; background: var(--p-ink); border: 0; border-radius: 0; cursor: grab; }
+    &:hover::-moz-range-thumb { width: 10px; height: 16px; }
+  }
+
+  .check {
+    margin-top: 8px;
+    cursor: pointer;
+
+    input { accent-color: var(--p-ink); margin: 0; }
+  }
+
+  /* Buttons: outlined at rest, inverted under the pointer. In the titlebar they are drawn in reverse. */
+  .panel-toggle,
+  .action {
+    height: 22px;
+    padding: 0 10px;
+    font-family: var(--p-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--p-bg);
+    color: var(--p-ink);
+    border: 1px solid var(--p-ink);
+    border-radius: 0;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+
+    &:hover { background: var(--p-ink); color: var(--p-bg); }
+    &:active { background: var(--p-muted); border-color: var(--p-muted); color: var(--p-bg); }
+  }
+
+  .panel-toggle {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: 14px;
+    background: transparent;
+    color: var(--p-bg);
+    border: 2px solid var(--p-bg);
+
+    &:hover { background: var(--p-bg); color: var(--p-ink); }
+    &:focus-visible { outline-color: var(--p-bg); }
+  }
+
+  /* Photos: the loop in order, four to a row. */
+  .photos {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 4px 14px 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 1px solid var(--p-ink);
+      background: var(--p-faint);
+      cursor: grab;
+
+      &.is-dragging { opacity: 0.35; }
+      /* where a dragged thumbnail will land */
+      &.is-before { box-shadow: -4px 0 0 var(--p-ink); }
+      &.is-after { box-shadow: 4px 0 0 var(--p-ink); }
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 1px 3px;
+      overflow: hidden;
+      font-size: 8px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--p-bg);
+      background: rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+    }
+
+    .remove {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      font: 400 12px/1 var(--p-mono);
+      color: var(--p-ink);
+      background: var(--p-bg);
+      border: 1px solid var(--p-ink);
+      border-radius: 0;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+
+      &:hover { background: var(--p-ink); color: var(--p-bg); }
+      &:disabled { display: none; }
+    }
+
+    li:hover .remove,
+    .remove:focus-visible { opacity: 1; }
+
+    /* image files being dragged in from the desktop */
+    &.is-dropping { outline: 2px dashed var(--p-ink); outline-offset: 3px; }
+  }
+
+  .photo-actions {
+    display: flex;
+    gap: 8px;
+    padding: 8px 14px 0;
+  }
+
+  .add-photos {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px 14px 14px;
+    border-top: 1px solid var(--p-ink);
+  }
+
+  .action { flex: 1; }
+
+  .caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--title-bottom, 28px);
+    z-index: 50;
+    padding: 0 16px;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  /* Small, light and widely tracked: a quiet label rather than a headline. The --title-* values are set by the panel. */
+  /* inline-block so the plate wraps the word rather than the full width; the caption row centers it. */
+  .season {
+    display: inline-block;
+    font-family: var(--title-font, "Montserrat"), ui-sans-serif, system-ui, sans-serif;
+    font-weight: var(--title-weight, 300);
+    font-size: var(--title-size, 16px);
+    line-height: 1;
+    letter-spacing: var(--title-tracking, 0.42em);
+    text-transform: uppercase;
+    text-shadow: 0 1px var(--shadow-blur, 12px) rgba(0, 0, 0, var(--shadow-opacity, 0.5));
+    /* The plate: a tinted box behind the word, see-through by --plate-opacity, optionally frosting what's behind. */
+    padding: calc(var(--plate-padding, 0px) * 0.6) var(--plate-padding, 0px);
+    /* tracking adds space after the last letter too; matching it on the left keeps the word truly centered */
+    padding-left: calc(var(--plate-padding, 0px) + var(--title-tracking, 0.42em));
+    border-radius: var(--plate-radius, 0px);
+    background: color-mix(in srgb, var(--plate-color, #000) calc(var(--plate-opacity, 0) * 100%), transparent);
+    backdrop-filter: blur(var(--plate-blur, 0px));
+  }
+}

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Infinite Zoom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&family=Open+Sans:wght@300&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="nsc-zoom">
+    <!-- The pictures the tunnel cycles through, in order. script.js builds the frames from these. -->
+    <ul class="sources" hidden>
+      <li data-src="img/spring.jpg">Spring</li>
+      <li data-src="img/mist.jpg">Mist</li>
+      <li data-src="img/summer.jpg">Summer</li>
+      <li data-src="img/sunbeams.jpg">Sunbeams</li>
+      <li data-src="img/dunes.jpg">Dunes</li>
+      <li data-src="img/autumn.jpg">Autumn</li>
+      <li data-src="img/clouds.jpg">Clouds</li>
+      <li data-src="img/lake.jpg">Stillness</li>
+      <li data-src="img/winter.jpg">Winter</li>
+      <li data-src="img/aurora.jpg">Aurora</li>
+      <li data-src="img/night.jpg">Night</li>
+    </ul>
+
+    <div class="stage"></div>
+
+    <!-- Live settings. Each input's name is a key in script.js's params; the output next to it shows the value. -->
+    <form class="panel" autocomplete="off">
+      <div class="panel-head">
+        <span class="panel-title">Zoom</span>
+        <button type="button" class="panel-toggle" title="Minimize (P)" aria-label="Minimize settings">&minus;</button>
+      </div>
+      <div class="panel-body">
+        <p class="group">Size</p>
+        <label class="param"><span class="param-name">Size ratio</span><input type="range" name="ratio" min="1.5" max="8" step="0.1"><output></output></label>
+        <label class="param"><span class="param-name">Twist per level</span><input type="range" name="twist" min="-45" max="45" step="1"><output></output></label>
+
+        <p class="group">Fade</p>
+        <label class="param"><span class="param-name">Fade from</span><input type="range" name="fadeFrom" min="-4" max="0" step="0.05"><output></output></label>
+        <label class="param"><span class="param-name">Visible at</span><input type="range" name="fadeTo" min="-3" max="0.5" step="0.05"><output></output></label>
+        <label class="param"><span class="param-name">Fade curve</span><input type="range" name="fadeCurve" min="0.3" max="3" step="0.05"><output></output></label>
+        <label class="param"><span class="param-name">Edge feather</span><input type="range" name="feather" min="0" max="45" step="1"><output></output></label>
+
+        <p class="group">Motion</p>
+        <label class="param"><span class="param-name">Sensitivity</span><input type="range" name="sensitivity" min="0.0003" max="0.006" step="0.0001"><output></output></label>
+        <label class="param"><span class="param-name">Smoothing</span><input type="range" name="smoothing" min="0.02" max="0.4" step="0.01"><output></output></label>
+        <label class="param"><span class="param-name">Idle drift</span><input type="range" name="drift" min="0" max="0.4" step="0.005"><output></output></label>
+
+        <p class="group">Photos</p>
+        <!-- Filled by script.js: the loop's photos in order. Drag to reorder, x to remove, drop image files to add. -->
+        <ol class="photos"></ol>
+        <div class="photo-actions">
+          <label class="action add-photos">Add photos<input type="file" accept="image/*" multiple hidden></label>
+          <button type="button" class="action" data-action="reset-photos">Reset photos</button>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="action" data-action="reset">Reset</button>
+          <button type="button" class="action" data-action="copy">Copy params</button>
+        </div>
+      </div>
+    </form>
+    <!-- Where the panel goes when minimized; pressing it brings the panel back out of it. -->
+    <button type="button" class="panel-show">Zoom settings</button>
+
+    <div class="caption">
+      <h2 class="season">Spring</h2>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

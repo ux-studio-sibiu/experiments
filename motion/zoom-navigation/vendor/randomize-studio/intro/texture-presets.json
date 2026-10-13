@@ -1,0 +1,2321 @@
+{
+  "kind": "randomize-studio/texture-presets",
+  "version": 1,
+  "presets": {
+    "2026-09-26 11:53": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "vanishing-stripes",
+        "overrides": {
+          "000022": "0985b2",
+          "001133": "316a95",
+          "001336": "594f77",
+          "001439": "80345a",
+          "00153c": "a8193c",
+          "00163f": "962a50",
+          "001743": "714a73",
+          "001846": "4c6b97",
+          "001949": "278bba",
+          "001a4c": "3093c1",
+          "001b4f": "6783ac",
+          "001c53": "9e7297",
+          "001d56": "d66282",
+          "001e59": "ff5f72",
+          "001f5c": "ff8570",
+          "002060": "ffab6e",
+          "002163": "ffd06d",
+          "002266": "fff66b"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 46,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "brick-wall",
+        "scale": 2.8000000000000003,
+        "opacity": 0.75,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:00:47": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "diamond-sunset",
+        "overrides": {
+          "8800ff": "519994",
+          "ff4400": "779e62",
+          "ffffff": "331a0f"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 279,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "polka-dots",
+        "scale": 1,
+        "opacity": 0.35,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 0
+      },
+      "fx": {
+        "enabled": true,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:00:53": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "wintery-sunburst",
+        "overrides": {
+          "00eeff": "519994",
+          "00ffff": "779e62",
+          "ffffff": "331a0f"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 279,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "diagonal-stripes",
+        "scale": 2.1,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:00:55": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "vanishing-stripes",
+        "overrides": {
+          "000022": "ba4a3c",
+          "001133": "aa5e45",
+          "001336": "9a724e",
+          "001439": "8b8557",
+          "00153c": "7b9960",
+          "00163f": "8fad57",
+          "001743": "afc147",
+          "001846": "cfd638",
+          "001949": "efea29",
+          "001a4c": "e7da1f",
+          "001b4f": "b7a71b",
+          "001c53": "877416",
+          "001d56": "574012",
+          "001e59": "352117",
+          "001f5c": "3c3f36",
+          "002060": "435d55",
+          "002163": "4a7b75",
+          "002266": "519994"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 279,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "circuit-board",
+        "scale": 1.8,
+        "opacity": 0.75,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 0
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:01:40": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "wintery-sunburst",
+        "overrides": {
+          "00eeff": "519994",
+          "00ffff": "779e62",
+          "ffffff": "331a0f"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 279,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "charlie-brown",
+        "scale": 1,
+        "opacity": 0.1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:02:30": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "liquid-cheese",
+        "overrides": {
+          "ffaa00": "1a1616",
+          "ffb100": "2d2828",
+          "ffb800": "403939",
+          "ffbe00": "602730",
+          "ffc500": "801426",
+          "ffcc00": "ad1730",
+          "ffd722": "d91a3a",
+          "ffe135": "eb7d43",
+          "ffeb46": "fcdf4c",
+          "fff556": "feefa6",
+          "ffff66": "ffffff"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 164,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "charlie-brown",
+        "scale": 1,
+        "opacity": 0.1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:04:00": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "varying-stripes",
+        "overrides": {
+          "565354": "c0c872",
+          "666364": "bab591",
+          "696667": "b9b099",
+          "727071": "b4acb2",
+          "737071": "b3b1b6",
+          "777777": "b2b7ba",
+          "828081": "afcccb",
+          "838182": "afd2cf",
+          "929091": "bcd3d4",
+          "939192": "c3d2d5",
+          "4a4748": "c3d162",
+          "514d4e": "c2cc6a",
+          "605d5e": "bfc379",
+          "615e5f": "bdbe81",
+          "625f60": "bcb989",
+          "6d6b6c": "b7aba0",
+          "6f6c6d": "b6a6a8",
+          "706e6f": "b5a7ae",
+          "7d7b7c": "b2bcbe",
+          "7e7c7d": "b1c2c3",
+          "817f80": "b0c7c7",
+          "8c8a8b": "aed7d3",
+          "8e8c8d": "b5d5d4",
+          "9b999a": "cad0d6",
+          "9d9c9d": "d1ced6",
+          "a4a3a4": "d8ccd7",
+          "aaa8a9": "dfcad7",
+          "acabac": "e6c9d8",
+          "b6b5b5": "edc7d9",
+          "b7b5b6": "f1c9da",
+          "bababa": "f1cedb",
+          "bbbabb": "f1d3dd",
+          "bebdbe": "f1d9df",
+          "c9c9c9": "f1dee0",
+          "cccccc": "f0e4e2",
+          "cfcecf": "f0e9e3",
+          "d0d0d0": "f0eee5",
+          "d8d7d8": "f0f4e6",
+          "f3f3f3": "f0f9e8"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 143,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "temple",
+        "scale": 2.7,
+        "opacity": 1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:04:28": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "confetti-doodles",
+        "overrides": {
+          "aa3333": "cf7313",
+          "55ffff": "ff860c",
+          "ffff77": "ffa85c",
+          "ffffff": "ffc78a"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 150,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "signal",
+        "scale": 1.5,
+        "opacity": 0.05,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:05:14": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "bullseye-gradient",
+        "overrides": {
+          "110617": "f5820d",
+          "331447": "ffa147",
+          "552277": "ffc78a",
+          "000000": "cf7313",
+          "220d2f": "ff9327",
+          "441b5f": "ffae65"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 150,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "graph-paper",
+        "scale": 0.9,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:05:27": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "radiant-gradient",
+        "overrides": {
+          "cc5577": "ff6a67",
+          "cd5878": "f06b6c",
+          "ce5b79": "e16b70",
+          "cf5e7a": "d26c75",
+          "cf617b": "c36c79",
+          "d0647d": "b46d7e",
+          "d1667e": "a66d83",
+          "d2697f": "976e87",
+          "d26c80": "886e8c",
+          "d36f81": "796f90",
+          "d47182": "6a6f95",
+          "d57483": "5b709a",
+          "d67784": "4c719e",
+          "d67986": "3d71a3",
+          "d77c87": "2e72a8",
+          "d87f88": "2774a8",
+          "d88189": "367e9e",
+          "d9848a": "458894",
+          "da868b": "53918a",
+          "db898c": "629b80",
+          "db8c8e": "71a476",
+          "dc8e8f": "80ae6c",
+          "dd9190": "8fb762",
+          "dd9391": "9ec158",
+          "de9692": "adca4e",
+          "de9893": "bcd444",
+          "df9b94": "cbde3a",
+          "e09e96": "dae730",
+          "e0a097": "e9f126",
+          "e1a398": "f8fa1c",
+          "e1a599": "ffff18",
+          "e2a89a": "ffff1b",
+          "e3aa9b": "ffff1d",
+          "e3ad9d": "ffff1f",
+          "e4af9e": "ffff22",
+          "e4b29f": "ffff24",
+          "e5b4a0": "ffff26",
+          "e5b7a1": "ffff29",
+          "e6b9a2": "ffff2b",
+          "e6bca3": "ffff2e",
+          "e7bea5": "ffff30",
+          "e7c1a6": "ffff32",
+          "e8c3a7": "ffff35",
+          "e8c6a8": "ffff37",
+          "e9c8a9": "ffff39",
+          "e9cbaa": "f6fb44",
+          "e9cdac": "eaf651",
+          "ead0ad": "ddf05d",
+          "ead2ae": "d1eb6a",
+          "ebd5af": "c5e577",
+          "ebd7b0": "b9e084",
+          "ebdab2": "adda91",
+          "ecdcb3": "a0d59e",
+          "ecdfb4": "94d0ab",
+          "ece1b5": "88cab8",
+          "ede4b6": "7cc5c4",
+          "ede6b7": "70bfd1",
+          "ede9b9": "63bade",
+          "eeebba": "57b4eb",
+          "eeeebb": "4baff8"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 149,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "pie-factory",
+        "scale": 2.1,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:05:42": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "repeating-chevrons",
+        "overrides": {
+          "aaee99": "d9e625",
+          "ddffaa": "d1dd23"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 140,
+        "palRot": 5,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "temple",
+        "scale": 1.4000000000000001,
+        "opacity": 0.5,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:05:47": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "colorful-stingrays",
+        "overrides": {
+          "037b79": "ffff3a",
+          "006185": "bee27f",
+          "006eb4": "7cc5c4",
+          "1ec3ad": "5ba9eb",
+          "29a4ff": "9d90b6",
+          "6fccff": "de7781",
+          "92deba": "d76b73",
+          "9fe3ff": "876e8c",
+          "daf6c9": "3771a5",
+          "caf2ff": "5f9883",
+          "ffffd8": "afcc4d",
+          "ffffff": "ffff17"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 149,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "polka-dots",
+        "scale": 1.2000000000000002,
+        "opacity": 0.75,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:06:07": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "radiant-gradient",
+        "overrides": {
+          "cc5577": "36464d",
+          "cd5878": "43464c",
+          "ce5b79": "50464a",
+          "cf5e7a": "5d4649",
+          "cf617b": "6a4647",
+          "d0647d": "774646",
+          "d1667e": "854644",
+          "d2697f": "924643",
+          "d26c80": "9f4741",
+          "d36f81": "ac4740",
+          "d47182": "b9473e",
+          "d57483": "c6473d",
+          "d67784": "d3473b",
+          "d67986": "e0473a",
+          "d77c87": "ed4738",
+          "d87f88": "f74937",
+          "d88189": "f75038",
+          "d9848a": "f75838",
+          "da868b": "f76038",
+          "db898c": "f66739",
+          "db8c8e": "f66f39",
+          "dc8e8f": "f6763a",
+          "dd9190": "f67e3a",
+          "dd9391": "f6863a",
+          "de9692": "f68d3b",
+          "de9893": "f6953b",
+          "df9b94": "f59c3c",
+          "e09e96": "f5a43c",
+          "e0a097": "f5ac3c",
+          "e1a398": "f5b33d",
+          "e1a599": "f5b944",
+          "e2a89a": "f4bd51",
+          "e3aa9b": "f4c15e",
+          "e3ad9d": "f4c56b",
+          "e4af9e": "f3c978",
+          "e4b29f": "f3cd85",
+          "e5b4a0": "f2d192",
+          "e5b7a1": "f2d6a0",
+          "e6b9a2": "f2daad",
+          "e6bca3": "f1deba",
+          "e7bea5": "f1e2c7",
+          "e7c1a6": "f0e6d4",
+          "e8c3a7": "f0eae1",
+          "e8c6a8": "f0eeef",
+          "e9c8a9": "eff2fc",
+          "e9cbaa": "e4e9f6",
+          "e9cdac": "d6dbea",
+          "ead0ad": "c8cdde",
+          "ead2ae": "babfd3",
+          "ebd5af": "acb1c7",
+          "ebd7b0": "9ea3bb",
+          "ebdab2": "9095af",
+          "ecdcb3": "8287a3",
+          "ecdfb4": "747997",
+          "ece1b5": "666b8b",
+          "ede4b6": "575e7f",
+          "ede6b7": "495074",
+          "ede9b9": "3b4268",
+          "eeebba": "2d345c",
+          "eeeebb": "1f2650"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 151,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "tiny-checkers",
+        "scale": 2.2,
+        "opacity": 1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:06:52": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "wintery-sunburst",
+        "overrides": {
+          "00eeff": "519994",
+          "00ffff": "779e62",
+          "ffffff": "331a0f"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 279,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "diagonal-stripes",
+        "scale": 2.1,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:06:56": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "radiant-gradient",
+        "overrides": {
+          "cc5577": "f0f9e8",
+          "cd5878": "edf6df",
+          "ce5b79": "eaf4d6",
+          "cf5e7a": "e7f1cd",
+          "cf617b": "e4eec4",
+          "d0647d": "e1ebbb",
+          "d1667e": "dee9b1",
+          "d2697f": "dbe6a8",
+          "d26c80": "d8e39f",
+          "d36f81": "d5e196",
+          "d47182": "d1de8d",
+          "d57483": "cedb84",
+          "d67784": "cbd87b",
+          "d67986": "c8d672",
+          "d77c87": "c5d369",
+          "d87f88": "c3d063",
+          "d88189": "c2cd68",
+          "d9848a": "c1ca6d",
+          "da868b": "c0c772",
+          "db898c": "bfc477",
+          "db8c8e": "bec17c",
+          "dc8e8f": "bdbe81",
+          "dd9190": "bcbb86",
+          "dd9391": "bbb88b",
+          "de9692": "bab590",
+          "de9893": "b9b295",
+          "df9b94": "b8af9a",
+          "e09e96": "b7ac9f",
+          "e0a097": "b6a9a4",
+          "e1a398": "b5a6a9",
+          "e1a599": "b5a6ad",
+          "e2a89a": "b4a9b0",
+          "e3aa9b": "b4adb3",
+          "e3ad9d": "b3b0b5",
+          "e4af9e": "b3b4b8",
+          "e4b29f": "b2b7bb",
+          "e5b4a0": "b2babd",
+          "e5b7a1": "b1bec0",
+          "e6b9a2": "b1c1c2",
+          "e6bca3": "b0c5c5",
+          "e7bea5": "b0c8c8",
+          "e7c1a6": "b0ccca",
+          "e8c3a7": "afcfcd",
+          "e8c6a8": "afd3d0",
+          "e9c8a9": "aed6d2",
+          "e9cbaa": "b1d6d3",
+          "e9cdac": "b6d5d4",
+          "ead0ad": "bad4d4",
+          "ead2ae": "bfd3d5",
+          "ebd5af": "c4d2d5",
+          "ebd7b0": "c8d0d5",
+          "ebdab2": "cdcfd6",
+          "ecdcb3": "d1ced6",
+          "ecdfb4": "d6cdd7",
+          "ece1b5": "daccd7",
+          "ede4b6": "dfcbd7",
+          "ede6b7": "e3c9d8",
+          "ede9b9": "e8c8d8",
+          "eeebba": "ecc7d9",
+          "eeeebb": "f1c6d9"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 143,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "pie-factory",
+        "scale": 2.1,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:08:56": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "dalmatian-spots",
+        "overrides": {
+          "000000": "fff94d",
+          "ffffff": "ffffff"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 143,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "plus",
+        "scale": 0.7000000000000001,
+        "opacity": 0.1,
+        "color": "#ffffff",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": true,
+        "opacity": 0.06,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:09:19": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "liquid-cheese",
+        "overrides": {
+          "ffaa00": "b21235",
+          "ffb100": "734971",
+          "ffb800": "3480ae",
+          "ffbe00": "438dba",
+          "ffc500": "a17296",
+          "ffcc00": "ff5672",
+          "ffd722": "ff966f",
+          "ffe135": "ffd66c",
+          "ffeb46": "cedf79",
+          "fff556": "6bb296",
+          "ffff66": "0985b2"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 46,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "charlie-brown",
+        "scale": 1,
+        "opacity": 0.1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:10:17": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "confetti-doodles",
+        "overrides": {
+          "aa3333": "029bde",
+          "55ffff": "f39f01",
+          "ffff77": "d8e4f2",
+          "ffffff": "a0a401"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 146,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "eyes",
+        "scale": 1.6,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:10:58": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "confetti-doodles",
+        "overrides": {
+          "aa3333": "029bde",
+          "55ffff": "f39f01",
+          "ffff77": "d8e4f2",
+          "ffffff": "a0a401"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 146,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "bubbles",
+        "scale": 0.8,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 0
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:11:25": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "dalmatian-spots",
+        "overrides": {
+          "000000": "f5b73d",
+          "ffffff": "f74737"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 151,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "bamboo",
+        "scale": 2.1,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:11:34": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "repeating-chevrons",
+        "overrides": {
+          "aaee99": "fcdf4c",
+          "ddffaa": "d91a3a"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 164,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "temple",
+        "scale": 1.4000000000000001,
+        "opacity": 0.5,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:11:51": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "radiant-gradient",
+        "overrides": {
+          "cc5577": "f2913d",
+          "cd5878": "ec9441",
+          "ce5b79": "e79846",
+          "cf5e7a": "e19b4a",
+          "cf617b": "db9e4e",
+          "d0647d": "d6a152",
+          "d1667e": "d0a557",
+          "d2697f": "caa85b",
+          "d26c80": "c4ab5f",
+          "d36f81": "bfae63",
+          "d47182": "b9b268",
+          "d57483": "b3b56c",
+          "d67784": "aeb870",
+          "d67986": "a8bb75",
+          "d77c87": "a2bf79",
+          "d87f88": "a0c27e",
+          "d88189": "a6c684",
+          "d9848a": "adca8a",
+          "da868b": "b3cd91",
+          "db898c": "bad197",
+          "db8c8e": "c0d59e",
+          "dc8e8f": "c7d9a4",
+          "dd9190": "cdddab",
+          "dd9391": "d4e0b1",
+          "de9692": "dae4b8",
+          "de9893": "e1e8be",
+          "df9b94": "e7ecc4",
+          "e09e96": "eef0cb",
+          "e0a097": "f4f3d1",
+          "e1a398": "fbf7d8",
+          "e1a599": "f6f2d5",
+          "e2a89a": "e7e3c8",
+          "e3aa9b": "d8d4bb",
+          "e3ad9d": "c9c6ae",
+          "e4af9e": "bab7a1",
+          "e4b29f": "aba895",
+          "e5b4a0": "9c9988",
+          "e5b7a1": "8d8b7b",
+          "e6b9a2": "7d7c6e",
+          "e6bca3": "6e6d61",
+          "e7bea5": "5f5f54",
+          "e7c1a6": "505048",
+          "e8c3a7": "41413b",
+          "e8c6a8": "32322e",
+          "e9c8a9": "232421",
+          "e9cbaa": "1e2726",
+          "e9cdac": "1d3031",
+          "ead0ad": "1b393b",
+          "ead2ae": "1a4346",
+          "ebd5af": "194c50",
+          "ebd7b0": "18555b",
+          "ebdab2": "165e65",
+          "ecdcb3": "156770",
+          "ecdfb4": "14717b",
+          "ece1b5": "127a85",
+          "ede4b6": "118390",
+          "ede6b7": "108c9a",
+          "ede9b9": "0f96a5",
+          "eeebba": "0d9faf",
+          "eeeebb": "0ca8ba"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 157,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "pie-factory",
+        "scale": 2.1,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": true,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:12:19": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "tortoise-shell",
+        "overrides": {
+          "11aa44": "fef9db",
+          "77ff33": "9ec17c"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 157,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "charlie-brown",
+        "scale": 1,
+        "opacity": 0.1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:13:20": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "large-triangles",
+        "overrides": {
+          "222222": "ba8a40",
+          "444444": "e1bb1b",
+          "666666": "fee421",
+          "999999": "b3ccb3",
+          "00b7ff": "fbf3a3",
+          "aaaaaa": "246f51",
+          "dddddd": "1e5568",
+          "ffffff": "4750a8"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 191,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "circuit-board",
+        "scale": 1.8,
+        "opacity": 0.75,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 0
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:13:45": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "diamond-sunset",
+        "overrides": {
+          "8800ff": "0389bc",
+          "ff4400": "a8c8d2",
+          "ffffff": "057fb4"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 294,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "charlie-brown",
+        "scale": 1,
+        "opacity": 0.1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": true,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:14:07": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "subtle-stripes",
+        "overrides": {
+          "cccccc": "f22929",
+          "f5f5f5": "472212",
+          "ffffff": "34bf49"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 98,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "jupiter",
+        "scale": 0.5,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:14:50": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "rainbow-vortex",
+        "overrides": {
+          "210024": "f29ba2",
+          "801843": "dedad7",
+          "000000": "f29199",
+          "2e062c": "f2a5ab",
+          "3e0933": "f2aeb4",
+          "4e0c38": "f2b8bd",
+          "5e0f3d": "eec3c5",
+          "6f1341": "e6cfce",
+          "901e44": "d6e6df",
+          "a02644": "cef2e8",
+          "b02f43": "d6ece3",
+          "be3941": "dee6dd",
+          "ff9d00": "e6e0d8",
+          "cc453e": "eedad3",
+          "d85239": "d9c1ba",
+          "fb8d17": "a6948f",
+          "e35f34": "736764",
+          "f47d24": "403a38",
+          "ed6e2d": "0d0d0d"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 156,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "jupiter",
+        "scale": 0.5,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:16:18": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "pattern-randomized",
+        "overrides": {
+          "ff6600": "fcd52b",
+          "cccccc": "efdfa4",
+          "dddddd": "efe8e3",
+          "e7e7e7": "faf0e6",
+          "eeeeee": "53504d",
+          "f7f7f7": "3d4a16",
+          "ffffff": "b7de43"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 30,
+        "scale": 1,
+        "palette": 35,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "charlie-brown",
+        "scale": 2,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:16:30": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "large-triangles",
+        "overrides": {
+          "222222": "0079ab",
+          "444444": "5caa50",
+          "666666": "9fcf2d",
+          "999999": "b1dbf4",
+          "00b7ff": "96cdaf",
+          "aaaaaa": "eff8fd",
+          "dddddd": "92a9b4",
+          "ffffff": "00364f"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 199,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "groovy",
+        "scale": 1.3,
+        "opacity": 1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:17:52": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "bullseye-gradient",
+        "overrides": {
+          "110617": "b69b85",
+          "331447": "b7ada1",
+          "552277": "a6654e",
+          "000000": "938079",
+          "220d2f": "ddc2aa",
+          "441b5f": "6d6b6c"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 33,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "cage",
+        "scale": 2.4000000000000004,
+        "opacity": 0.75,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": true,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:18:02": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "quantum-gradient",
+        "overrides": {
+          "150083": "7275ba",
+          "000077": "6f6cb8",
+          "2b008f": "747fbd",
+          "40009c": "7788bf",
+          "5600a8": "7a92c1",
+          "6c00b4": "7d9bc4",
+          "8100c1": "8aa9ca",
+          "9700cd": "a1bad5",
+          "ad00d9": "b9cbdf",
+          "c200e6": "d0dcea",
+          "ef00e7": "e8eef4",
+          "f100d0": "ffffff",
+          "d800f2": "d3deed",
+          "f200b9": "a7bddb",
+          "f400a2": "7b9cc9",
+          "f5008b": "4f7bb7",
+          "f70073": "235aa5",
+          "f8005c": "224c8e",
+          "fa0045": "4b5271",
+          "fb002e": "745855",
+          "fd0017": "9d5f39",
+          "ff0000": "c6651c",
+          "ee00ff": "ef6b00"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 58,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "zig-zag",
+        "scale": 2.9000000000000004,
+        "opacity": 0.5,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:20:37": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "zig-zag",
+        "overrides": {
+          "000000": "4bbfb4",
+          "00bb77": "4d578c"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 249,
+        "palRot": 1,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "hideout",
+        "scale": 2.3000000000000003,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:20:47": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "bermuda-diamond",
+        "overrides": {
+          "224400": "f2ab6d",
+          "008811": "f28a80",
+          "eeff55": "4bbfb4",
+          "66ff77": "f2529d"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 249,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "polka-dots",
+        "scale": 1,
+        "opacity": 0.35,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 0
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:21:28": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "tortoise-shell",
+        "overrides": {
+          "11aa44": "ff71ce",
+          "77ff33": "b967ff"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 72,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "leaf",
+        "scale": 0.6000000000000001,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:22:06": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "diamond-sunset",
+        "overrides": {
+          "8800ff": "a32c35",
+          "ff4400": "ebf302",
+          "ffffff": "efee78"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 144,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "fancy-rectangles",
+        "scale": 1.1,
+        "opacity": 0.5,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 0
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:22:18": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "quantum-gradient",
+        "overrides": {
+          "150083": "085666",
+          "000077": "015072",
+          "2b008f": "0e5d5a",
+          "40009c": "15634d",
+          "5600a8": "1c6941",
+          "6c00b4": "237035",
+          "8100c1": "25773e",
+          "9700cd": "227e5d",
+          "ad00d9": "20867c",
+          "c200e6": "1d8e9b",
+          "ef00e7": "1b95b9",
+          "f100d0": "189dd8",
+          "d800f2": "1ea1be",
+          "f200b9": "25a6a4",
+          "f400a2": "2baa8b",
+          "f5008b": "31ae71",
+          "f70073": "38b357",
+          "f8005c": "4cb844",
+          "fa0045": "6ebe39",
+          "fb002e": "90c42e",
+          "fd0017": "b1cb23",
+          "ff0000": "d3d118",
+          "ee00ff": "f5d70d"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 61,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "floating-cogs",
+        "scale": 2.7,
+        "opacity": 0.75,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:22:25": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "quantum-gradient",
+        "overrides": {
+          "150083": "085666",
+          "000077": "015072",
+          "2b008f": "0e5d5a",
+          "40009c": "15634d",
+          "5600a8": "1c6941",
+          "6c00b4": "237035",
+          "8100c1": "25773e",
+          "9700cd": "227e5d",
+          "ad00d9": "20867c",
+          "c200e6": "1d8e9b",
+          "ef00e7": "1b95b9",
+          "f100d0": "189dd8",
+          "d800f2": "1ea1be",
+          "f200b9": "25a6a4",
+          "f400a2": "2baa8b",
+          "f5008b": "31ae71",
+          "f70073": "38b357",
+          "f8005c": "4cb844",
+          "fa0045": "6ebe39",
+          "fb002e": "90c42e",
+          "fd0017": "b1cb23",
+          "ff0000": "d3d118",
+          "ee00ff": "f5d70d"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 61,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "texture",
+        "scale": 0.7000000000000001,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:22:32": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "quantum-gradient",
+        "overrides": {
+          "150083": "085666",
+          "000077": "015072",
+          "2b008f": "0e5d5a",
+          "40009c": "15634d",
+          "5600a8": "1c6941",
+          "6c00b4": "237035",
+          "8100c1": "25773e",
+          "9700cd": "227e5d",
+          "ad00d9": "20867c",
+          "c200e6": "1d8e9b",
+          "ef00e7": "1b95b9",
+          "f100d0": "189dd8",
+          "d800f2": "1ea1be",
+          "f200b9": "25a6a4",
+          "f400a2": "2baa8b",
+          "f5008b": "31ae71",
+          "f70073": "38b357",
+          "f8005c": "4cb844",
+          "fa0045": "6ebe39",
+          "fb002e": "90c42e",
+          "fd0017": "b1cb23",
+          "ff0000": "d3d118",
+          "ee00ff": "f5d70d"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 61,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "hexagons",
+        "scale": 1.8,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 0
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:23:08": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "flat-mountains",
+        "overrides": {
+          "880088": "010d00",
+          "9e0071": "091500",
+          "aa0000": "121e01",
+          "aa00aa": "1a2601",
+          "ac0057": "18210a",
+          "b10022": "151b14",
+          "b2003d": "13161d",
+          "c4008c": "220f1b",
+          "cc0000": "31081a",
+          "d3006c": "400118",
+          "d6002b": "401524",
+          "d9004b": "402a2f",
+          "ff7700": "403e3b"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 83,
+        "palRot": 0,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "boxes",
+        "scale": 2.6,
+        "opacity": 0.15,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 90
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:28:40": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "rainbow-vortex",
+        "overrides": {
+          "210024": "fcbce7",
+          "801843": "f996d3",
+          "000000": "ffcfe9",
+          "2e062c": "f9a9e4",
+          "3e0933": "f696e2",
+          "4e0c38": "f383df",
+          "5e0f3d": "f37fdc",
+          "6f1341": "f68bd7",
+          "901e44": "fca2ce",
+          "a02644": "ffaeca",
+          "b02f43": "ffbcc4",
+          "be3941": "ffcabe",
+          "ff9d00": "ffd9b7",
+          "cc453e": "ffe7b1",
+          "d85239": "f9eeb6",
+          "fb8d17": "ededc5",
+          "e35f34": "e1ecd4",
+          "f47d24": "d5ece3",
+          "ed6e2d": "c9ebf2"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 245,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "volcano-lamp",
+        "scale": 2.6,
+        "opacity": 1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:29:01": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "bermuda-circle",
+        "overrides": {
+          "990000": "c9ebf2",
+          "ff0000": "ffcfe9",
+          "ffff00": "ffaeca",
+          "ff4400": "ffeeae"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 245,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "tiny-checkers",
+        "scale": 1.8,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:29:41": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "bermuda-circle",
+        "overrides": {
+          "990000": "c9ebf2",
+          "ff0000": "ffcfe9",
+          "ffff00": "ffaeca",
+          "ff4400": "ffeeae"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 245,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "tiny-checkers",
+        "scale": 1.8,
+        "opacity": 0.2,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:31:11": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "radiant-gradient",
+        "overrides": {
+          "cc5577": "0bc0ef",
+          "cd5878": "0abcf0",
+          "ce5b79": "0ab8f1",
+          "cf5e7a": "09b4f2",
+          "cf617b": "08b0f3",
+          "d0647d": "07acf4",
+          "d1667e": "07a8f6",
+          "d2697f": "06a4f7",
+          "d26c80": "05a1f8",
+          "d36f81": "049df9",
+          "d47182": "0499fa",
+          "d57483": "0395fb",
+          "d67784": "0291fc",
+          "d67986": "018dfd",
+          "d77c87": "0189fe",
+          "d87f88": "0488ff",
+          "d88189": "148ffe",
+          "d9848a": "2596fd",
+          "da868b": "359efc",
+          "db898c": "45a5fb",
+          "db8c8e": "56acfa",
+          "dc8e8f": "66b4f9",
+          "dd9190": "76bbf8",
+          "dd9391": "87c2f7",
+          "de9692": "97caf6",
+          "de9893": "a7d1f5",
+          "df9b94": "b8d8f4",
+          "e09e96": "c8e0f3",
+          "e0a097": "d8e7f2",
+          "e1a398": "e9eef1",
+          "e1a599": "e9ebeb",
+          "e2a89a": "d9dcdf",
+          "e3aa9b": "c9cdd3",
+          "e3ad9d": "b9bfc7",
+          "e4af9e": "a9b0bb",
+          "e4b29f": "99a1af",
+          "e5b4a0": "8993a3",
+          "e5b7a1": "7a8496",
+          "e6b9a2": "6a768a",
+          "e6bca3": "5a677e",
+          "e7bea5": "4a5872",
+          "e7c1a6": "3a4a66",
+          "e8c3a7": "2a3b5a",
+          "e8c6a8": "1a2c4e",
+          "e9c8a9": "0a1e42",
+          "e9cbaa": "081c43",
+          "e9cdac": "0a1e48",
+          "ead0ad": "0d204e",
+          "ead2ae": "0f2253",
+          "ebd5af": "112458",
+          "ebd7b0": "14265e",
+          "ebdab2": "162863",
+          "ecdcb3": "182a69",
+          "ecdfb4": "1b2c6e",
+          "ece1b5": "1d2e73",
+          "ede4b6": "203179",
+          "ede6b7": "22337e",
+          "ede9b9": "243583",
+          "eeebba": "273789",
+          "eeeebb": "29398e"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 60,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "boxes",
+        "scale": 2,
+        "opacity": 0.25,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:31:49": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "square-versatiles",
+        "overrides": {
+          "f29e03": "f3cf9d",
+          "ffa61d": "a37f5d"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 188,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "leaf",
+        "scale": 1.6,
+        "opacity": 0.1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:32:10": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "endless-constellation",
+        "overrides": {
+          "330033": "d7d9d7",
+          "440044": "68f1ae",
+          "550055": "d79ef1"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 75,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "diagonal-lines",
+        "scale": 1.1,
+        "opacity": 1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:32:41": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "quantum-gradient",
+        "overrides": {
+          "150083": "f26294",
+          "000077": "f2529d",
+          "2b008f": "f2728c",
+          "40009c": "f28383",
+          "5600a8": "f2937a",
+          "6c00b4": "f2a371",
+          "8100c1": "f2a86f",
+          "9700cd": "f2a272",
+          "ad00d9": "f29c76",
+          "c200e6": "f29679",
+          "ef00e7": "f2907d",
+          "f100d0": "f28a80",
+          "d800f2": "d48182",
+          "f200b9": "b67784",
+          "f400a2": "986e87",
+          "f5008b": "7a6589",
+          "f70073": "5c5c8b",
+          "f8005c": "4d6090",
+          "fa0045": "4c7397",
+          "fb002e": "4c869e",
+          "fd0017": "4c99a5",
+          "ff0000": "4bacad",
+          "ee00ff": "4bbfb4"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 249,
+        "palRot": 2,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "bathroom-floor",
+        "scale": 2.8000000000000003,
+        "opacity": 0.5,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 12:44:38": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": true,
+        "id": "varying-stripes",
+        "overrides": {
+          "565354": "cfcbb3",
+          "666364": "717064",
+          "696667": "5a5950",
+          "727071": "1c3537",
+          "737071": "1a4447",
+          "777777": "185257",
+          "828081": "108b99",
+          "838182": "0e9aaa",
+          "929091": "3ca3a0",
+          "939192": "55a193",
+          "4a4748": "fef9db",
+          "514d4e": "e7e2c7",
+          "605d5e": "b8b49f",
+          "615e5f": "a09e8b",
+          "625f60": "898778",
+          "6d6b6c": "42423c",
+          "6f6c6d": "2b2b28",
+          "706e6f": "1e2726",
+          "7d7b7c": "166068",
+          "7e7c7d": "146f78",
+          "817f80": "127d89",
+          "8c8a8b": "0ca8ba",
+          "8e8c8d": "24a6ad",
+          "9b999a": "6d9e85",
+          "9d9c9d": "859c78",
+          "a4a3a4": "9d996b",
+          "aaa8a9": "b5975e",
+          "acabac": "ce9551",
+          "b6b5b5": "e69244",
+          "b7b5b6": "ee9440",
+          "bababa": "e59947",
+          "bbbabb": "dc9e4e",
+          "bebdbe": "d3a354",
+          "c9c9c9": "caa85b",
+          "cccccc": "c1ad61",
+          "cfcecf": "b9b268",
+          "d0d0d0": "b0b76f",
+          "d8d7d8": "a7bc75",
+          "f3f3f3": "9ec17c"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 157,
+        "palRot": 4,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": false,
+        "name": "temple",
+        "scale": 2.7,
+        "opacity": 1,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 270
+      },
+      "fx": {
+        "enabled": false,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    },
+    "2026-09-26 13:06:12": {
+      "color": null,
+      "colorAlpha": 1,
+      "onTop": false,
+      "svgbg": {
+        "enabled": false,
+        "id": "vanishing-stripes",
+        "overrides": {
+          "000022": "cef2e8",
+          "001133": "d6ece2",
+          "001336": "dfe5dd",
+          "001439": "e7dfd7",
+          "00153c": "f0d9d1",
+          "00163f": "cab3ae",
+          "001743": "948480",
+          "001846": "5e5452",
+          "001949": "282524",
+          "001a4c": "281d1d",
+          "001b4f": "5e3c3e",
+          "001c53": "945b5f",
+          "001d56": "ca7a80",
+          "001e59": "f2949b",
+          "001f5c": "f29ea5",
+          "002060": "f2a8ae",
+          "002163": "f2b3b8",
+          "002266": "f2bdc1"
+        },
+        "hue": 0,
+        "sat": 0,
+        "light": 0,
+        "scale": 1,
+        "palette": 156,
+        "palRot": 3,
+        "fixed": false
+      },
+      "pattern": {
+        "enabled": true,
+        "name": "squares",
+        "scale": 0.6000000000000001,
+        "opacity": 0.15,
+        "color": "#000000",
+        "blend": "normal",
+        "rotate": 180
+      },
+      "fx": {
+        "enabled": true,
+        "opacity": 0.12,
+        "fps": 24,
+        "cell": 2
+      }
+    }
+  }
+}

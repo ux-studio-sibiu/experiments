@@ -52,6 +52,32 @@
         "-c-1"
       ],
       "port": 8130
+    },
+    {
+      "name": "motion-rotate-sectors",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "motion/rotate-sectors",
+        "-p",
+        "8131",
+        "-c-1"
+      ],
+      "port": 8131
+    },
+    {
+      "name": "motion-zoom-navigation",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "motion/zoom-navigation",
+        "-p",
+        "8132",
+        "-c-1"
+      ],
+      "port": 8132
     }
   ]
 }

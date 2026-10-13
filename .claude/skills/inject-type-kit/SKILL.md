@@ -30,6 +30,31 @@ on one page** at the end.
 
 ## 1. Copy the files - keep the folder shape
 
+**Always make a local copy - never link to the studio's files by a relative
+path out of the project** (`../../randomize-studio/...`). That applies inside
+`effects-collection/` too: an effect folder such as `motion/<name>/` gets its
+own `vendor/` copy. Two reasons. A link out of the folder breaks as soon as the
+page is served from a different root (VS Code Live Server serves whatever
+folder is open, so `../../` points outside it, and the buttons and Shift+T
+quietly do nothing). And a local copy is free to be adjusted for that one
+page without touching the original kit or anyone else's page that uses it.
+
+For an effect folder in this collection the shape is:
+
+```
+motion/<name>/vendor/
+  randomize-studio/type-kit/type-kit.js, kit-shell.css
+  randomize-studio/css/panel.css, controls.css
+  randomize-studio/js/fonts.js
+  randomize-studio/patterns/diagonal.svg     panel.css's hatched shadow
+  move-resize-studio/move-resize-kit.js, move-resize-kit.css   (if the move kit is wanted too)
+```
+
+with `<script src="vendor/randomize-studio/type-kit/type-kit.js" defer>`. The
+move-resize kit finds `../randomize-studio/` beside itself by default, so the
+two folders side by side inside `vendor/` need no `data-studio`. Test it with
+the effect folder itself as the server root, not only the collection root.
+
 The kit finds the studio relative to **its own script address**
 (`new URL('../', document.currentScript.src)`), so the default shape is the kit
 in a folder inside the studio's. Put these in the project's **static / public**
