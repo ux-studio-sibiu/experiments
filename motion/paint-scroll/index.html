@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paint Scroll</title>
+  <style>
+    :root {
+      --paper: #ffffff;
+      --hint: #8a847a;
+    }
+
+    * { box-sizing: border-box; margin: 0; }
+
+    body { background: var(--paper); }
+
+    /* The page is only as long as the drawing: scrolling it through draws PAINT start to finish (the sequence from
+       paint-concept, without its window). The drawing stays pinned to the screen while the page moves under it. */
+    .nsc-paint-scroll {
+      height: 600vh;
+
+      .stage {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        height: 100dvh;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Until the first stroke: a quiet line in the middle of the paper. */
+      .hint {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        translate: -50% -50%;
+        font: 400 12px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--hint);
+        pointer-events: none;
+        transition: opacity 0.6s ease;
+
+        &.is-hidden { opacity: 0; }
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="nsc-paint-scroll">
+    <div class="stage">
+      <canvas id="art" aria-label="A hand-drawn picture of the word PAINT, drawn as you scroll" role="img"></canvas>
+      <p class="hint">Scroll to draw</p>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const art = document.getElementById('art');
+  const actx = art.getContext('2d');
+  const hint = document.querySelector('.hint');
+
+  // The canvas matches the screen; a new size rebuilds the picture to fit it (same seed, so the same picture).
+  const resize = () => {
+    const w = Math.max(1, Math.floor(art.clientWidth));
+    const h = Math.max(1, Math.floor(art.clientHeight));
+    if (w === art.width && h === art.height && segments.length) return;
+    art.width = w;
+    art.height = h;
+    buildSequence();
+    render(true);
+  };
+
+
+  // ---- picking an ink dark enough to read on white paper ----
+  // HSL lightness is not perceptual, and the gap is not small: at 38% lightness
+  // a saturated blue reads 11.9:1 against white and a saturated yellow reads
+  // 2.0:1 - the second is barely a mark on the page. So no single lightness cap
+  // works for every hue; a cap kind to yellow turns every other hue to mud.
+  //
+  // Instead each hue is walked down from 45% until it actually clears the bar.
+  // Yellow comes out near 20%, blue stays at 45%, and both are legible. The
+  // measurement is the WCAG relative-luminance formula, which is the same one a
+  // contrast checker uses.
+  const INK_CONTRAST = 6;   // against #fff, comfortably past the 4.5 AA line
+  const srgb = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const luminance = (h, s, l) => {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const ch = (n) => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+    return 0.2126 * srgb(ch(0)) + 0.7152 * srgb(ch(8)) + 0.0722 * srgb(ch(4));
+  };
+  const darkestNeeded = (h, s) => {
+    for (let l = 45; l > 10; l--) if (1.05 / (luminance(h, s, l) + 0.05) >= INK_CONTRAST) return l;
+    return 10;
+  };
+
+  // The picture is the paint-concept intro, unchanged in what it draws. What changes is when: its random colours
+  // and hand wobble come from a seeded generator, so the picture is the same however often it is rebuilt, and
+  // every line segment is laid out in advance on a timeline that keeps the original's rhythm (its per-stroke
+  // pace and the beats between the three passes). The scroll position then says how far along that timeline to
+  // draw, forwards or backwards.
+  const SEED = (Math.random() * 2 ** 32) >>> 0;           // a fresh picture per visit, stable within it
+  const seeded = (s) => () => {                             // mulberry32
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  let random = seeded(SEED);
+  let segments = [];   // { color, width, x0, y0, x1, y1, t }
+  let total = 1;       // the timeline's length, in the original's milliseconds
+
+  function buildSequence() {
+    random = seeded(SEED);
+    // Normalized polylines in [0..1]^2 spelling PAINT, one entry per pen stroke.
+    //
+    // Capitals, and deliberately. The lowercase version this replaced was built
+    // from bowls - four or five points curving back on themselves - and at a
+    // weight you can actually see, the A closed into an O and the I and the T
+    // ran together. Capitals are straight lines meeting at corners, which is
+    // the one thing that survives both a heavy stroke and the jitter below.
+    //
+    // Cap height .28 to .50, so every letter sits between the same two lines.
+    // The long strokes carry a midpoint they do not strictly need: jitter is
+    // applied per point, so a two-point line comes out ruler-straight and only
+    // its ends wobble. The midpoint is what bends it like a hand would.
+    // `g` is which letter the stroke belongs to. Colour is picked per letter at
+    // draw time rather than written in here - see letterInk below.
+    const strokes = [
+      { g: 0, pts: [[.08,.28],[.08,.39],[.08,.50]] },                            // P
+      { g: 0, pts: [[.08,.28],[.16,.28],[.17,.31],[.17,.36],[.16,.39],[.08,.39]] },
+      { g: 1, pts: [[.205,.50],[.2275,.39],[.25,.28]] },                         // A
+      { g: 1, pts: [[.25,.28],[.2725,.39],[.295,.50]] },
+      { g: 1, pts: [[.222,.43],[.278,.43]] },
+      { g: 2, pts: [[.345,.28],[.405,.28]] },                                    // I
+      { g: 2, pts: [[.375,.28],[.375,.39],[.375,.50]] },
+      { g: 2, pts: [[.345,.50],[.405,.50]] },
+      { g: 3, pts: [[.455,.50],[.455,.39],[.455,.28]] },                         // N
+      { g: 3, pts: [[.455,.28],[.50,.39],[.545,.50]] },
+      { g: 3, pts: [[.545,.50],[.545,.39],[.545,.28]] },
+      { g: 4, pts: [[.58,.28],[.67,.28]] },                                      // T
+      { g: 4, pts: [[.625,.28],[.625,.39],[.625,.50]] },
+    ];
+    const w = art.width, h = art.height;
+
+    // Fit the word to the canvas rather than to the numbers above. The strokes
+    // are drawn in whatever space was convenient; this measures the box they
+    // actually occupy and maps it onto the canvas, filling most of it and
+    // centred on both axes.
+    //
+    // One scale for both axes, not two, or the letters would stretch to the
+    // window's shape - a wide window would flatten them and a tall one would
+    // draw PAINT on stilts. Whichever axis runs out first decides, and the
+    // slack on the other axis becomes the margin.
+    const xs = strokes.flatMap(s => s.pts.map(p => p[0]));
+    const ys = strokes.flatMap(s => s.pts.map(p => p[1]));
+    const bx = Math.min(...xs), bw = Math.max(...xs) - bx;
+    const by = Math.min(...ys), bh = Math.max(...ys) - by;
+    // 0.84 minus 15%. It left no air for the scene - the sun and the gulls had
+    // to crowd the corners above a word that was already touching them.
+    const FILL = 0.714;                      // of the shorter-constrained axis
+    const scale = Math.min(w * FILL / bw, h * FILL / bh);
+    const offX = (w - bw * scale) / 2 - bx * scale;
+    // Nudged below centre. The sky is doing more work than the ground - sun in
+    // one corner, three gulls across the other - so the optical centre of the
+    // finished picture sits above its geometric one, and the word has to come
+    // down to meet it. Capped against the canvas so a short window cannot push
+    // the letters into the grass.
+    const DROP = Math.min(40, h * 0.08);
+    const offY = (h - bh * scale) / 2 - by * scale + DROP;
+    // A fresh set of colours every time it plays, one per LETTER rather than
+    // one per stroke - the P's stem and its bowl in different colours would
+    // read as two marks rather than as a letter.
+    //
+    // Hue and saturation are free; lightness is handed to darkestNeeded, which
+    // measures it against white rather than guessing (see the note up by it).
+    // The small extra subtraction only ever makes a letter darker, so it varies
+    // the weight of the run without putting anything back at risk.
+    //
+    // Hues are spread evenly round the wheel from a random starting angle
+    // rather than drawn independently: five free throws will sometimes hand you
+    // two neighbouring reds, and the one thing these colours have to do is tell
+    // the letters apart. The jitter stops it looking like a colour wheel.
+    const glyphs = Math.max(...strokes.map(s => s.g)) + 1;
+    const h0 = random() * 360;
+    const letterInk = Array.from({ length: glyphs }, (_, i) => {
+      const hue = Math.round((h0 + (i * 360 / glyphs) + (random() - 0.5) * 28) % 360);
+      const sat = Math.round(68 + random() * 27);                    // 68-95%
+      const lit = Math.max(10, darkestNeeded(hue, sat) - Math.round(random() * 8));
+      return `hsl(${hue}, ${sat}%, ${lit}%)`;
+    });
+
+    const flat = strokes.map(s => ({
+      g: s.g,
+      color: letterInk[s.g],
+      pts: s.pts.map(([x, y]) => [x * scale + offX, y * scale + offY]),
+    }));
+    const capPx = bh * scale;                // cap height on screen, in pixels
+
+    // ---- the second pass ----
+    // The whole word is written once, and only then gone back over - not each
+    // stroke doubled as it is drawn. That is the order a person works in: you
+    // write the thing, look at it, and then go over it in the brighter pen.
+    // Doubling stroke by stroke reads as a tremor instead.
+    //
+    // Two things stop the second pass landing on top of the first. The offset
+    // below is picked once per stroke and applied to all its points, so the
+    // second pull is a line that misses in one direction rather than a cloud of
+    // noise; and the jitter inside step() is rolled fresh per point, so the two
+    // passes wander differently along their length. Together they give the
+    // doubled edge and the small bulges where the two cross.
+    //
+    // Opacity is deliberately left alone. Building the colour up by drawing a
+    // translucent stroke twice would muddy both passes, and the two-colour
+    // registration below is the whole effect - it only works if the top pass
+    // is opaque enough to hide the one underneath except where it misses.
+    //
+    // The second pass is a DIFFERENT colour: a bright marker over the dark
+    // measured ink. That is where the look comes from - the dark hue surviving
+    // as a sliver down one edge, the way a misregistered print shows the plate
+    // under it. The two hues are unrelated on purpose; a dark version of the
+    // same colour would just read as a shadow.
+    const MARKERS = ['#2e1fc9', '#c8125e', '#ffe800', '#9b1fd6', '#f4197c'];
+    const markerInk = MARKERS.slice();
+    for (let i = markerInk.length - 1; i > 0; i--) {   // Fisher-Yates, so the
+      const j = Math.floor(random() * (i + 1));   // letters do not always
+      [markerInk[i], markerInk[j]] = [markerInk[j], markerInk[i]];   // wear the
+    }                                                  // same five in order
+    const OFF = Math.max(1, capPx * 0.014);  // how far a second pull may miss by
+    const overs = flat.map(s => {
+      const dx = (random() - 0.5) * 2 * OFF;
+      const dy = (random() - 0.5) * 2 * OFF;
+      return {
+        color: markerInk[s.g % markerInk.length],
+        over: true,
+        pts: s.pts.map(([x, y]) => [x + dx, y + dy]),
+      };
+    });
+    // ---- the scene, drawn once the word is done ----
+    // Pixel coordinates, not the letter box's. The word is fitted to a box in
+    // the middle of the canvas; these have to find the real corners - sky above
+    // the lettering, ground below it - so they are placed against w and h.
+    //
+    // R is the short side. Anything that has to stay round uses it for both
+    // axes, or the sun comes out an ellipse on a wide window.
+    const R = Math.min(w, h);
+    const scene = [];
+    // jit scales the hand-wobble down for small things - see the note by the
+    // cloud's. Left out, a stroke gets the letters' full amount.
+    const add = (color, pts, px, delay, jit) => scene.push({ color, pts, w: px, d: delay, jit });
+
+    // The sun, top left: a ring gone round twice, then rays. Twice round for
+    // the same reason the letters get a second pass - one clean circle looks
+    // printed, and nothing else here is.
+    const sx = 0.12 * w, sy = 0.15 * h, sr = 0.085 * R;
+    const ring = (rad) => Array.from({ length: 15 }, (_, i) => {
+      const a = (i / 14) * Math.PI * 2;
+      return [sx + Math.cos(a) * rad, sy + Math.sin(a) * rad];
+    });
+    add('#ffd400', ring(sr), Math.max(4, R * 0.019), 15);
+    add('#ffd400', ring(sr * 0.93), Math.max(4, R * 0.019), 15);
+
+    // The rays get the word's treatment: all nine laid down in red, then all
+    // nine gone over in yellow, each missing by a little. Same reason it works
+    // on the letters - the red surviving down one side of each ray is what
+    // makes it look drawn rather than plotted.
+    const rays = Array.from({ length: 9 }, (_, i) => {
+      const a = (i / 9) * Math.PI * 2 + 0.3;
+      return [
+        [sx + Math.cos(a) * sr * 1.35, sy + Math.sin(a) * sr * 1.35],
+        [sx + Math.cos(a) * sr * 1.95, sy + Math.sin(a) * sr * 1.95],
+      ];
+    });
+    const RAY_OFF = Math.max(1, R * 0.007);
+    for (const r of rays) add('#ff2d00', r, Math.max(3, R * 0.013), 11);
+    for (const r of rays) {
+      const dx = (random() - 0.5) * 2 * RAY_OFF;
+      const dy = (random() - 0.5) * 2 * RAY_OFF;
+      add('#ffe800', r.map(([x, y]) => [x + dx, y + dy]), Math.max(2, R * 0.010), 9);
+    }
+
+    // ---- the cloud ----
+    // Before the gulls, which is the whole trick: everything here is painted in
+    // order onto one canvas, so "behind" is just "earlier". The birds go on top
+    // of it a few strokes later and read as being in front.
+    //
+    // Four shades rather than one flat colour. A cloud is the one thing in this
+    // picture that is not a line - it is a volume - and the only way a drawing
+    // of lines says volume is by putting a darker tone where the light is not.
+    // So: a slate outline, a paler one over it missing by a little the way
+    // everything else here does, then hatching in two tones, denser and greyer
+    // along the underside.
+    const CLOUD = { ink: '#7e97b5', lit: '#9fb6ce', hatch: '#b3c4d4', shade: '#90a0b0' };
+
+    // Top right, and running off the right-hand edge on purpose. A cloud that
+    // stops neatly inside the frame is a drawing of a cloud; one that leaves
+    // the page is weather. The canvas clips it for free.
+    const CX0 = 0.74 * w, CX1 = 1.09 * w, CY0 = 0.07 * h, CY1 = 0.28 * h;
+    const CW = CX1 - CX0, CH = CY1 - CY0;
+    const P = ([tx, ty]) => [CX0 + tx * CW, CY0 + ty * CH];
+
+    // The silhouette, written out in box coordinates (0..1 across, 0..1 down)
+    // rather than generated. The shape wanted here is not a row of equal bumps:
+    // it has a rounded head at the left, a flattish top that only undulates,
+    // and a scalloped underside that drops away as it goes right. A generator
+    // flexible enough to say all that would be longer than the path is.
+    const CTOP = [
+      [0.00, 0.42], [0.01, 0.28], [0.05, 0.14], [0.11, 0.05], [0.19, 0.02],
+      [0.26, 0.08], [0.30, 0.18], [0.36, 0.09], [0.44, 0.02], [0.53, 0.00],
+      [0.61, 0.05], [0.66, 0.14], [0.72, 0.07], [0.80, 0.03], [0.88, 0.06],
+      [0.95, 0.12], [1.00, 0.20],
+    ];
+    // Left to right, same as the top, so the two can be read against each
+    // other. The outline walks it backwards to close the shape.
+    const CBOT = [
+      [0.00, 0.42], [0.02, 0.54], [0.06, 0.68], [0.11, 0.84], [0.17, 0.80],
+      [0.23, 0.92], [0.29, 0.85], [0.35, 0.96], [0.41, 0.88], [0.47, 0.99],
+      [0.54, 0.90], [0.60, 1.00], [0.66, 0.90], [0.72, 1.00], [0.78, 0.89],
+      [0.84, 0.99], [0.90, 0.88], [0.95, 0.97], [1.00, 0.86],
+    ];
+    const outline = [...CTOP.map(P), ...CBOT.slice().reverse().map(P)];
+
+    // Where the top and bottom edges are at a given point across the cloud,
+    // by walking the path. The hatch is clipped between them.
+    //
+    // The first version approximated the top with a bell curve, on the theory
+    // that the exact silhouette was not worth computing. It was: wherever the
+    // bell sat above the real outline the hatch came out through the roof, and
+    // bumps with spikes rising out of them is a mountain range, not a cloud.
+    const edgeAt = (arr, t) => {
+      for (let i = 1; i < arr.length; i++) {
+        if (t <= arr[i][0]) {
+          const [x0, y0] = arr[i - 1], [x1, y1] = arr[i];
+          const k = x1 === x0 ? 0 : (t - x0) / (x1 - x0);
+          return y0 + (y1 - y0) * k;
+        }
+      }
+      return arr[arr.length - 1][1];
+    };
+
+    // Jitter is tuned to the letters, which are 270-odd pixels tall; on a bump
+    // of 50 the same wobble is proportionally six times coarser and turns the
+    // curve into a sawtooth. Everything in the cloud asks for a fraction of it.
+    const CO = Math.max(1, R * 0.005);
+    const cdx = (random() - 0.5) * 2 * CO, cdy = (random() - 0.5) * 2 * CO;
+    add(CLOUD.ink, outline, Math.max(2, R * 0.010), 10, 0.3);
+    add(CLOUD.lit, outline.map(([x, y]) => [x + cdx, y + cdy]), Math.max(2, R * 0.008), 8, 0.3);
+
+    // The hatch: long diagonals leaning up to the right, the way a hand fills a
+    // shape quickly without lifting much. Each runs between the two edges with
+    // an inset, so none of them can reach the outline, let alone cross it.
+    for (let i = 0; i < 7; i++) {
+      const t0 = 0.08 + (i / 7) * 0.80;
+      const t1 = Math.min(0.99, t0 + 0.13);            // leans right as it rises
+      const band = edgeAt(CBOT, t0) - edgeAt(CTOP, t1);
+      if (band < 0.3) continue;                        // too thin to take a stroke
+      const low = i % 3 === 1;                         // one in three is the darker tone
+      const lo = edgeAt(CBOT, t0) - 0.1;
+      const hi = edgeAt(CTOP, t1) + (low ? 0.34 : 0.14);
+      add(low ? CLOUD.shade : CLOUD.hatch,
+        [P([t0, lo]), P([t1, hi])],
+        Math.max(2, R * (low ? 0.008 : 0.006)), 6, 0.25);
+    }
+
+    // Gulls. Three rather than two, at three sizes and three heights - two the
+    // same size on one line reads as a pattern instead of as birds.
+    const gull = (gx, gy, gs) => add('#000000', [
+      [gx - gs, gy], [gx - gs * 0.45, gy - gs * 0.52], [gx, gy - gs * 0.1],
+      [gx + gs * 0.45, gy - gs * 0.52], [gx + gs, gy],
+    ], Math.max(3, R * 0.015), 17);
+    // One crossing the cloud, two in clear sky. All three on it was a row of
+    // birds pinned to one object - the overlap stopped being a depth cue and
+    // became a texture. One crossing is enough to say which is in front, and
+    // the other two then have somewhere to be.
+    //
+    // Size falls off with height, so the low one reads as nearest and the high
+    // one as furthest. That does more for the depth than the overlap does.
+    gull(0.30 * w, 0.145 * h, 0.050 * R);   // open sky, clear of the sun's rays
+    gull(0.82 * w, 0.205 * h, 0.070 * R);   // crossing the cloud, lowest and largest
+    gull(0.55 * w, 0.085 * h, 0.038 * R);   // high and small, well clear of both
+
+    // Grass: three long wandering lines rather than one, at different heights
+    // and phases, so they cross each other the way a scribbled horizon does.
+    // freq is how many times the line waves across the page. Each blade gets
+    // its own, because lines sharing a frequency stay the same distance apart
+    // the whole way across however you shift their phase - five of those is one
+    // shape drawn five times. Different frequencies make them converge, cross
+    // and open out, which is what fills the band.
+    const blade = (y0, amp, phase, color, freq) => {
+      const pts = [];
+      for (let i = 0; i <= 24; i++) {
+        const t = i / 24;
+        pts.push([
+          (0.04 + t * 0.92) * w,
+          y0 + Math.sin(t * freq + phase) * amp + (random() - 0.5) * amp * 0.9,
+        ]);
+      }
+      // 9 was the pace when there were three of these. At five it is 125 points
+      // of waiting at the end of the animation, long after the word is made and
+      // there is nothing left to find out. 9 / 1.3 - a third quicker.
+      add(color, pts, Math.max(3, R * 0.012), 7);
+    };
+    // Grown up to the lettering so the top line just catches it.
+    //
+    // Measured from the word, not from the canvas. The word's position already
+    // moves with FILL and DROP and with the window's shape, so grass pinned to
+    // a fraction of the height would drift away from it - it only happened to
+    // sit right at one size. gTop is where the tallest peaks reach: a little
+    // ABOVE the baseline of the letters, which is what makes it touch rather
+    // than stop politely underneath.
+    //
+    // Only the top line gets there, and only at its peaks - and since the peaks
+    // fall where the wave puts them rather than where the letters are, some
+    // catch a stem and some pass through the gaps. That is the part that reads
+    // as grass rather than as a border.
+    const wordBottom = (by + bh) * scale + offY;
+    const gTop = wordBottom - Math.max(3, h * 0.006);
+    const gBot = h * 0.95;
+    // Five lines, darkest at the back and palest at the front, each a little
+    // deeper in wave than the one behind it. The spacing is worked out from the
+    // count rather than written down, so adding a sixth needs one more row.
+    [
+      { amp: 0.022 * h, phase: 0.0, freq: 13, color: '#156b22' },
+      { amp: 0.024 * h, phase: 1.7, freq: 9,  color: '#1a7a28' },
+      { amp: 0.027 * h, phase: 3.1, freq: 16, color: '#1f8a2e' },
+      { amp: 0.030 * h, phase: 4.6, freq: 11, color: '#249639' },
+      { amp: 0.032 * h, phase: 5.9, freq: 14, color: '#2aa33a' },
+    ].forEach((b, i, all) => {
+      const k = i / (all.length - 1);
+      blade(gTop + b.amp + k * (gBot - gTop - b.amp * 2), b.amp, b.phase, b.color, b.freq);
+    });
+
+    // Every dark stroke, then every bright one, then the world around them.
+    const passes = [...flat, ...overs, ...scene];
+
+    const weight = Math.max(3, Math.round(capPx * 0.075));
+    const jitter = (k = 1) => (random() - 0.5) * Math.max(1.5, capPx * 0.03) * k;
+
+    // One entry per segment the timer used to draw, with the jitter it would have rolled baked in, and the time it
+    // would have appeared at. The waits are the original's (their random spread averaged out): the brighter pass
+    // quicker than the first, scene strokes at their own pace, and a long beat at each handover so the word is seen
+    // on its own before it is gone over, and again before the scene starts.
+    segments = [];
+    let t = 400;
+    const wait = (s) => (s.d ? s.d * 1.5 : s.over ? 19 : 35);
+    passes.forEach((s, i) => {
+      const width = s.w || (s.over ? Math.max(2, weight * 0.78) : weight);
+      for (let j = 1; j < s.pts.length; j++) {
+        segments.push({
+          color: s.color, width,
+          x0: s.pts[j - 1][0] + jitter(s.jit), y0: s.pts[j - 1][1] + jitter(s.jit),
+          x1: s.pts[j][0] + jitter(s.jit), y1: s.pts[j][1] + jitter(s.jit),
+          t,
+        });
+        t += wait(s);
+      }
+      const handover = i + 1 === flat.length || i + 1 === flat.length + overs.length;
+      t += handover ? 520 : wait(s);
+    });
+    total = t;
+    drawn = -1;
+  }
+
+  // ---- drawing up to a point ----
+  // Forward is incremental: only the new segments are added. Back is a repaint from white, which at a few hundred
+  // short lines is still well inside a frame.
+  let drawn = -1;            // how many segments are on the canvas
+  function paintTo(count) {
+    if (count < drawn || drawn < 0) {
+      actx.globalCompositeOperation = 'source-over';
+      actx.fillStyle = '#fff';
+      actx.fillRect(0, 0, art.width, art.height);
+      drawn = 0;
+    }
+    actx.lineCap = 'round';
+    actx.lineJoin = 'round';
+    for (let k = drawn; k < count; k++) {
+      const s = segments[k];
+      actx.strokeStyle = s.color;
+      actx.lineWidth = s.width;
+      actx.beginPath();
+      actx.moveTo(s.x0, s.y0);
+      actx.lineTo(s.x1, s.y1);
+      actx.stroke();
+    }
+    drawn = count;
+  }
+
+  // ---- scroll -> timeline ----
+  // The page's scroll position, eased a little so a wheel's steps turn into a continuous pen rather than jumps.
+  const progressOf = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    return max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+  };
+  let shown = 0;
+  let frame = 0;
+  function render(immediate = false) {
+    cancelAnimationFrame(frame);
+    const target = progressOf();
+    shown = immediate ? target : shown + (target - shown) * 0.25;
+    if (Math.abs(target - shown) < 0.0005) shown = target;
+    const time = shown * total;
+    let count = 0;
+    while (count < segments.length && segments[count].t <= time) count++;
+    paintTo(count);
+    hint.classList.toggle('is-hidden', shown > 0); // gone once the pen is down, back at the very top
+    if (shown !== target) frame = requestAnimationFrame(() => render());
+  }
+  addEventListener('scroll', () => render(), { passive: true });
+
+  new ResizeObserver(resize).observe(art);
+  resize();
+})();
+</script>
+</body>
+</html>
