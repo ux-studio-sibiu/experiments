@@ -262,7 +262,7 @@
       }
     } catch {}
     // Opens the project in the address (#slug) if there is one, otherwise the default.
-    const DEFAULT = 'infinite-zoom';
+    const DEFAULT = 'paint-scroll';
     const start = links.find((a) => `#${slug(a)}` === location.hash) || links.find((a) => slug(a) === DEFAULT) || links[0];
     select(start);
     show(start.getAttribute('href'));

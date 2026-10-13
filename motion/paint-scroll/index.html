@@ -17,7 +17,7 @@
     /* The page is only as long as the drawing: scrolling it through draws PAINT start to finish (the sequence from
        paint-concept, without its window). The drawing stays pinned to the screen while the page moves under it. */
     .nsc-paint-scroll {
-      height: 600vh;
+      height: calc(var(--length, 6) * 100vh); /* set from the panel's Scroll length */
 
       .stage {
         position: sticky;
@@ -38,7 +38,7 @@
         left: 50%;
         top: 50%;
         translate: -50% -50%;
-        font: 400 12px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font: 400 15px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
         letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--hint);
@@ -47,6 +47,251 @@
 
         &.is-hidden { opacity: 0; }
       }
+
+    /* Settings panel, drawn like the collection's other tools (type / move-resize kits): white face, 2px ink
+       edge, one solid black titlebar, a hatched offset shadow instead of a blur, mono caps, square controls. */
+    .panel {
+      --p-bg: #ffffff;
+      --p-ink: #000000;
+      --p-muted: #6b6b6b;
+      --p-faint: #d4d4d4;
+      --p-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      width: 320px;
+      max-height: calc(100% - 50px);
+      background: var(--p-bg);
+      color: var(--p-ink);
+      border: 2px solid var(--p-ink);
+      font-family: var(--p-mono);
+      font-size: 11px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+
+      /* The lift: an L of hatch outside the border box, down the right edge and along the bottom. */
+      &::before,
+      &::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        background: url("patterns/diagonal.svg") repeat;
+        background-size: 5px 5px;
+      }
+      &::before { top: 10px; bottom: -10px; right: -12px; width: 10px; }
+      &::after { left: 10px; right: -12px; bottom: -12px; height: 10px; }
+
+      /* Minimized: not a fade in place - it shrinks along a vector into .panel-show (--dock-x/y are measured by
+         script.js when it goes), and grows back out of it on the same curve. visibility goes on a delay so a hidden
+         window also leaves the tab order. */
+      --dock-x: 0px;
+      --dock-y: 0px;
+      transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.33, 0, 0.2, 1);
+
+      &.is-minimized {
+        opacity: 0;
+        transform: translate(var(--dock-x), var(--dock-y)) scale(0.12);
+        pointer-events: none;
+        visibility: hidden;
+        transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.33, 0, 0.2, 1), visibility 0s linear 0.24s;
+      }
+
+      :focus-visible { outline: 2px solid var(--p-ink); outline-offset: 2px; }
+    }
+
+    /* The way back: a solid ink tab bottom right, shown only while the panel is minimized. */
+    .panel-show {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      z-index: 100;
+      height: 26px;
+      padding: 0 12px;
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: #000000;
+      border: 1px solid #000000;
+      border-radius: 0;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease, background-color 0.12s ease, color 0.12s ease;
+
+      &.is-visible { opacity: 1; visibility: visible; transition-delay: 0.18s, 0s, 0s; }
+      &:hover { background: #ffffff; color: #000000; }
+    }
+
+    .panel-head {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+      padding: 0 12px;
+      background: var(--p-ink);
+      color: var(--p-bg);
+      /* the handle the panel is dragged by */
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+
+      button { cursor: pointer; }
+    }
+
+    /* no easing while it follows the pointer */
+    .panel.is-dragging { transition: none; }
+    .panel.is-dragging .panel-head { cursor: grabbing; }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .panel-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: var(--p-faint) transparent;
+    }
+
+    /* Section headers run the full width with an ink rule above, like the kits' groups. */
+    .group {
+      margin: 0;
+      padding: 12px 14px 6px;
+      border-top: 1px solid var(--p-ink);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+
+      &:first-child { border-top: 0; }
+    }
+
+    .param,
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 22px;
+      margin: 4px 14px;
+    }
+
+    .param-name {
+      flex: 0 0 96px;
+      color: var(--p-muted);
+    }
+
+    .param select {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 22px;
+      padding: 0 6px;
+      font: inherit;
+      color: var(--p-ink);
+      background: var(--p-bg);
+      border: 1px solid var(--p-ink);
+      border-radius: 0;
+      cursor: pointer;
+    }
+
+    .param input[type="color"] {
+      flex: 1 1 auto;
+      height: 22px;
+      padding: 0;
+      border: 1px solid var(--p-ink);
+      border-radius: 0;
+      background: var(--p-bg);
+      cursor: pointer;
+    }
+
+    .param output {
+      flex: 0 0 auto;
+      min-width: 52px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    /* Hairline track, square ink thumb that grows a step under the pointer. */
+    .param input[type="range"] {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 18px;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+
+      &::-webkit-slider-runnable-track { height: 1px; background: var(--p-ink); }
+      &::-webkit-slider-thumb { appearance: none; width: 8px; height: 14px; margin-top: -6.5px; background: var(--p-ink); border: 0; border-radius: 0; cursor: grab; }
+      &:hover::-webkit-slider-thumb { width: 10px; height: 16px; margin-top: -7.5px; }
+      &::-moz-range-track { height: 1px; background: var(--p-ink); }
+      &::-moz-range-thumb { width: 8px; height: 14px; background: var(--p-ink); border: 0; border-radius: 0; cursor: grab; }
+      &:hover::-moz-range-thumb { width: 10px; height: 16px; }
+    }
+
+    .check {
+      margin-top: 8px;
+      cursor: pointer;
+
+      input { accent-color: var(--p-ink); margin: 0; }
+    }
+
+    /* Buttons: outlined at rest, inverted under the pointer. In the titlebar they are drawn in reverse. */
+    .panel-toggle,
+    .action {
+      height: 22px;
+      padding: 0 10px;
+      font-family: var(--p-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: var(--p-bg);
+      color: var(--p-ink);
+      border: 1px solid var(--p-ink);
+      border-radius: 0;
+      cursor: pointer;
+      transition: background-color 0.12s ease, color 0.12s ease;
+
+      &:hover { background: var(--p-ink); color: var(--p-bg); }
+      &:active { background: var(--p-muted); border-color: var(--p-muted); color: var(--p-bg); }
+    }
+
+    .panel-toggle {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      font-size: 14px;
+      background: transparent;
+      color: var(--p-bg);
+      border: 2px solid var(--p-bg);
+
+      &:hover { background: var(--p-bg); color: var(--p-ink); }
+      &:focus-visible { outline-color: var(--p-bg); }
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--p-ink);
+    }
+
+    .action { flex: 1; }
     }
   </style>
 </head>
@@ -56,10 +301,60 @@
       <canvas id="art" aria-label="A hand-drawn picture of the word PAINT, drawn as you scroll" role="img"></canvas>
       <p class="hint">Scroll to draw</p>
     </div>
+
+    <!-- Live settings, minimized to the tab bottom right until opened (or P). Each input's name is a key in params. -->
+    <form class="panel is-minimized" autocomplete="off">
+      <div class="panel-head">
+        <span class="panel-title">Paint</span>
+        <button type="button" class="panel-toggle" title="Minimize (P)" aria-label="Minimize settings">&minus;</button>
+      </div>
+      <div class="panel-body">
+        <p class="group">Scroll</p>
+        <label class="param"><span class="param-name">Scroll length</span><input type="range" name="length" min="2" max="14" step="1"><output></output></label>
+        <label class="param"><span class="param-name">Smoothing</span><input type="range" name="smoothing" min="0.05" max="1" step="0.05"><output></output></label>
+
+        <p class="group">Word</p>
+        <label class="param"><span class="param-name">Word size</span><input type="range" name="fill" min="0.35" max="0.95" step="0.01"><output></output></label>
+        <label class="param"><span class="param-name">Stroke weight</span><input type="range" name="weight" min="0.4" max="2.5" step="0.05"><output></output></label>
+        <label class="param"><span class="param-name">Hand wobble</span><input type="range" name="wobble" min="0" max="3" step="0.05"><output></output></label>
+        <label class="param"><span class="param-name">Second pass</span><input type="range" name="offset" min="0" max="4" step="0.1"><output></output></label>
+
+
+        <div class="actions">
+          <button type="button" class="action" data-action="colours">New colours</button>
+          <button type="button" class="action" data-action="reset">Reset</button>
+        </div>
+        <div class="actions">
+          <button type="button" class="action" data-action="copy">Copy params</button>
+        </div>
+      </div>
+    </form>
+    <button type="button" class="panel-show is-visible">Paint settings</button>
   </main>
 
 <script>
 (() => {
+  // The animation's settings, tuned live from the panel. Saved in this browser; Reset goes back to these.
+  const defaults = {
+    length: 6,          // screens of scrolling the whole drawing takes
+    smoothing: 0.25,    // 0..1, how quickly the pen catches up with the scroll (1 = no easing)
+    fill: 0.5,          // how much of the screen the word fills
+    weight: 1,          // pen thickness, x the original
+    wobble: 1,          // hand jitter, x the original
+    offset: 1,          // how far the bright second pass misses the dark first one, x the original
+    letterPace: 1,      // time per segment of the word's two passes, x the original (higher = more scroll)
+    scenePace: 1,       // time per segment of the sun, cloud, gulls and grass, x the original
+    beat: 520,          // ms of the original's timeline held between the passes
+    scene: true,        // draw the sun, cloud, gulls and grass after the word
+  };
+  const STORE = 'paint-scroll-params-v2'; // bumped when defaults change, so old saved settings don't override them
+  const params = { ...defaults };
+  // Only settings that have a control in the panel come back from storage; the rest are always the defaults above.
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE)) || {};
+    document.querySelectorAll('.panel input[name]').forEach(({ name }) => { if (name in saved) params[name] = saved[name]; });
+  } catch {}
+
   const art = document.getElementById('art');
   const actx = art.getContext('2d');
   const hint = document.querySelector('.hint');
@@ -104,7 +399,7 @@
   // every line segment is laid out in advance on a timeline that keeps the original's rhythm (its per-stroke
   // pace and the beats between the three passes). The scroll position then says how far along that timeline to
   // draw, forwards or backwards.
-  const SEED = (Math.random() * 2 ** 32) >>> 0;           // a fresh picture per visit, stable within it
+  let SEED = (Math.random() * 2 ** 32) >>> 0;             // a fresh picture per visit (or New colours), stable within it
   const seeded = (s) => () => {                             // mulberry32
     s = (s + 0x6d2b79f5) >>> 0;
     let t = s;
@@ -164,7 +459,7 @@
     const by = Math.min(...ys), bh = Math.max(...ys) - by;
     // 0.84 minus 15%. It left no air for the scene - the sun and the gulls had
     // to crowd the corners above a word that was already touching them.
-    const FILL = 0.714;                      // of the shorter-constrained axis
+    const FILL = params.fill;                // of the shorter-constrained axis
     const scale = Math.min(w * FILL / bw, h * FILL / bh);
     const offX = (w - bw * scale) / 2 - bx * scale;
     // Nudged below centre. The sky is doing more work than the ground - sun in
@@ -232,7 +527,7 @@
       const j = Math.floor(random() * (i + 1));   // letters do not always
       [markerInk[i], markerInk[j]] = [markerInk[j], markerInk[i]];   // wear the
     }                                                  // same five in order
-    const OFF = Math.max(1, capPx * 0.014);  // how far a second pull may miss by
+    const OFF = Math.max(params.offset ? 1 : 0, capPx * 0.014 * params.offset); // how far a second pull may miss by
     const overs = flat.map(s => {
       const dx = (random() - 0.5) * 2 * OFF;
       const dy = (random() - 0.5) * 2 * OFF;
@@ -437,10 +732,10 @@
     });
 
     // Every dark stroke, then every bright one, then the world around them.
-    const passes = [...flat, ...overs, ...scene];
+    const passes = [...flat, ...overs, ...(params.scene ? scene : [])];
 
-    const weight = Math.max(3, Math.round(capPx * 0.075));
-    const jitter = (k = 1) => (random() - 0.5) * Math.max(1.5, capPx * 0.03) * k;
+    const weight = Math.max(2, Math.round(capPx * 0.075 * params.weight));
+    const jitter = (k = 1) => (random() - 0.5) * Math.max(1.5, capPx * 0.03) * k * params.wobble;
 
     // One entry per segment the timer used to draw, with the jitter it would have rolled baked in, and the time it
     // would have appeared at. The waits are the original's (their random spread averaged out): the brighter pass
@@ -448,7 +743,7 @@
     // on its own before it is gone over, and again before the scene starts.
     segments = [];
     let t = 400;
-    const wait = (s) => (s.d ? s.d * 1.5 : s.over ? 19 : 35);
+    const wait = (s) => (s.d ? s.d * 1.5 * params.scenePace : (s.over ? 19 : 35) * params.letterPace);
     passes.forEach((s, i) => {
       const width = s.w || (s.over ? Math.max(2, weight * 0.78) : weight);
       for (let j = 1; j < s.pts.length; j++) {
@@ -461,7 +756,7 @@
         t += wait(s);
       }
       const handover = i + 1 === flat.length || i + 1 === flat.length + overs.length;
-      t += handover ? 520 : wait(s);
+      t += handover ? params.beat : wait(s);
     });
     total = t;
     drawn = -1;
@@ -503,7 +798,7 @@
   function render(immediate = false) {
     cancelAnimationFrame(frame);
     const target = progressOf();
-    shown = immediate ? target : shown + (target - shown) * 0.25;
+    shown = immediate ? target : shown + (target - shown) * params.smoothing;
     if (Math.abs(target - shown) < 0.0005) shown = target;
     const time = shown * total;
     let count = 0;
@@ -515,6 +810,125 @@
   addEventListener('scroll', () => render(), { passive: true });
 
   new ResizeObserver(resize).observe(art);
+
+  /* ---- settings panel ---- */
+  const root = document.querySelector('.nsc-paint-scroll');
+  const panel = root.querySelector('.panel');
+  const toggle = panel.querySelector('.panel-toggle');
+  const show = root.querySelector('.panel-show');
+  const inputs = [...panel.querySelectorAll('input[name]')];
+  const formats = {
+    length: (v) => `${v} screens`,
+    smoothing: (v) => (v >= 1 ? 'off' : v.toFixed(2)),
+    fill: (v) => `${Math.round(v * 100)}%`,
+    weight: (v) => `${v.toFixed(2)}x`,
+    wobble: (v) => (v ? `${v.toFixed(2)}x` : 'none'),
+    offset: (v) => (v ? `${v.toFixed(1)}x` : 'none'),
+  };
+  // Which settings change the picture itself (rebuilt from the seed) rather than only how it is scrolled.
+  const rebuilds = new Set(['fill', 'weight', 'wobble', 'offset']);
+
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(params)); } catch {} };
+  const fill = () => inputs.forEach((input) => {
+    if (input.type === 'checkbox') input.checked = params[input.name];
+    else input.value = params[input.name];
+  });
+  const showValues = () => inputs.forEach((input) => {
+    const out = input.parentElement.querySelector('output');
+    if (out) out.textContent = formats[input.name](params[input.name]);
+  });
+  const applyAll = (rebuild) => {
+    root.style.setProperty('--length', params.length);
+    showValues();
+    save();
+    if (rebuild && segments.length) { buildSequence(); render(true); } else render();
+  };
+
+  panel.addEventListener('input', (e) => {
+    const input = e.target;
+    if (!input.name) return;
+    params[input.name] = input.type === 'checkbox' ? input.checked : Number(input.value);
+    applyAll(rebuilds.has(input.name));
+  });
+  panel.addEventListener('submit', (e) => e.preventDefault());
+  panel.addEventListener('click', async (e) => {
+    const button = e.target.closest('[data-action]');
+    const action = button?.dataset.action;
+    if (action === 'colours') { SEED = (Math.random() * 2 ** 32) >>> 0; applyAll(true); }
+    if (action === 'reset') { Object.assign(params, defaults); fill(); applyAll(true); }
+    if (action === 'copy') {
+      try { await navigator.clipboard.writeText(JSON.stringify(params, null, 2)); button.textContent = 'Copied'; }
+      catch { button.textContent = 'Copy failed'; }
+      setTimeout(() => { button.textContent = 'Copy params'; }, 1200);
+    }
+  });
+  // The panel takes its own wheel, so scrolling its list doesn't also draw.
+  panel.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
+
+  // Minimized as in randomize-studio: the window shrinks into the tab that brings it back, and grows back out of it.
+  function togglePanel() {
+    const minimize = !panel.classList.contains('is-minimized');
+    if (minimize) {
+      const p = panel.getBoundingClientRect();
+      const b = show.getBoundingClientRect();
+      panel.style.setProperty('--dock-x', `${b.left + b.width / 2 - (p.left + p.width / 2)}px`);
+      panel.style.setProperty('--dock-y', `${b.top + b.height / 2 - (p.top + p.height / 2)}px`);
+    }
+    panel.classList.toggle('is-minimized', minimize);
+    show.classList.toggle('is-visible', minimize);
+    (minimize ? show : toggle).focus({ preventScroll: true });
+  }
+  // Dragged by its title bar, kept inside the window, and remembered for next time.
+  const PLACE = 'paint-scroll-panel-place';
+  const clampPlace = (x, y) => [
+    Math.min(Math.max(8, x), innerWidth - panel.offsetWidth - 8),
+    Math.min(Math.max(8, y), innerHeight - 48 - 8), // at least the title bar stays reachable
+  ];
+  const place = (x, y) => {
+    [x, y] = clampPlace(x, y);
+    panel.style.left = `${x}px`;
+    panel.style.top = `${y}px`;
+    panel.style.right = 'auto';
+  };
+  try { const saved = JSON.parse(localStorage.getItem(PLACE)); if (saved) place(saved.x, saved.y); } catch {}
+  addEventListener('resize', () => { if (panel.style.left) place(panel.offsetLeft, panel.offsetTop); });
+
+  const head = panel.querySelector('.panel-head');
+  let drag = null;
+  head.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('button')) return;
+    const r = panel.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    head.setPointerCapture(e.pointerId);
+    panel.classList.add('is-dragging');
+  });
+  head.addEventListener('pointermove', (e) => { if (drag) place(e.clientX - drag.dx, e.clientY - drag.dy); });
+  const endDrag = () => {
+    if (!drag) return;
+    drag = null;
+    panel.classList.remove('is-dragging');
+    try { localStorage.setItem(PLACE, JSON.stringify({ x: panel.offsetLeft, y: panel.offsetTop })); } catch {}
+  };
+  head.addEventListener('pointerup', endDrag);
+  head.addEventListener('pointercancel', endDrag);
+
+  toggle.addEventListener('click', togglePanel);
+  show.addEventListener('click', togglePanel);
+  addEventListener('keydown', (e) => {
+    if (e.target.closest?.('input, textarea, select')) return;
+    if (e.key === 'p' || e.key === 'P') togglePanel();
+  });
+  // Starts minimized: dock it on the tab before the first paint so it doesn't fly there.
+  requestAnimationFrame(() => {
+    const p = panel.getBoundingClientRect();
+    const b = show.getBoundingClientRect();
+    panel.style.setProperty('--dock-x', `${b.left + b.width / 2 - (p.left + p.width / 2)}px`);
+    panel.style.setProperty('--dock-y', `${b.top + b.height / 2 - (p.top + p.height / 2)}px`);
+  });
+
+  fill();
+  root.style.setProperty('--length', params.length);
+  showValues();
   resize();
 })();
 </script>
