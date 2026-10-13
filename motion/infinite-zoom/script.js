@@ -318,47 +318,60 @@ photoList.addEventListener('click', (e) => {
   if (button) removePhoto(button.closest('li').dataset.id);
 });
 
-// Drag to reorder: the thumbnail lands before or after the one under the pointer, by which half it is over.
+// Drag to reorder: the dragged row lifts out of the list and a placeholder row stands where it would land,
+// moving above or below the row under the pointer by which half of it the pointer is over.
 let dragId = null;
-const clearMarks = () => photoList.querySelectorAll('.is-before, .is-after').forEach((el) => el.classList.remove('is-before', 'is-after'));
+let dragged = null;
+const placeholder = Object.assign(document.createElement('li'), { className: 'placeholder' });
+placeholder.setAttribute('aria-hidden', 'true');
+
 photoList.addEventListener('dragstart', (e) => {
   const li = e.target.closest('li');
-  if (!li) return;
+  if (!li || li === placeholder) return;
   dragId = li.dataset.id;
-  li.classList.add('is-dragging');
+  dragged = li;
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', dragId);
+  placeholder.style.height = `${li.offsetHeight}px`;
+  // Hidden a moment later: the browser takes its drag image from the row as the drag starts.
+  setTimeout(() => {
+    if (dragged !== li) return;
+    li.classList.add('is-dragging');
+    li.after(placeholder);
+  });
 });
 photoList.addEventListener('dragend', () => {
-  dragId = null;
-  photoList.querySelectorAll('.is-dragging').forEach((el) => el.classList.remove('is-dragging'));
-  clearMarks();
+  dragged?.classList.remove('is-dragging');
+  placeholder.remove();
+  dragId = dragged = null;
   photoList.classList.remove('is-dropping');
 });
-const sideOf = (li, e) => { const r = li.getBoundingClientRect(); return e.clientX < r.left + r.width / 2 ? 'before' : 'after'; };
 photoList.addEventListener('dragover', (e) => {
   e.preventDefault();
   const files = [...e.dataTransfer.types].includes('Files');
   e.dataTransfer.dropEffect = files ? 'copy' : 'move';
   photoList.classList.toggle('is-dropping', files);
-  clearMarks();
+  if (!dragId) return;
   const li = e.target.closest('li');
-  if (li && dragId && li.dataset.id !== dragId) li.classList.add(`is-${sideOf(li, e)}`);
+  if (!li || li === placeholder || li === dragged) return;
+  const r = li.getBoundingClientRect();
+  if (e.clientY < r.top + r.height / 2) li.before(placeholder);
+  else li.after(placeholder);
 });
 photoList.addEventListener('dragleave', (e) => {
-  if (!photoList.contains(e.relatedTarget)) { photoList.classList.remove('is-dropping'); clearMarks(); }
+  if (!photoList.contains(e.relatedTarget)) photoList.classList.remove('is-dropping');
 });
 photoList.addEventListener('drop', (e) => {
   e.preventDefault();
   photoList.classList.remove('is-dropping');
   if (e.dataTransfer.files.length) { addFiles([...e.dataTransfer.files]); return; }
-  const li = e.target.closest('li');
-  if (!dragId || !li || li.dataset.id === dragId) return;
-  const moving = sources.find((p) => p.id === dragId);
-  const rest = sources.filter((p) => p.id !== dragId);
-  const at = rest.findIndex((p) => p.id === li.dataset.id) + (sideOf(li, e) === 'after' ? 1 : 0);
-  rest.splice(at, 0, moving);
-  setPhotos(rest);
+  if (!dragId || !placeholder.isConnected) return;
+  // The new order is the rows as they stand, with the dragged one where the placeholder is.
+  const ids = [...photoList.children]
+    .filter((el) => el !== dragged)
+    .map((el) => (el === placeholder ? dragId : el.dataset.id));
+  const byId = new Map(sources.map((p) => [p.id, p]));
+  setPhotos(ids.map((id) => byId.get(id)));
 });
 
 // Start from the saved order and any photos added before; built-ins no longer in the list stay removed.

@@ -15,6 +15,7 @@
       --nav-top: 240px; /* how far down the nav (and its expand tab) sits */
       --nav-ink: #f1eee8;
       --nav-muted: #9a958c;
+      --nav-hover: rgba(255, 255, 255, 0.14); /* the hover wash on links and the ear */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,90 +39,79 @@
       height: 100vh;
       height: 100dvh;
 
-      /* Against the browser's left edge, var(--nav-top) down. */
-      .sidebar {
+      /* The drawer: the nav plus its ear, against the browser's left edge, var(--nav-top) down. Collapsing slides
+         the whole drawer out by the nav's width, so only the ear is left showing at the edge. One drop-shadow on
+         the drawer outlines nav and ear as a single shape. */
+      .drawer {
         position: absolute;
         top: var(--nav-top);
         left: 0;
         z-index: 2;
+        filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.28));
+        transition: translate 0.35s cubic-bezier(0.33, 0, 0.2, 1);
+      }
+
+      &.is-collapsed .drawer { translate: -100% 0; }
+      &.is-restoring .drawer,
+      &.is-restoring .ear::before { transition: none; }
+
+      .sidebar {
         display: flex;
         flex-direction: column;
         gap: 18px;
         width: 200px;
         min-height: 300px;
-        max-height: calc(100% - var(--nav-top) - 12px);
+        max-height: calc(100vh - var(--nav-top) - 12px);
         padding: 20px 16px;
         overflow-y: auto;
         background: var(--nav-bg);
         color: var(--nav-ink);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-        transition: translate 0.35s cubic-bezier(0.33, 0, 0.2, 1), opacity 0.25s ease;
       }
 
-      /* Collapsed: the nav slides out past the left edge and only the expand tab is left. */
-      &.is-collapsed .sidebar {
-        translate: -100% 0;
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .nav-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      /* Collapse (in the nav) and expand (left behind when it is collapsed): square, light on dark. */
-      .collapse,
-      .expand {
+      /* The ear: attached to the nav's right outside edge, 30px down, in the nav's colour, no border. Its caret points
+         left to hide the nav and turns to point right once it is hidden. */
+      .ear {
+        position: absolute;
+        top: 30px;
+        left: 100%;
         display: grid;
         place-items: center;
-        width: 26px;
-        height: 26px;
+        width: 24px;
+        height: 34px;
         padding: 0;
-        border: 1px solid var(--nav-muted);
-        background: transparent;
-        color: var(--nav-ink);
-        font: 400 16px/1 ui-sans-serif, system-ui, sans-serif;
-        cursor: pointer;
-        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-
-        &:hover { background: var(--nav-ink); color: var(--nav-bg); border-color: var(--nav-ink); }
-      }
-
-      .collapse { margin: -4px -4px 0 0; }
-
-      .expand {
-        position: absolute;
-        top: var(--nav-top);
-        left: 0;
-        z-index: 2;
-        width: 32px;
-        height: 32px;
-        border-color: var(--nav-bg);
+        border: 0;
         background: var(--nav-bg);
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s ease, visibility 0s linear 0.2s, background 0.15s ease, color 0.15s ease;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        /* The caret: two borders of a small square turned 45deg, so it sits exactly in the middle (a text glyph
+           like the old one rides on the font's baseline). Nudged 2px toward its open side, since a chevron's weight
+           sits at its point. */
+        &::before {
+          content: "";
+          display: block;
+          width: 9px;
+          height: 9px;
+          border-left: 2px solid currentColor;
+          border-bottom: 2px solid currentColor;
+          rotate: 45deg;
+          translate: 2px 0;
+          transition: rotate 0.35s cubic-bezier(0.33, 0, 0.2, 1), translate 0.35s cubic-bezier(0.33, 0, 0.2, 1);
+        }
+
+        /* hover like the project links: the same faint white wash, the caret stays white */
+        &:hover { background: linear-gradient(var(--nav-hover), var(--nav-hover)), var(--nav-bg); }
       }
 
-      &.is-restoring .sidebar,
-      &.is-restoring .expand { transition: none; }
-
-      &.is-collapsed .expand {
-        opacity: 1;
-        visibility: visible;
-        transition-delay: 0.2s, 0s, 0s, 0s;
-      }
+      &.is-collapsed .ear::before { rotate: 225deg; translate: -2px 0; }
 
       .title {
         font-size: 11px;
         font-weight: 600;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: var(--nav-muted);
+        color: #fff;
       }
 
       .projects {
@@ -139,18 +129,11 @@
           text-decoration: none;
           transition: background 0.15s ease;
 
-          &:hover { background: rgba(255, 255, 255, 0.08); }
+          &:hover { background: var(--nav-hover); }
           &.is-current { background: var(--nav-ink); color: var(--nav-bg); }
         }
       }
 
-      .open-tab {
-        margin-top: auto;
-        font-size: 12px;
-        color: var(--nav-muted);
-
-        &:hover { color: var(--nav-ink); }
-      }
 
       /* Two stacked frames for the cross-fade: the new project loads, hidden, in the one at the back, and fades in
          over the old one only once it is ready (see script). */
@@ -177,22 +160,20 @@
 <body>
   <div class="nsc-motion-index">
     <!-- One link per project folder in motion/. Add a line here when a new one is added. -->
-    <nav class="sidebar" aria-label="Projects">
-      <div class="nav-head">
+    <div class="drawer">
+      <nav class="sidebar" aria-label="Projects">
         <p class="title">Scroll Driven:</p>
-        <button type="button" class="collapse" aria-label="Hide the project list" title="Hide">&lsaquo;</button>
-      </div>
-      <ul class="projects">
-        <li><a href="rotate-sectors/">Scroll effect</a></li>
-        <li><a href="infinite-zoom/">Infinite zoom scroll</a></li>
-        <li><a href="zoom-navigation/">Zoom based navigation</a></li>
-      </ul>
+        <ul class="projects">
+          <li><a href="rotate-sectors/">Scroll effect</a></li>
+          <li><a href="infinite-zoom/">Infinite zoom scroll</a></li>
+          <li><a href="zoom-navigation/">Zoom based navigation</a></li>
+        </ul>
 
-      <p class="title">Other:</p>
+        <p class="title">Other:</p>
 
-      <a class="open-tab" href="rotate-sectors/" target="_blank" rel="noopener">Open in new tab &#8599;</a>
-    </nav>
-    <button type="button" class="expand" aria-label="Show the project list" title="Show projects">&rsaquo;</button>
+      </nav>
+      <button type="button" class="ear" aria-expanded="true" aria-label="Hide the project list"></button>
+    </div>
 
     <iframe class="frame" title="Project preview"></iframe>
     <iframe class="frame" title="Project preview"></iframe>
@@ -202,13 +183,11 @@
     // Keeps the current project marked, in the address (#infinite-zoom) so a reload or a shared link opens it,
     // and in focus, so its keys and wheel work straight away.
     const links = [...document.querySelectorAll('.projects a')];
-    const openTab = document.querySelector('.open-tab');
     const slug = (a) => a.getAttribute('href').replace(/\/$/, '');
 
     function select(link) {
       links.forEach((a) => a.classList.toggle('is-current', a === link));
       links.forEach((a) => a.toggleAttribute('aria-current', a === link));
-      openTab.href = link.getAttribute('href');
       history.replaceState(null, '', `#${slug(link)}`);
     }
 
@@ -262,23 +241,28 @@
       show(a.getAttribute('href'));
     }));
 
-    // Collapse / expand the nav, remembered for next time.
+    // The ear hides and shows the nav; the choice is remembered for next time.
     const wrapper = document.querySelector('.nsc-motion-index');
+    const ear = document.querySelector('.ear');
     const KEY = 'motion-index-collapsed';
     const setCollapsed = (on) => {
       wrapper.classList.toggle('is-collapsed', on);
+      ear.setAttribute('aria-expanded', String(!on));
+      ear.setAttribute('aria-label', on ? 'Show the project list' : 'Hide the project list');
       try { localStorage.setItem(KEY, on ? '1' : ''); } catch {}
     };
-    document.querySelector('.collapse').addEventListener('click', () => { setCollapsed(true); document.querySelector('.expand').focus(); });
-    document.querySelector('.expand').addEventListener('click', () => { setCollapsed(false); document.querySelector('.collapse').focus(); });
+    ear.addEventListener('click', () => setCollapsed(!wrapper.classList.contains('is-collapsed')));
     // Restored without the slide, so a reload doesn't show the nav leaving.
     try {
       if (localStorage.getItem(KEY)) {
-        wrapper.classList.add('is-restoring', 'is-collapsed');
+        wrapper.classList.add('is-restoring');
+        setCollapsed(true);
         requestAnimationFrame(() => requestAnimationFrame(() => wrapper.classList.remove('is-restoring')));
       }
     } catch {}
-    const start = links.find((a) => `#${slug(a)}` === location.hash) || links[0];
+    // Opens the project in the address (#slug) if there is one, otherwise the default.
+    const DEFAULT = 'infinite-zoom';
+    const start = links.find((a) => `#${slug(a)}` === location.hash) || links.find((a) => slug(a) === DEFAULT) || links[0];
     select(start);
     show(start.getAttribute('href'));
   </script>
