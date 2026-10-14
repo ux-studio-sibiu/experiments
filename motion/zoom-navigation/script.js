@@ -259,12 +259,16 @@ $site.on('click', '.section', function (e) {
 $container.on('click', () => { if (!kits.size) close(); });
 
 // The wheel steps through the scrollbar's steps in order, looping: the overview, then each section, then round
-// to the overview again.
+// to the overview again. Looping one way only: going back from the overview (step 0, where the page starts)
+// would wrap to the last section, Contact, which is a confusing first move, so it does nothing there. The
+// last section still steps on round to the overview.
+const atTop = () => stepOf(current) === 0;
 let cooldown = false;
 window.addEventListener('wheel', (e) => {
   if (kits.size) return;
   e.preventDefault();
   if (cooldown || Math.abs(e.deltaY) < 4) return;
+  if (e.deltaY < 0 && atTop()) return;
   cooldown = true;
   setTimeout(() => { cooldown = false; }, 750);
   goToStep(stepOf(current) + (e.deltaY > 0 ? 1 : -1));
@@ -274,7 +278,7 @@ window.addEventListener('keydown', (e) => {
   if (kits.size) return;
   if (e.key === 'Escape') close();
   if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goToStep(stepOf(current) + 1);
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goToStep(stepOf(current) - 1);
+  if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && !atTop()) goToStep(stepOf(current) - 1);
 });
 
 // Arriving with #projects (etc.) opens that section.
