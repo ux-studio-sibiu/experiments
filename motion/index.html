@@ -171,6 +171,10 @@
         </ul>
 
         <p class="title">Other:</p>
+        <ul class="projects">
+          <!-- Hosted elsewhere, so it names its own #slug (data-slug) instead of a folder. -->
+          <li><a href="https://learn-angular-eosin-rho.vercel.app/" data-slug="learn-angular">Angular + GSAP + three.js (tutorials)</a></li>
+        </ul>
 
       </nav>
       <button type="button" class="ear" aria-expanded="true" aria-label="Hide the project list"></button>
@@ -184,7 +188,7 @@
     // Keeps the current project marked, in the address (#infinite-zoom) so a reload or a shared link opens it,
     // and in focus, so its keys and wheel work straight away.
     const links = [...document.querySelectorAll('.projects a')];
-    const slug = (a) => a.getAttribute('href').replace(/\/$/, '');
+    const slug = (a) => a.dataset.slug || a.getAttribute('href').replace(/\/$/, '');
 
     function select(link) {
       links.forEach((a) => a.classList.toggle('is-current', a === link));
