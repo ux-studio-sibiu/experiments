@@ -1,0 +1,148 @@
+@import url("https://fonts.googleapis.com/css2?family=Lexend:wght@700&display=swap");
+
+:root {
+  --bg: #0e0e0d;
+  --ink: #f3f0ea;
+  --gap: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+/* The scrollbar's space is always there, so the screen is the same width before the pin adds the page's scroll as
+   after - every cell, and so every distance in the timeline, is measured once and stays right. */
+html { overflow-y: scroll; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* One screen, pinned by ScrollTrigger for as long as the three phases need; the page scroll that pinning adds is
+   what moves the photos. Every photo is the same cell - half the screen across and half down, less the gaps - so
+   four always fill the screen exactly, which is what lets each phase hand over to the next in place.
+   The screen is a size container so the cells can be said in cqw / cqh. */
+.nsc-gallery {
+  --cell-w: calc((100cqw - 3 * var(--gap)) / 2);
+  --cell-h: calc((100cqh - 3 * var(--gap)) / 2);
+
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  container-type: size;
+
+  /* ---- phase 1: two columns ---- */
+  .vertical {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: var(--cell-w) var(--cell-w);
+    gap: var(--gap);
+    padding: 0 var(--gap);
+  }
+
+  .column {
+    overflow: hidden;
+
+    .track {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      padding: var(--gap) 0;
+    }
+  }
+
+  /* ---- phase 2: two rows, hidden until the handover ---- */
+  .horizontal {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: var(--cell-h) var(--cell-h);
+    gap: var(--gap);
+    padding: var(--gap) 0;
+    visibility: hidden;
+  }
+
+  .row {
+    overflow: hidden;
+
+    .track {
+      display: flex;
+      gap: var(--gap);
+      width: max-content;
+      padding: 0 var(--gap);
+    }
+  }
+
+  /* ---- phase 3: one diagonal line, hidden until the second handover ----
+     Each photo sits one cell further right and up than the last (script.js gives each its grid cell), so the
+     first two land exactly on the 2x2's bottom-left and top-right. */
+  .diagonal {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    visibility: hidden;
+
+    .track {
+      display: grid;
+      grid-auto-columns: var(--cell-w);
+      grid-auto-rows: var(--cell-h);
+      gap: var(--gap);
+      width: max-content;
+      padding: var(--gap);
+    }
+
+    /* The corner photos: two thirds of a cell, tucked into the corner where the two big photos meet - the one
+       above the line in its cell's bottom-right, the one below in its top-left. */
+    .small {
+      width: calc(var(--cell-w) * 2 / 3);
+      height: calc(var(--cell-h) * 2 / 3);
+    }
+
+    /* The whole line is black and white; script.js brings the last 2x2 back to colour as it grows. */
+    img { filter: grayscale(1); }
+
+    .upper { justify-self: end; align-self: end; }
+    .lower { justify-self: start; align-self: start; }
+  }
+
+  .track { will-change: transform; }
+
+  .photo {
+    position: relative;
+    flex: 0 0 auto;
+    width: var(--cell-w);
+    height: var(--cell-h);
+    overflow: hidden;
+    background: #1c1c1a;
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  /* The title, in a cell of its own. The card is its own size container and the type is set in its units, so the
+     copy that grows at the end of the loop scales its type with it rather than re-wrapping. */
+  .title-card {
+    container-type: size;
+    display: grid;
+    place-items: center end;
+    background: none;
+
+    /* One word to a line, set right. The size is the smaller of a width share and a height share, so on a wide,
+       short screen the four lines (4 x 1.05 of the size = 77% of the card) still fit its height. */
+    .title {
+      margin: 0 6cqw 0 0;
+      font-family: "Lexend", sans-serif;
+      font-size: min(9.8cqw, 18.4cqh);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: 0.01em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+  }
+}
