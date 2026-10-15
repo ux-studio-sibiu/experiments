@@ -461,14 +461,23 @@ p{position : absolute;}
 
 .cp{cursor: pointer; z-index:100;}  /*cursor=pointer*/
 
-#frame0 .cp:hover:after {
+/* Hover: a vignette over the item - clear in the middle, darker toward the edges - faded in and out on a sharp
+   curve (quick to move, quick to settle). */
+#frame0 .cp:after {
     content:"";
-    display:block;
+    position:absolute;
+    top:0;
+    left:0;
     width:100%;
     height:100%;
-    background: rgba(0,0,0,0.5);
-
+    z-index:30;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.6, 1);
 }
+
+#frame0 .cp:hover:after { opacity:1; }
 
 .jos, .sus{display: block;
     float: left;
