@@ -49,6 +49,10 @@ body {
 /* Section headers here don't fold open and shut as the studio's do, so they don't look clickable. */
 .panel .grp h3 { cursor: default; }
 .panel .grp h3:hover { color: var(--ink); }
+/* The photo picker: the studio's pattern grid (.pat-grid, controls.css), with photos for tiles - three
+   across, landscape, each thumbnail filling its tile. */
+.pat-grid.photos { grid-template-columns: repeat(3, 1fr); max-height: none; }
+.pat-grid.photos button { aspect-ratio: 4 / 3; background-size: cover; background-position: center; background-repeat: no-repeat; }
 /* Upload is a <label> round a file input; beside Random photo it takes the same share of the row. */
 .btnrow .uploadbtn { flex: 1; width: auto; margin-top: 0; }
 /* Random photo, Gradient and Upload share one line: no wrapping, a tighter fit than the studio's buttons. */

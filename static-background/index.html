@@ -45,6 +45,8 @@
       </div>
       <div class="grp">
         <h3>Image</h3>
+        <!-- sample photos to pick from, as tiles (the studio's .pat-grid); the full-size image loads on pick -->
+        <div class="pat-grid photos" id="photoGrid" aria-label="Sample photos"></div>
         <div class="btnrow image-sources">
           <button id="randomPhoto" data-mark="randomize">Random photo</button>
           <button id="c_gradient" data-mark="randomize">Gradient</button>
@@ -370,48 +372,74 @@ function createStaticBackground(opts = {}) {
 
 // --- demo bootstrap --------------------------------------------------------
 
-// The sample photo, from this page's folder in the shared sample media (picsum.photos seed "static").
-const SAMPLE = '../sample-media/img/static-background/foggy-trees.jpg';
+// Sample photos to pick from: this page's folder in the shared sample media, thumbnails in thumbs/.
+// foggy-trees is picsum.photos seed "static"; mountain-day-5-night is a copy of swipe-effect's night slide.
+const MEDIA = '../sample-media/img/static-background/';
+const photoUrl = (photo) => `${MEDIA}${photo}.jpg`;
 
-// What the panel shows, and what Copy settings writes out. Tuned for the stronger, coarser TV-static look:
-// chunky cells, dense, fairly opaque.
-const settings = {
-  image: SAMPLE, opacity: 0.30, fps: 24, cellSize: 3, density: 1, grainBlur: 0, blur: 0,
-  grainBlend: 'overlay', color: [20, 28, 255], mono: true,
+// Each sample is a template: picking its tile loads the photo AND sets every control to the values tuned for it.
+const SAMPLES = {
+  // the default: sparse, slow, fine grain over the night sky
+  'mountain-day-5-night': { opacity: 0.41, fps: 8, cellSize: 1.5, density: 0.35, grainBlur: 0, blur: 0, grainBlend: 'overlay', color: null, mono: false },
+  // the stronger, coarser TV-static look: chunky cells, dense, blue-tinted, the photo in black and white
+  'foggy-trees': { opacity: 0.30, fps: 24, cellSize: 3, density: 1, grainBlur: 0, blur: 0, grainBlend: 'overlay', color: [20, 28, 255], mono: true },
 };
+const PHOTOS = Object.keys(SAMPLES);
+const DEFAULT_PHOTO = PHOTOS[0];
+
+// What the panel shows, and what Copy settings writes out.
+const settings = { image: photoUrl(DEFAULT_PHOTO), ...SAMPLES[DEFAULT_PHOTO] };
 
 const fx = createStaticBackground({ container: document.getElementById('bg'), ...settings, autostart: true });
 window.fx = fx; // expose for quick console tinkering in the demo
 
 // --- demo controls
 const $ = (id) => document.getElementById(id);
+const SLIDERS = ['opacity', 'fps', 'cellSize', 'density', 'grainBlur', 'blur'];
 const show = (name) => { $(`c_${name}V`).textContent = +(+settings[name]).toFixed(2); };
-for (const name of ['opacity', 'fps', 'cellSize', 'density', 'grainBlur', 'blur']) {
-  $(`c_${name}`).value = settings[name];
-  show(name);
+const toHex = (rgb) => rgb ? '#' + rgb.map((v) => v.toString(16).padStart(2, '0')).join('') : '#ffffff';
+
+// The panel's controls set from `settings` - on load, and whenever a sample's template replaces them.
+function syncPanel() {
+  for (const name of SLIDERS) { $(`c_${name}`).value = settings[name]; show(name); }
+  $('c_grainBlend').querySelector(`input[value="${settings.grainBlend}"]`).checked = true;
+  $('c_color').value = toHex(settings.color);
+  $('c_mono').checked = settings.mono;
+}
+
+for (const name of SLIDERS) {
   $(`c_${name}`).addEventListener('input', (e) => { settings[name] = +e.target.value; fx.set(name, settings[name]); show(name); });
 }
-$('c_grainBlend').querySelector(`input[value="${settings.grainBlend}"]`).checked = true;
 $('c_grainBlend').addEventListener('change', (e) => { settings.grainBlend = e.target.value; fx.set('grainBlend', settings.grainBlend); });
 // Tint: the picker's #rrggbb as the [r, g, b] the effect takes; white is no tint (plain grayscale).
-$('c_color').value = settings.color ? '#' + settings.color.map((v) => v.toString(16).padStart(2, '0')).join('') : '#ffffff';
 $('c_color').addEventListener('input', (e) => {
   const hex = e.target.value;
   settings.color = hex.toLowerCase() === '#ffffff' ? null : [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
   fx.set('color', settings.color);
 });
-
-$('c_mono').checked = settings.mono;
 $('c_mono').addEventListener('change', (e) => { settings.mono = e.target.checked; fx.set('mono', settings.mono); });
+syncPanel();
 
-// The image: the sample (on load), a random photo, an upload, or a generated gradient.
+// The image: a tile per sample photo (the picked one framed), a random photo, an upload, or a generated gradient.
+$('photoGrid').innerHTML = PHOTOS.map((n) =>
+  `<button type="button" data-photo="${n}" title="${n.replace(/-/g, ' ')}" aria-pressed="false" style="background-image:url('${MEDIA}thumbs/${n}.jpg')"></button>`).join('');
 // Track the active object URL so the PREVIOUS one is revoked when switching - never the one about to load.
 let objectUrl = null;
-function useImage(src) {
+function useImage(src, photo = null) {
   if (objectUrl && src !== objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
   settings.image = src;
   fx.setImage(src);
+  $('photoGrid').querySelectorAll('[data-photo]').forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.photo === photo)));
 }
+$('photoGrid').addEventListener('click', (e) => {
+  const tile = e.target.closest('[data-photo]');
+  if (!tile) return;
+  const photo = tile.dataset.photo;
+  Object.assign(settings, SAMPLES[photo]);   // the sample's template replaces the current values
+  for (const [name, value] of Object.entries(SAMPLES[photo])) fx.set(name, value);
+  syncPanel();
+  useImage(photoUrl(photo), photo);
+});
 $('randomPhoto').addEventListener('click', () => {
   useImage(`https://picsum.photos/seed/${Math.random().toString(36).slice(2, 10)}/1600/1000`);
 });
@@ -439,7 +467,7 @@ $('c_gradient').addEventListener('click', () => {
   g.fillStyle = grad; g.fillRect(0, 0, c.width, c.height);
   useImage(c);   // the canvas element goes straight through
 });
-useImage(SAMPLE);
+useImage(settings.image, DEFAULT_PHOTO);
 
 // Copy settings: the call that recreates the effect with the current values. An uploaded image only exists
 // in this tab, and a gradient is a canvas, so those become a placeholder.
