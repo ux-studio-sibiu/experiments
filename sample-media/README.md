@@ -49,4 +49,5 @@ remove any folder left empty. Grep for the old path and fix every reference.
 | `img/swipe-effect/` | `swipe-effect/` (the five `mountain-day-*` slides) |
 | `img/background-experiments/` | `background-experiments/` (its default photo, a copy of the midday slide) |
 | `img/fluid-hover/` | `effect/` (Fluid hover's image picker) |
+| `img/static-background/` | `static-background/` (its default sample photo) |
 | `img/pawson/` | `motion/gallery-navigation/`. Kept **complete** (all 30), including the ones no page shows yet: never prune it as unused. |

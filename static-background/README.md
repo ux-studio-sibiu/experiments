@@ -42,8 +42,12 @@ exposes `window.createStaticBackground`.
 > `z-index: 9999` *inside* the container, so give your menu content a higher
 > `z-index` (and `position`) to keep it above the grain.
 
-Open [`index.html`](index.html) for a full working menu-overlay demo with live
-controls.
+Open [`index.html`](index.html) for the demo: the static as a full-screen page
+background over a sample photo, with a movable, minimizable control panel
+(sliders, random photo, upload, copy settings). It loads its sample from
+`../sample-media/img/static-background/`, so serve the collection root (the
+`static-background` entry in `.claude/launch.json` does) rather than this folder
+on its own.
 
 ## Options
 
@@ -59,6 +63,9 @@ All options can also be changed at runtime via `fx.set(name, value)`.
 | `color` | `null` | `[r,g,b]` 0–255 tint, or `null` for neutral grayscale. |
 | `image` | `null` | Background image to mix the grain into: a URL string, an `HTMLImageElement`/`HTMLCanvasElement`, or `null`. |
 | `imageFit` | `'cover'` | How the image fills the canvas: `'cover'`, `'contain'`, or `'fill'`. |
+| `mono` | `false` | Draw the image in black and white; the grain keeps its own tint. |
+| `blur` | `0` | Blur the image, in px - an out-of-focus backdrop behind crisp grain. Drawn once and cached, so it costs nothing per frame. |
+| `grainBlur` | `0` | Blur the grain, in px - softens blocky TV snow towards film grain (applied every frame; keep it small). |
 | `grainBlend` | `'overlay'` | How the grain blends over the image/colour (canvas composite op): `'overlay'`, `'soft-light'`, `'screen'`, `'source-over'`, … |
 | `background` | `'transparent'` | Flat colour painted behind the grain (and behind the image). |
 | `blendMode` | `'normal'` | CSS `mix-blend-mode` of the whole canvas vs. the page behind it. |

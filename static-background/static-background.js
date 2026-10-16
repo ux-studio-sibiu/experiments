@@ -39,6 +39,12 @@ const DEFAULTS = {
   image: null,
   /** How the image fills the canvas: 'cover' | 'contain' | 'fill'. */
   imageFit: 'cover',
+  /** Draw the image in black and white (the grain keeps its own tint). */
+  mono: false,
+  /** Blur the image, in CSS px (0 = sharp). A soft, out-of-focus backdrop behind crisp grain. */
+  blur: 0,
+  /** Blur the grain, in CSS px (0 = crisp cells). Softens TV snow towards film grain. */
+  grainBlur: 0,
   /** How the grain mixes over the image/colour (canvas globalCompositeOperation):
    *  'overlay' (filmic), 'soft-light', 'screen' (additive snow), 'source-over'… */
   grainBlend: 'overlay',
@@ -91,43 +97,62 @@ function createStaticBackground(opts = {}) {
   const bctx = buffer.getContext('2d');
   let imageData = null;
 
+  // The base (backdrop colour + image, with its mono/blur filter) is drawn once into this offscreen canvas
+  // and reused every frame - only the grain changes per frame, and a blur is too costly to redo 24 times a second.
+  const base = document.createElement('canvas');
+  const basectx = base.getContext('2d');
+  let baseDirty = true;
+
   let cssW = 0, cssH = 0, bufW = 0, bufH = 0;
 
   // --- background image ----------------------------------------------------
-  let imgEl = null;       // currently-loaded image element
+  let imgEl = null;       // the image being drawn
   let imgReady = false;
+  let pending = null;     // the image loading to replace it - the current one stays up until it arrives
 
-  function setImage(src) {
-    if (!src) { imgEl = null; imgReady = false; if (!running) renderFrame(); return; }
-    if (src instanceof HTMLImageElement || src instanceof HTMLCanvasElement) {
-      imgEl = src;
-      imgReady = !!(src.complete ?? true) &&
-                 (src.naturalWidth || src.width) > 0;
-      if (!imgReady && src.addEventListener) {
-        src.addEventListener('load', () => { imgReady = true; if (!running) renderFrame(); }, { once: true });
-      } else if (!running) renderFrame();
-      return;
-    }
-    // URL string
-    const im = new Image();
-    im.decoding = 'async';
-    im.onload = () => { if (imgEl === im) { imgReady = true; if (!running) renderFrame(); } };
-    im.onerror = () => { if (imgEl === im) { imgEl = null; imgReady = false; } };
-    imgEl = im;
-    imgReady = false;
-    im.src = src;
+  function useLoaded(el) {
+    if (pending !== el) return;   // superseded by a later setImage
+    pending = null; imgEl = el; imgReady = true; baseDirty = true;
+    if (!running) renderFrame();
   }
 
-  function drawImageFit(img) {
+  function setImage(src) {
+    pending = null;
+    if (!src) { imgEl = null; imgReady = false; baseDirty = true; if (!running) renderFrame(); return; }
+    // an element is used as given; a URL string gets an image to load into
+    const el = (src instanceof HTMLImageElement || src instanceof HTMLCanvasElement) ? src : new Image();
+    pending = el;
+    if (el instanceof HTMLCanvasElement || (el.complete && el.naturalWidth > 0)) { useLoaded(el); return; }
+    el.addEventListener('load', () => useLoaded(el), { once: true });
+    el.addEventListener('error', () => { if (pending === el) pending = null; }, { once: true });   // a failed load leaves the current image up
+    if (el !== src) { el.decoding = 'async'; el.src = src; }
+  }
+
+  // `pad` grows the drawn image past the edges on every side, so a blur doesn't fade the borders to transparent.
+  function drawImageFit(c, img, pad = 0) {
     const iw = img.naturalWidth || img.width;
     const ih = img.naturalHeight || img.height;
     if (!iw || !ih) return;
-    if (cfg.imageFit === 'fill') { ctx.drawImage(img, 0, 0, cssW, cssH); return; }
-    const cr = cssW / cssH, ir = iw / ih;
+    const W = cssW + pad * 2, H = cssH + pad * 2;
+    if (cfg.imageFit === 'fill') { c.drawImage(img, -pad, -pad, W, H); return; }
+    const cr = W / H, ir = iw / ih;
     let dw, dh;
-    if (cfg.imageFit === 'contain' ? ir > cr : ir < cr) { dw = cssW; dh = cssW / ir; }
-    else { dh = cssH; dw = cssH * ir; }
-    ctx.drawImage(img, (cssW - dw) / 2, (cssH - dh) / 2, dw, dh);
+    if (cfg.imageFit === 'contain' ? ir > cr : ir < cr) { dw = W; dh = W / ir; }
+    else { dh = H; dw = H * ir; }
+    c.drawImage(img, (cssW - dw) / 2, (cssH - dh) / 2, dw, dh);
+  }
+
+  function renderBase() {
+    baseDirty = false;
+    basectx.clearRect(0, 0, cssW, cssH);
+    if (cfg.background && cfg.background !== 'transparent') { basectx.fillStyle = cfg.background; basectx.fillRect(0, 0, cssW, cssH); }
+    if (!(imgEl && imgReady)) return;
+    const blur = Math.max(0, +cfg.blur || 0);
+    const filter = [cfg.mono ? 'grayscale(1)' : '', blur ? `blur(${blur}px)` : ''].join(' ').trim();
+    basectx.imageSmoothingEnabled = true;
+    basectx.filter = filter || 'none';
+    drawImageFit(basectx, imgEl, blur * 2);
+    basectx.filter = 'none';
   }
 
   // --- sizing --------------------------------------------------------------
@@ -136,6 +161,9 @@ function createStaticBackground(opts = {}) {
     cssH = container.clientHeight || window.innerHeight;
     canvas.width = cssW;
     canvas.height = cssH;
+    base.width = cssW;
+    base.height = cssH;
+    baseDirty = true;
 
     bufW = Math.max(1, Math.ceil(cssW / cfg.cellSize));
     bufH = Math.max(1, Math.ceil(cssH / cfg.cellSize));
@@ -174,18 +202,22 @@ function createStaticBackground(opts = {}) {
     ctx.globalCompositeOperation = 'source-over';
     ctx.clearRect(0, 0, cssW, cssH);
 
-    const hasColour = cfg.background && cfg.background !== 'transparent';
-    if (hasColour) { ctx.fillStyle = cfg.background; ctx.fillRect(0, 0, cssW, cssH); }
-    if (imgEl && imgReady) { ctx.imageSmoothingEnabled = true; drawImageFit(imgEl); }
-    const hasBase = hasColour || (imgEl && imgReady);
+    const hasBase = (cfg.background && cfg.background !== 'transparent') || (imgEl && imgReady);
+    if (hasBase) {
+      if (baseDirty) renderBase();
+      ctx.drawImage(base, 0, 0);
+    }
 
     // grain on top, mixed into the base
     fillNoiseBuffer();
+    const grainBlur = Math.max(0, +cfg.grainBlur || 0);
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = cfg.opacity;
     ctx.globalCompositeOperation = hasBase ? cfg.grainBlend : 'source-over';
+    ctx.filter = grainBlur ? `blur(${grainBlur}px)` : 'none';
     ctx.drawImage(buffer, 0, 0, bufW, bufH, 0, 0, cssW, cssH);
 
+    ctx.filter = 'none';
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
@@ -267,6 +299,7 @@ function createStaticBackground(opts = {}) {
       if (name === 'image') { setImage(value); return api; }
       if (!(name in cfg)) return api;
       cfg[name] = value;
+      if (['background', 'imageFit', 'mono', 'blur'].includes(name)) baseDirty = true;   // redraw the cached base
       switch (name) {
         case 'blendMode':  s.mixBlendMode = value; break;
         case 'zIndex':     s.zIndex = String(value); break;

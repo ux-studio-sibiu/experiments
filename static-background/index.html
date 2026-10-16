@@ -3,156 +3,55 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Static background — menu overlay concept</title>
-<style>
-  :root { --ink: #f4f4f2; --bg: #0a0a0b; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body {
-    background: var(--bg); color: var(--ink); overflow: hidden;
-    font-family: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* the static effect lives here — a full-screen background layer on the MAIN
-     screen, behind the page content. */
-  #bg { position: fixed; inset: 0; z-index: 0; }
-
-  /* page content sits above the static background */
-  .page { position: fixed; inset: 0; z-index: 1; display: grid; place-items: center; padding: 24px; }
-  .page h1 { font-size: clamp(40px, 9vw, 120px); font-weight: 600; letter-spacing: -0.03em; margin: 0; opacity: .9; }
-  .page p  { position: fixed; left: 24px; bottom: 22px; font-size: 13px; opacity: .5; max-width: 40ch; line-height: 1.5; }
-
-  /* top bar */
-  .bar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 10001;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 22px 28px; mix-blend-mode: difference; color: #fff;
-  }
-  .brand { font-weight: 600; letter-spacing: .02em; font-size: 15px; }
-  .menu-btn {
-    appearance: none; background: none; border: none; color: inherit; cursor: pointer;
-    font: inherit; font-size: 15px; letter-spacing: .08em; text-transform: uppercase;
-    display: inline-flex; align-items: center; gap: 10px; padding: 6px 0;
-  }
-  .menu-btn .bars { display: inline-flex; flex-direction: column; gap: 4px; }
-  .menu-btn .bars i { width: 22px; height: 1.5px; background: currentColor; transition: transform .3s ease, opacity .3s ease; }
-  body.menu-open .menu-btn .bars i:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
-  body.menu-open .menu-btn .bars i:nth-child(2) { opacity: 0; }
-  body.menu-open .menu-btn .bars i:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
-
-  /* the menu overlay — plain navigation panel (the static lives on #bg now) */
-  .overlay {
-    position: fixed; inset: 0; z-index: 10000;
-    background: #08080a;
-    opacity: 0; visibility: hidden;
-    transition: opacity .45s ease, visibility 0s linear .45s;
-  }
-  body.menu-open .overlay { opacity: 1; visibility: visible; transition: opacity .45s ease; }
-
-  .nav {
-    position: relative; z-index: 2;
-    height: 100%; display: flex; flex-direction: column; justify-content: center;
-    gap: 6px; padding: 0 8vw;
-  }
-  .nav a {
-    color: var(--ink); text-decoration: none; font-weight: 600; letter-spacing: -0.02em;
-    font-size: clamp(34px, 7vw, 84px); line-height: 1.05; width: max-content;
-    opacity: 0; transform: translateY(18px);
-    /* Only the entrance reveal animates. Hover colour is intentionally NOT in
-       this list, so :hover feedback is instant (0ms) — fast, responsive UI. */
-    transition: opacity .5s ease, transform .5s ease;
-  }
-  .nav a:hover { color: #9a9a93; } /* instant — no color transition on purpose */
-  body.menu-open .nav a { opacity: 1; transform: none; }
-  body.menu-open .nav a:nth-child(1) { transition-delay: .10s; }
-  body.menu-open .nav a:nth-child(2) { transition-delay: .16s; }
-  body.menu-open .nav a:nth-child(3) { transition-delay: .22s; }
-  body.menu-open .nav a:nth-child(4) { transition-delay: .28s; }
-
-  /* live controls */
-  .controls {
-    position: fixed; right: 16px; bottom: 16px; z-index: 10002; font-size: 12px; color: #cfcfd2;
-    background: rgba(20,20,22,.6); padding: 12px 14px; border-radius: 10px;
-    backdrop-filter: blur(8px); display: grid; gap: 8px; min-width: 230px;
-  }
-  .controls label { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-  .controls input[type=range] { width: 130px; }
-  .controls .row { display:flex; gap:8px; align-items:center; justify-content: space-between; }
-  .controls select { background:#1b1b1e; color:#eee; border:1px solid #333; border-radius:6px; padding:3px 6px; }
-  .controls button { flex:1; background:#1b1b1e; color:#eee; border:1px solid #333; border-radius:6px; padding:4px 6px; cursor:pointer; font:inherit; }
-  .controls button:hover { background:#2a2a2e; }
-</style>
+<title>Static background</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- the randomize-studio's panel, copied in (see style.css) -->
+<link rel="stylesheet" href="vendor/randomize-studio/css/panel.css">
+<link rel="stylesheet" href="vendor/randomize-studio/css/controls.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="bg"></div>
 
-  <main class="page">
-    <h1>New Form</h1>
-    <p>Animated static runs as the page background. Tweak it with the panel, or
-       blend in a background image (upload one, or try <em>gradient</em>/<em>sample</em>).</p>
-  </main>
-
-  <header class="bar">
-    <span class="brand">◈ STATIC/BG</span>
-    <button class="menu-btn" id="menuBtn" aria-expanded="false">
-      <span id="menuLabel">Menu</span>
-      <span class="bars"><i></i><i></i><i></i></span>
-    </button>
-  </header>
-
-  <div class="overlay" id="overlay" aria-hidden="true">
-    <nav class="nav">
-      <a href="#">Work</a>
-      <a href="#">Studio</a>
-      <a href="#">Approach</a>
-      <a href="#">Contact</a>
-    </nav>
-  </div>
-
-  <aside class="controls">
-    <div class="row"><strong>static-background</strong></div>
-    <label>opacity <input id="c_opacity" type="range" min="0" max="1" step="0.01" value="0.30"></label>
-    <label>fps <input id="c_fps" type="range" min="6" max="60" step="1" value="24"></label>
-    <label>cell size <input id="c_cell" type="range" min="1" max="6" step="0.5" value="3"></label>
-    <label>density <input id="c_density" type="range" min="0.05" max="1" step="0.05" value="1"></label>
-    <label class="row">image <input id="c_image" type="file" accept="image/*" style="font-size:11px; max-width:120px;"></label>
-    <div class="row">
-      <button id="c_gradient" type="button">gradient</button>
-      <button id="c_sample" type="button">sample</button>
-      <button id="c_clear" type="button">clear</button>
+  <button id="panelShow" data-mark="plus">Maximize edit panel</button>
+  <aside class="panel" id="panel">
+    <div class="phead">
+      <b>Static background</b>
+      <span class="spacer"></span>
+      <button id="panelToggle" class="iconbtn" data-mark="minus" title="Minimize"></button>
     </div>
-    <label class="row">fit
-      <select id="c_fit">
-        <option value="cover" selected>cover</option>
-        <option value="contain">contain</option>
-        <option value="fill">fill</option>
-      </select>
-    </label>
-    <label class="row">grain mix
-      <select id="c_grain">
-        <option value="overlay" selected>overlay</option>
-        <option value="soft-light">soft-light</option>
-        <option value="screen">screen</option>
-        <option value="source-over">normal</option>
-      </select>
-    </label>
-    <label class="row">canvas blend
-      <select id="c_blend">
-        <option value="normal" selected>normal</option>
-        <option value="screen">screen</option>
-        <option value="overlay">overlay</option>
-        <option value="soft-light">soft-light</option>
-      </select>
-    </label>
-    <label class="row">tint
-      <select id="c_color">
-        <option value="" selected>grayscale</option>
-        <option value="120,200,255">cyan</option>
-        <option value="255,150,90">amber</option>
-        <option value="120,255,160">green</option>
-      </select>
-    </label>
+    <div class="pbody">
+      <div class="grp">
+        <h3>Static
+          <button id="copySettings" class="iconbtn" data-mark="copy" title="Copy settings" aria-label="Copy settings"></button></h3>
+        <div class="row"><label>opacity</label><input id="c_opacity" type="range" min="0" max="1" step="0.01"><output id="c_opacityV"></output></div>
+        <div class="row"><label>fps</label><input id="c_fps" type="range" min="6" max="60" step="1"><output id="c_fpsV"></output></div>
+        <div class="row"><label>cell size</label><input id="c_cellSize" type="range" min="1" max="6" step="0.5"><output id="c_cellSizeV"></output></div>
+        <div class="row"><label>density</label><input id="c_density" type="range" min="0.05" max="1" step="0.05"><output id="c_densityV"></output></div>
+        <div class="row"><label>grain blur</label><input id="c_grainBlur" type="range" min="0" max="4" step="0.25"><output id="c_grainBlurV"></output></div>
+        <!-- one-of-several as pills (the studio's .chips) -->
+        <div class="row"><label>grain mix</label><div class="chips" id="c_grainBlend">
+          <label><input type="radio" name="grainBlend" value="overlay">overlay</label>
+          <label><input type="radio" name="grainBlend" value="soft-light">soft-light</label>
+          <label><input type="radio" name="grainBlend" value="screen">screen</label>
+          <label><input type="radio" name="grainBlend" value="source-over">normal</label>
+        </div></div>
+        <!-- white = plain grayscale static; any other colour tints the grain -->
+        <div class="row"><label>tint</label><input id="c_color" type="color" value="#ffffff"><span></span>
+          <span class="inline-check"><label for="c_mono">mono</label><input id="c_mono" type="checkbox" title="The image in black and white, the grain keeps its tint"></span></div>
+      </div>
+      <div class="grp">
+        <h3>Image</h3>
+        <div class="btnrow image-sources">
+          <button id="randomPhoto" data-mark="randomize">Random photo</button>
+          <button id="c_gradient" data-mark="randomize">Gradient</button>
+          <label class="uploadbtn" data-mark="upload">Upload<input id="c_file" type="file" accept="image/*" hidden></label>
+        </div>
+        <div class="row"><label>blur</label><input id="c_blur" type="range" min="0" max="40" step="1"><output id="c_blurV"></output></div>
+      </div>
+    </div>
   </aside>
 
 <script>
@@ -162,10 +61,45 @@
 //  keep the two in sync if you edit the algorithm.
 // ===========================================================================
 const DEFAULTS = {
-  container: null, opacity: 0.10, fps: 24, cellSize: 1.5, density: 1,
-  color: null, image: null, imageFit: 'cover', grainBlend: 'overlay',
-  background: 'transparent', blendMode: 'normal', fade: 320,
-  zIndex: 9999, passthrough: true, autostart: false, respectReducedMotion: true,
+  /** Element the canvas is appended to (fills it). Default: document.body. */
+  container: null,
+  /** Grain strength (0..1). With an image, this is how strongly snow mixes in. */
+  opacity: 0.10,
+  /** Grain refresh rate in frames/sec. Lower = chunkier, more "film". 12–30. */
+  fps: 24,
+  /** Size of one noise cell in CSS px. >1 = coarser/blockier static. */
+  cellSize: 1.5,
+  /** Fraction of cells that receive grain each frame (0..1). 1 = dense TV snow. */
+  density: 1,
+  /** RGB tint as [r,g,b] 0..255, or null for neutral grayscale snow. */
+  color: null,
+  /** Background IMAGE: a URL string, or an HTMLImageElement/Canvas, or null. */
+  image: null,
+  /** How the image fills the canvas: 'cover' | 'contain' | 'fill'. */
+  imageFit: 'cover',
+  /** Draw the image in black and white (the grain keeps its own tint). */
+  mono: false,
+  /** Blur the image, in CSS px (0 = sharp). A soft, out-of-focus backdrop behind crisp grain. */
+  blur: 0,
+  /** Blur the grain, in CSS px (0 = crisp cells). Softens TV snow towards film grain. */
+  grainBlur: 0,
+  /** How the grain mixes over the image/colour (canvas globalCompositeOperation):
+   *  'overlay' (filmic), 'soft-light', 'screen' (additive snow), 'source-over'… */
+  grainBlend: 'overlay',
+  /** Flat backdrop painted behind the grain (and behind the image). */
+  background: 'transparent',
+  /** CSS mix-blend-mode for the whole canvas vs. the page behind it. */
+  blendMode: 'normal',
+  /** Fade duration in ms for show()/hide(). */
+  fade: 320,
+  /** Stacking order of the overlay canvas. */
+  zIndex: 9999,
+  /** Forward pointer events to content underneath (true) or capture them (false). */
+  passthrough: true,
+  /** Start visible immediately. */
+  autostart: false,
+  /** Honour `prefers-reduced-motion`: render a single still grain frame. */
+  respectReducedMotion: true,
 };
 
 function createStaticBackground(opts = {}) {
@@ -177,63 +111,108 @@ function createStaticBackground(opts = {}) {
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // --- canvas setup --------------------------------------------------------
   const canvas = document.createElement('canvas');
   const s = canvas.style;
-  s.position = 'absolute'; s.inset = '0'; s.width = '100%'; s.height = '100%';
-  s.display = 'block'; s.zIndex = String(cfg.zIndex);
+  s.position = 'absolute';
+  s.inset = '0';
+  s.width = '100%';
+  s.height = '100%';
+  s.display = 'block';
+  s.zIndex = String(cfg.zIndex);
   s.pointerEvents = cfg.passthrough ? 'none' : 'auto';
-  s.mixBlendMode = cfg.blendMode; s.opacity = '0';
+  s.mixBlendMode = cfg.blendMode;
+  s.opacity = '0'; // CSS opacity drives only the show/hide fade
   s.transition = `opacity ${cfg.fade}ms ease`;
 
   const ctx = canvas.getContext('2d');
   container.appendChild(canvas);
 
+  // Noise is generated into this smaller offscreen buffer (1 px per cell) then
+  // stretched up with smoothing off — both the look (crisp blocks) and the
+  // speed (far fewer writes).
   const buffer = document.createElement('canvas');
   const bctx = buffer.getContext('2d');
   let imageData = null;
+
+  // The base (backdrop colour + image, with its mono/blur filter) is drawn once into this offscreen canvas
+  // and reused every frame - only the grain changes per frame, and a blur is too costly to redo 24 times a second.
+  const base = document.createElement('canvas');
+  const basectx = base.getContext('2d');
+  let baseDirty = true;
+
   let cssW = 0, cssH = 0, bufW = 0, bufH = 0;
 
-  let imgEl = null, imgReady = false;
+  // --- background image ----------------------------------------------------
+  let imgEl = null;       // the image being drawn
+  let imgReady = false;
+  let pending = null;     // the image loading to replace it - the current one stays up until it arrives
+
+  function useLoaded(el) {
+    if (pending !== el) return;   // superseded by a later setImage
+    pending = null; imgEl = el; imgReady = true; baseDirty = true;
+    if (!running) renderFrame();
+  }
 
   function setImage(src) {
-    if (!src) { imgEl = null; imgReady = false; if (!running) renderFrame(); return; }
-    if (src instanceof HTMLImageElement || src instanceof HTMLCanvasElement) {
-      imgEl = src;
-      imgReady = !!(src.complete ?? true) && (src.naturalWidth || src.width) > 0;
-      if (!imgReady && src.addEventListener) {
-        src.addEventListener('load', () => { imgReady = true; if (!running) renderFrame(); }, { once: true });
-      } else if (!running) renderFrame();
-      return;
-    }
-    const im = new Image();
-    im.decoding = 'async';
-    im.onload = () => { if (imgEl === im) { imgReady = true; if (!running) renderFrame(); } };
-    im.onerror = () => { if (imgEl === im) { imgEl = null; imgReady = false; } };
-    imgEl = im; imgReady = false; im.src = src;
+    pending = null;
+    if (!src) { imgEl = null; imgReady = false; baseDirty = true; if (!running) renderFrame(); return; }
+    // an element is used as given; a URL string gets an image to load into
+    const el = (src instanceof HTMLImageElement || src instanceof HTMLCanvasElement) ? src : new Image();
+    pending = el;
+    if (el instanceof HTMLCanvasElement || (el.complete && el.naturalWidth > 0)) { useLoaded(el); return; }
+    el.addEventListener('load', () => useLoaded(el), { once: true });
+    el.addEventListener('error', () => { if (pending === el) pending = null; }, { once: true });   // a failed load leaves the current image up
+    if (el !== src) { el.decoding = 'async'; el.src = src; }
   }
 
-  function drawImageFit(img) {
-    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+  // `pad` grows the drawn image past the edges on every side, so a blur doesn't fade the borders to transparent.
+  function drawImageFit(c, img, pad = 0) {
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
     if (!iw || !ih) return;
-    if (cfg.imageFit === 'fill') { ctx.drawImage(img, 0, 0, cssW, cssH); return; }
-    const cr = cssW / cssH, ir = iw / ih;
+    const W = cssW + pad * 2, H = cssH + pad * 2;
+    if (cfg.imageFit === 'fill') { c.drawImage(img, -pad, -pad, W, H); return; }
+    const cr = W / H, ir = iw / ih;
     let dw, dh;
-    if (cfg.imageFit === 'contain' ? ir > cr : ir < cr) { dw = cssW; dh = cssW / ir; }
-    else { dh = cssH; dw = cssH * ir; }
-    ctx.drawImage(img, (cssW - dw) / 2, (cssH - dh) / 2, dw, dh);
+    if (cfg.imageFit === 'contain' ? ir > cr : ir < cr) { dw = W; dh = W / ir; }
+    else { dh = H; dw = H * ir; }
+    c.drawImage(img, (cssW - dw) / 2, (cssH - dh) / 2, dw, dh);
   }
 
+  function renderBase() {
+    baseDirty = false;
+    basectx.clearRect(0, 0, cssW, cssH);
+    if (cfg.background && cfg.background !== 'transparent') { basectx.fillStyle = cfg.background; basectx.fillRect(0, 0, cssW, cssH); }
+    if (!(imgEl && imgReady)) return;
+    const blur = Math.max(0, +cfg.blur || 0);
+    const filter = [cfg.mono ? 'grayscale(1)' : '', blur ? `blur(${blur}px)` : ''].join(' ').trim();
+    basectx.imageSmoothingEnabled = true;
+    basectx.filter = filter || 'none';
+    drawImageFit(basectx, imgEl, blur * 2);
+    basectx.filter = 'none';
+  }
+
+  // --- sizing --------------------------------------------------------------
   function resize() {
     cssW = container.clientWidth || window.innerWidth;
     cssH = container.clientHeight || window.innerHeight;
-    canvas.width = cssW; canvas.height = cssH;
+    canvas.width = cssW;
+    canvas.height = cssH;
+    base.width = cssW;
+    base.height = cssH;
+    baseDirty = true;
+
     bufW = Math.max(1, Math.ceil(cssW / cfg.cellSize));
     bufH = Math.max(1, Math.ceil(cssH / cfg.cellSize));
-    buffer.width = bufW; buffer.height = bufH;
+    buffer.width = bufW;
+    buffer.height = bufH;
     imageData = bctx.createImageData(bufW, bufH);
+
     if (reducedMotion || !running) renderFrame();
   }
 
+  // --- noise + compositing -------------------------------------------------
   function fillNoiseBuffer() {
     const data = imageData.data;
     const n = bufW * bufH;
@@ -256,22 +235,36 @@ function createStaticBackground(opts = {}) {
   }
 
   function renderFrame() {
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    // base layers
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
     ctx.clearRect(0, 0, cssW, cssH);
-    const hasColour = cfg.background && cfg.background !== 'transparent';
-    if (hasColour) { ctx.fillStyle = cfg.background; ctx.fillRect(0, 0, cssW, cssH); }
-    if (imgEl && imgReady) { ctx.imageSmoothingEnabled = true; drawImageFit(imgEl); }
-    const hasBase = hasColour || (imgEl && imgReady);
 
+    const hasBase = (cfg.background && cfg.background !== 'transparent') || (imgEl && imgReady);
+    if (hasBase) {
+      if (baseDirty) renderBase();
+      ctx.drawImage(base, 0, 0);
+    }
+
+    // grain on top, mixed into the base
     fillNoiseBuffer();
+    const grainBlur = Math.max(0, +cfg.grainBlur || 0);
     ctx.imageSmoothingEnabled = false;
     ctx.globalAlpha = cfg.opacity;
     ctx.globalCompositeOperation = hasBase ? cfg.grainBlend : 'source-over';
+    ctx.filter = grainBlur ? `blur(${grainBlur}px)` : 'none';
     ctx.drawImage(buffer, 0, 0, bufW, bufH, 0, 0, cssW, cssH);
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+
+    ctx.filter = 'none';
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
   }
 
-  let rafId = 0, running = false, visible = false, lastFrame = -Infinity;
+  // --- animation loop ------------------------------------------------------
+  let rafId = 0;
+  let running = false;
+  let visible = false;
+  let lastFrame = -Infinity;
 
   function frame(ts) {
     if (!running) return;
@@ -279,58 +272,95 @@ function createStaticBackground(opts = {}) {
     if (ts - lastFrame >= interval) { lastFrame = ts; renderFrame(); }
     rafId = requestAnimationFrame(frame);
   }
+
   function start() {
     if (running || reducedMotion) { if (reducedMotion) renderFrame(); return api; }
-    running = true; lastFrame = -Infinity;
-    rafId = requestAnimationFrame(frame); return api;
+    running = true;
+    lastFrame = -Infinity;
+    rafId = requestAnimationFrame(frame);
+    return api;
   }
-  function stop() { running = false; cancelAnimationFrame(rafId); return api; }
 
-  function show() { visible = true; s.opacity = '1'; start(); return api; }
+  function stop() {
+    running = false;
+    cancelAnimationFrame(rafId);
+    return api;
+  }
+
+  // --- visibility / lifecycle ---------------------------------------------
+  function show() {
+    visible = true;
+    s.opacity = '1';
+    start();
+    return api;
+  }
+
   function hide() {
-    visible = false; s.opacity = '0';
+    visible = false;
+    s.opacity = '0';
     clearTimeout(hide._t);
     hide._t = setTimeout(() => { if (!visible) stop(); }, cfg.fade + 50);
     return api;
   }
+
   function toggle(force) {
     const next = typeof force === 'boolean' ? force : !visible;
     return next ? show() : hide();
   }
+
   function onVisibilityChange() {
-    if (document.hidden) stop(); else if (visible) start();
+    if (document.hidden) stop();
+    else if (visible) start();
   }
 
-  const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
-  if (ro) ro.observe(container); else window.addEventListener('resize', resize);
+  const ro = typeof ResizeObserver !== 'undefined'
+    ? new ResizeObserver(resize)
+    : null;
+  if (ro) ro.observe(container);
+  else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', onVisibilityChange);
 
+  // --- public API ----------------------------------------------------------
   const api = {
-    canvas, show, hide, toggle, start, stop, resize, setImage,
+    canvas,
+    show,
+    hide,
+    toggle,
+    start,
+    stop,
+    resize,
+    setImage,
     get visible() { return visible; },
+
+    /** Update a knob at runtime. Geometry changes (cellSize) trigger a resize. */
     set(name, value) {
       if (name === 'image') { setImage(value); return api; }
       if (!(name in cfg)) return api;
       cfg[name] = value;
+      if (['background', 'imageFit', 'mono', 'blur'].includes(name)) baseDirty = true;   // redraw the cached base
       switch (name) {
         case 'blendMode':  s.mixBlendMode = value; break;
         case 'zIndex':     s.zIndex = String(value); break;
         case 'cellSize':   resize(); break;
         case 'passthrough': s.pointerEvents = value ? 'none' : 'auto'; break;
-        default: break;
+        default: break; // opacity/density/color/background/imageFit/grainBlend
       }
-      if (!running) renderFrame();
+      if (!running) renderFrame(); // reflect change immediately when idle
       return api;
     },
+
     destroy() {
-      stop(); clearTimeout(hide._t);
-      if (ro) ro.disconnect(); else window.removeEventListener('resize', resize);
+      stop();
+      clearTimeout(hide._t);
+      if (ro) ro.disconnect();
+      else window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       if (canvas.parentNode === container) container.removeChild(canvas);
     },
   };
 
-  // Init AFTER `api` exists — show()/start() reference `api` (TDZ otherwise).
+  // Init runs AFTER `api` exists — show()/start() reference `api`, so calling
+  // them earlier (e.g. via autostart) would hit a temporal-dead-zone error.
   if (cfg.image) setImage(cfg.image);
   resize();
   if (cfg.autostart) show();
@@ -338,85 +368,99 @@ function createStaticBackground(opts = {}) {
   return api;
 }
 
-// --- demo wiring -----------------------------------------------------------
-// Static runs on the MAIN screen as a persistent background. Presets tuned for
-// the stronger / coarser TV-static look: chunky cells, dense, fairly opaque.
-const fx = createStaticBackground({
-  container: document.getElementById('bg'),
-  opacity: 0.30,     // strong
-  cellSize: 3,       // coarse / blocky
-  density: 1,        // dense snow
-  fps: 24,
-  autostart: true,
-});
+// --- demo bootstrap --------------------------------------------------------
+
+// The sample photo, from this page's folder in the shared sample media (picsum.photos seed "static").
+const SAMPLE = '../sample-media/img/static-background/foggy-trees.jpg';
+
+// What the panel shows, and what Copy settings writes out. Tuned for the stronger, coarser TV-static look:
+// chunky cells, dense, fairly opaque.
+const settings = {
+  image: SAMPLE, opacity: 0.30, fps: 24, cellSize: 3, density: 1, grainBlur: 0, blur: 0,
+  grainBlend: 'overlay', color: [20, 28, 255], mono: true,
+};
+
+const fx = createStaticBackground({ container: document.getElementById('bg'), ...settings, autostart: true });
 window.fx = fx; // expose for quick console tinkering in the demo
 
-// The menu is now just navigation — no static attached to it.
-const overlay = document.getElementById('overlay');
-const btn = document.getElementById('menuBtn');
-const label = document.getElementById('menuLabel');
-let open = false;
-function setMenu(next) {
-  open = next;
-  document.body.classList.toggle('menu-open', open);
-  btn.setAttribute('aria-expanded', String(open));
-  overlay.setAttribute('aria-hidden', String(!open));
-  label.textContent = open ? 'Close' : 'Menu';
-}
-btn.addEventListener('click', () => setMenu(!open));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) setMenu(false); });
-
-// --- controls --------------------------------------------------------------
+// --- demo controls
 const $ = (id) => document.getElementById(id);
-$('c_opacity').addEventListener('input', (e) => fx.set('opacity', +e.target.value));
-$('c_fps').addEventListener('input',     (e) => fx.set('fps', +e.target.value));
-$('c_cell').addEventListener('input',    (e) => fx.set('cellSize', +e.target.value));
-$('c_density').addEventListener('input', (e) => fx.set('density', +e.target.value));
-$('c_blend').addEventListener('change',  (e) => fx.set('blendMode', e.target.value));
-$('c_color').addEventListener('change',  (e) => {
-  const v = e.target.value;
-  fx.set('color', v ? v.split(',').map(Number) : null);
+const show = (name) => { $(`c_${name}V`).textContent = +(+settings[name]).toFixed(2); };
+for (const name of ['opacity', 'fps', 'cellSize', 'density', 'grainBlur', 'blur']) {
+  $(`c_${name}`).value = settings[name];
+  show(name);
+  $(`c_${name}`).addEventListener('input', (e) => { settings[name] = +e.target.value; fx.set(name, settings[name]); show(name); });
+}
+$('c_grainBlend').querySelector(`input[value="${settings.grainBlend}"]`).checked = true;
+$('c_grainBlend').addEventListener('change', (e) => { settings.grainBlend = e.target.value; fx.set('grainBlend', settings.grainBlend); });
+// Tint: the picker's #rrggbb as the [r, g, b] the effect takes; white is no tint (plain grayscale).
+$('c_color').value = settings.color ? '#' + settings.color.map((v) => v.toString(16).padStart(2, '0')).join('') : '#ffffff';
+$('c_color').addEventListener('input', (e) => {
+  const hex = e.target.value;
+  settings.color = hex.toLowerCase() === '#ffffff' ? null : [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  fx.set('color', settings.color);
 });
 
-// --- background image controls ---------------------------------------------
-$('c_fit').addEventListener('change',   (e) => fx.set('imageFit', e.target.value));
-$('c_grain').addEventListener('change', (e) => fx.set('grainBlend', e.target.value));
+$('c_mono').checked = settings.mono;
+$('c_mono').addEventListener('change', (e) => { settings.mono = e.target.checked; fx.set('mono', settings.mono); });
 
-// Track the active object URL so we can revoke the PREVIOUS one when switching —
-// never the one we're about to hand to the image loader.
+// The image: the sample (on load), a random photo, an upload, or a generated gradient.
+// Track the active object URL so the PREVIOUS one is revoked when switching - never the one about to load.
 let objectUrl = null;
-function revokeCurrent() {
-  if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+function useImage(src) {
+  if (objectUrl && src !== objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+  settings.image = src;
+  fx.setImage(src);
 }
-
-$('c_image').addEventListener('change', (e) => {
+$('randomPhoto').addEventListener('click', () => {
+  useImage(`https://picsum.photos/seed/${Math.random().toString(36).slice(2, 10)}/1600/1000`);
+});
+$('c_file').addEventListener('change', (e) => {
   const f = e.target.files && e.target.files[0];
   if (!f) return;
-  revokeCurrent();
-  objectUrl = URL.createObjectURL(f);
-  fx.setImage(objectUrl);     // loader keeps a reference; safe to revoke later
+  const url = URL.createObjectURL(f);
+  useImage(url);
+  objectUrl = url;   // revoked when the next image replaces it
+  e.target.value = '';
 });
-
-// Procedurally generated image — works fully offline, no assets, no network.
+// A new random gradient each click: 2-4 colour stops at a random angle. Generated, so it works fully offline.
 $('c_gradient').addEventListener('click', () => {
-  revokeCurrent();
   const c = document.createElement('canvas');
   c.width = 1600; c.height = 1000;
   const g = c.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, c.width, c.height);
-  grad.addColorStop(0, '#1d4ed8'); grad.addColorStop(0.5, '#9333ea'); grad.addColorStop(1, '#f97316');
+  const a = Math.random() * Math.PI * 2, r = Math.hypot(c.width, c.height) / 2;
+  const dx = Math.cos(a) * r, dy = Math.sin(a) * r;
+  const grad = g.createLinearGradient(c.width / 2 - dx, c.height / 2 - dy, c.width / 2 + dx, c.height / 2 + dy);
+  const stops = 2 + Math.floor(Math.random() * 3);
+  const hue = Math.random() * 360;   // neighbouring hues spread from one start, so the blend stays harmonious
+  for (let i = 0; i < stops; i++) {
+    grad.addColorStop(i / (stops - 1), `hsl(${(hue + i * (40 + Math.random() * 80)) % 360} ${60 + Math.random() * 35}% ${35 + Math.random() * 30}%)`);
+  }
   g.fillStyle = grad; g.fillRect(0, 0, c.width, c.height);
-  fx.setImage(c);             // pass the canvas element straight through
+  useImage(c);   // the canvas element goes straight through
 });
+useImage(SAMPLE);
 
-// Network sample (graceful no-op offline); good for trying grain-over-photo.
-$('c_sample').addEventListener('click', () => { revokeCurrent(); fx.setImage('https://picsum.photos/seed/static/1600/1000'); });
-
-$('c_clear').addEventListener('click', () => {
-  revokeCurrent();
-  fx.setImage(null);
-  $('c_image').value = '';
+// Copy settings: the call that recreates the effect with the current values. An uploaded image only exists
+// in this tab, and a gradient is a canvas, so those become a placeholder.
+$('copySettings').addEventListener('click', async () => {
+  const btn = $('copySettings');
+  const img = settings.image;
+  const image = !img ? 'null' : typeof img !== 'string' ? "'your-image.jpg'" : img.startsWith('blob:') ? "'your-image.jpg'" : `'${img}'`;
+  const color = settings.color ? `[${settings.color.join(', ')}]` : 'null';
+  const code = `createStaticBackground({\n  container: document.getElementById('bg'),\n  image: ${image},\n` +
+    `  opacity: ${settings.opacity},\n  fps: ${settings.fps},\n  cellSize: ${settings.cellSize},\n  density: ${settings.density},\n  grainBlur: ${settings.grainBlur},\n  blur: ${settings.blur},\n` +
+    `  grainBlend: '${settings.grainBlend}',\n  color: ${color},\n  mono: ${settings.mono},\n  autostart: true,\n});\n`;
+  try {
+    await navigator.clipboard.writeText(code);
+    btn.classList.add('is-copied');
+    setTimeout(() => btn.classList.remove('is-copied'), 1200);
+  } catch {
+    console.log(code);
+    btn.title = 'Copy blocked - see the console';
+  }
 });
 </script>
+<script src="panel-window.js"></script>
 </body>
 </html>

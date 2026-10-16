@@ -7,7 +7,7 @@
       "runtimeArgs": [
         "--yes",
         "http-server",
-        "static-background",
+        ".",
         "-p",
         "8127",
         "-c-1"
