@@ -1,0 +1,58 @@
+/* Fluid hover - the demo page.
+
+   The panel is the randomize-studio's: its window and controls come from vendor/randomize-studio/css/
+   (panel.css, controls.css - local copies, adjust them here freely), and the tokens they read are below,
+   taken from the studio's base.css. panel-window.js makes it a floating window you can drag by its
+   titlebar and minimize to the button that brings it back. */
+
+:root {
+  --panel: 356px;
+  --panel-max: 90vh;
+  --panel-gap: 20px;
+  --bg: #ffffff;
+  --ink: #000000;
+  --muted: #6b6b6b;
+  --faint: #d4d4d4;
+  --wash: #f4f4f2;
+  --ui-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ui-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --icon-minus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M4 9h12v2H4V9z'/%3E%3C/g%3E%3C/svg%3E");   /* minimize the panel */
+  --icon-plus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M17 9v2h-6v6H9v-6H3V9h6V3h2v6h6z'/%3E%3C/g%3E%3C/svg%3E");   /* bring it back */
+  --icon-upload: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M8 14V8H5l5-6 5 6h-3v6H8zm-2 2v-6H4v8h12.01v-8H14v6H6z'/%3E%3C/g%3E%3C/svg%3E");   /* import one, and upload an image */
+  --lbl: 76px;
+  --ctl: 22px;
+  --icon-randomize: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 118.91 122.88'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M6.41,23.43l49.53,20.15c1.57,0.64,4.17,1.04,5.74,0.4l52.42-21.41c1.57-0.64-0.02-3.49-1.62-4.05L59.62,0 c-0.4-0.14-10.33,3.48-11.72,3.97L4.79,19.38C3.12,19.97,4.26,22.55,6.41,23.43L6.41,23.43z M116.87,94.34l-51.73,28.06 c-1.49,0.81-3.56,0.69-3.56-1.01l-0.01-66.03c0-1.7,0.14-3.36,1.7-4.03l51.92-22.12c1.56-0.66,3.73-0.07,3.72,1.62l-0.34,59.48 C118.56,92,118.36,93.53,116.87,94.34L116.87,94.34z M104.99,71.09c3.52,1.5,4.55,6.77,2.28,11.78c-2.26,5-6.96,7.84-10.48,6.34 c-3.52-1.5-4.55-6.77-2.28-11.78C96.78,72.43,101.47,69.59,104.99,71.09L104.99,71.09z M86.22,57.28c3.65,1.55,4.7,7.01,2.36,12.19 c-2.34,5.18-7.2,8.12-10.85,6.57c-3.65-1.55-4.7-7.01-2.36-12.19C77.71,58.66,82.57,55.72,86.22,57.28L86.22,57.28z M1.81,93.89 l51.26,27.75c1.49,0.81,3.56,0.69,3.56-1.01l0.01-65.42c0-1.7-0.14-3.36-1.7-4.03L3.72,29.22C2.16,28.55,0,29.15,0,30.85 l0.11,59.02C0.11,91.56,0.32,93.08,1.81,93.89L1.81,93.89z M6.91,75.74c3.21-2.04,7.99,0.29,10.66,5.2s2.24,10.56-0.97,12.6 c-3.21,2.04-7.99-0.29-10.66-5.2C3.27,83.42,3.7,77.78,6.91,75.74L6.91,75.74z M22.06,64.37c3.4-2.06,8.45,0.29,11.28,5.26 c2.83,4.97,2.38,10.67-1.02,12.73c-3.4,2.06-8.45-0.29-11.28-5.26C18.2,72.14,18.66,66.44,22.06,64.37L22.06,64.37z M38.12,52.37 c3.42-2.07,8.51,0.29,11.36,5.26c2.85,4.97,2.39,10.68-1.03,12.74c-3.42,2.07-8.51-0.29-11.36-5.26 C34.24,60.14,34.7,54.44,38.12,52.37L38.12,52.37z M59.16,15.48c6.04,0,10.93,2.34,10.93,5.22c0,2.88-4.89,5.22-10.93,5.22 c-6.03,0-10.93-2.34-10.93-5.22C48.23,17.82,53.13,15.48,59.16,15.48L59.16,15.48z'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #0b0b0c; color: var(--ink); font-family: var(--ui-sans); overflow: hidden; }
+#app { position: fixed; inset: 0; }
+
+/* buttons live inside the WebGL scene so the shader can smear them; the canvas reflects pointer state */
+canvas.hot { cursor: pointer; }
+
+/* The picker's thumbnails in black and white, to match the photo on screen - which the shader itself turns grey
+   (the "mono" option), so that the smear's colour fringes can stay in colour. */
+.pat-grid.photos button { filter: grayscale(1); }
+
+/* === panel: what this page adds to the studio's === */
+[data-mark="randomize"] { --mark: var(--icon-randomize); }
+/* Copy settings: two overlapping sheets, drawn like the studio's other marks (a mask in currentColor) */
+[data-mark="copy"] {
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M7 2h11v12H7zm2 2v8h7V4zM2 6h3v2H4v8h7v-1h2v3H2z'/%3E%3C/svg%3E");
+}
+#copySettings { width: 20px; padding: 0; }
+#copySettings::before { width: 12px; height: 12px; }
+#copySettings.is-copied { background: var(--ink); color: var(--bg); }   /* a moment inverted: copied */
+
+/* Section headers here don't fold open and shut as the studio's do, so they don't look clickable. */
+.panel .grp h3 { cursor: default; }
+.panel .grp h3:hover { color: var(--ink); }
+
+/* The photo picker: the studio's pattern grid (.pat-grid, controls.css), with photos for tiles - three
+   across (two even rows of six), landscape, each thumbnail filling its tile. */
+.pat-grid.photos { grid-template-columns: repeat(3, 1fr); max-height: none; }
+.pat-grid.photos button { aspect-ratio: 4 / 3; background-size: cover; background-position: center; background-repeat: no-repeat; }
+/* Upload is a <label> round a file input; beside Random photo it takes the same share of the row. */
+.btnrow .uploadbtn { flex: 1; width: auto; margin-top: 0; }

@@ -7,7 +7,7 @@ const state = {
   targetBgColor: '#0b0b0d',
   targetBgAlpha: 1,
   // a photo to start from, so the patterns have something to sit on (from the shared sample media)
-  bgImage: { url: '../sample-media/img/mountain-day-3-midday.jpg', fit: 'cover' },
+  bgImage: { url: '../sample-media/img/background-experiments/mountain-day-3-midday.jpg', fit: 'cover' },
   pattern: { name: 'graph-paper', scale: 1.3, opacity: 0.7, color: '#000000', blend: 'normal', rotate: 0 },   // 1.3 x its 100-unit tile = 130px
   pattern2: { enabled: false, name: 'stripes', scale: 1.5, opacity: 0.3, color: '#ffffff', blend: 'screen', rotate: 45 },
 };

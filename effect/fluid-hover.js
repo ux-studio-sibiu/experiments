@@ -42,6 +42,7 @@ const FRAG = /* glsl */`
   uniform float uStrength;
   uniform float uRadius;
   uniform float uChroma;
+  uniform float uMono;   // 1: the image in black and white, the smear's colour fringes still in colour
   uniform float uTime;
 
   vec2 coverUv(vec2 uv, vec2 res, vec2 tex) {
@@ -72,9 +73,16 @@ const FRAG = /* glsl */`
     vec2 dir = normalize(uMouseVel + vec2(1e-6));
     vec2 caShift = dir * ca;
 
-    float r = texture2D(uTex, coverUv(uv + disp + pull + caShift, uResolution, uTexSize)).r;
-    float g = texture2D(uTex, sampleUv).g;
-    float b = texture2D(uTex, coverUv(uv + disp + pull - caShift, uResolution, uTexSize)).b;
+    // Each channel is sampled at its own shift. With uMono, each reads the image's brightness instead of its own
+    // colour: where nothing is shifted the three agree and the picture is grey; where the smear pulls them
+    // apart they differ, and the fringes come out in colour.
+    vec3 lumaW = vec3(0.2126, 0.7152, 0.0722);
+    vec3 cR = texture2D(uTex, coverUv(uv + disp + pull + caShift, uResolution, uTexSize)).rgb;
+    vec3 cG = texture2D(uTex, sampleUv).rgb;
+    vec3 cB = texture2D(uTex, coverUv(uv + disp + pull - caShift, uResolution, uTexSize)).rgb;
+    float r = mix(cR.r, dot(cR, lumaW), uMono);
+    float g = mix(cG.g, dot(cG, lumaW), uMono);
+    float b = mix(cB.b, dot(cB, lumaW), uMono);
     vec3 bg = vec3(r, g, b);
 
     vec2 ovUv = uv + disp + pull;
@@ -108,7 +116,9 @@ export function createFluidHover(opts = {}) {
     strength = 0.18,
     radius   = 9.0,
     chroma   = 0.012,
+    mono     = false,   // the image in black and white, the smear's colour fringes kept
     decay    = 0.94,
+    buttonsAt = 0.5,   // where the button row's centre sits, as a share of the height (0.5 = the middle)
     // visual tuning for the rasterised buttons
     buttonStyle = {
       width: 260, height: 80, gap: 28, fontSize: 22,
@@ -152,6 +162,7 @@ export function createFluidHover(opts = {}) {
     uStrength:   { value: strength },
     uRadius:     { value: radius },
     uChroma:     { value: chroma },
+    uMono:       { value: mono ? 1 : 0 },
     uTime:       { value: 0 },
     uOverlay:    { value: overlayTex },
   };
@@ -201,7 +212,7 @@ export function createFluidHover(opts = {}) {
     const bw  = buttonStyle.width  * dpr;
     const bh  = buttonStyle.height * dpr;
     const gap = buttonStyle.gap    * dpr;
-    const cy = H / 2 - bh / 2;
+    const cy = H * buttonsAt - bh / 2;
     const cx = W / 2;
 
     // Centre the row regardless of how many buttons there are.
@@ -324,7 +335,7 @@ export function createFluidHover(opts = {}) {
   rafId = requestAnimationFrame(tick);
 
   // --- public API ------------------------------------------------------------
-  const settableUniforms = { strength: 'uStrength', radius: 'uRadius', chroma: 'uChroma' };
+  const settableUniforms = { strength: 'uStrength', radius: 'uRadius', chroma: 'uChroma', mono: 'uMono' };
 
   return {
     renderer,

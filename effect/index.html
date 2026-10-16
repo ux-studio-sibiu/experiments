@@ -4,42 +4,46 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Fluid hover — concept</title>
-<style>
-  html, body { margin: 0; height: 100%; background: #0b0b0c; color: #eee; font-family: ui-sans-serif, system-ui, sans-serif; overflow: hidden; }
-  #app { position: fixed; inset: 0; }
-  .hud {
-    position: fixed; left: 16px; bottom: 14px; font-size: 12px; line-height: 1.5;
-    color: #cfcfd2; opacity: .75; user-select: none; pointer-events: none;
-    text-shadow: 0 1px 2px rgba(0,0,0,.6);
-  }
-  .hud b { color: #fff; font-weight: 600; }
-  .controls {
-    position: fixed; right: 16px; top: 14px; font-size: 12px; color: #cfcfd2;
-    background: rgba(20,20,22,.55); padding: 10px 12px; border-radius: 8px;
-    backdrop-filter: blur(8px); display: grid; gap: 6px; min-width: 220px;
-  }
-  .controls label { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
-  .controls input[type=range] { width: 130px; }
-  .controls input[type=file] { font-size: 11px; }
-
-  /* buttons live inside the WebGL scene so the shader can smear them;
-     the canvas reflects pointer state via cursor: pointer when hovering */
-  canvas.hot { cursor: pointer; }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- the randomize-studio's panel, copied in (see style.css) -->
+<link rel="stylesheet" href="vendor/randomize-studio/css/panel.css">
+<link rel="stylesheet" href="vendor/randomize-studio/css/controls.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app"></div>
-<div class="controls">
-  <label>strength <input id="u_strength" type="range" min="0" max="0.6" step="0.005" value="0.18"></label>
-  <label>radius <input id="u_radius" type="range" min="2" max="40" step="0.5" value="9"></label>
-  <label>decay <input id="u_decay" type="range" min="0.80" max="0.995" step="0.001" value="0.94"></label>
-  <label>chroma <input id="u_chroma" type="range" min="0" max="0.04" step="0.001" value="0.012"></label>
-  <label>image <input id="u_file" type="file" accept="image/*"></label>
-</div>
-<div class="hud">
-  Move the cursor over the image. <b>Faster motion → stronger smear.</b><br/>
-  Drop your own image with the picker (top-right).
-</div>
+
+<button id="panelShow" data-mark="plus">Maximize edit panel</button>
+<aside class="panel" id="panel">
+  <div class="phead">
+    <b>Fluid hover</b>
+    <span class="spacer"></span>
+    <button id="panelToggle" class="iconbtn" data-mark="minus" title="Minimize"></button>
+  </div>
+  <div class="pbody">
+    <div class="grp">
+      <h3>Smear
+        <button id="copySettings" class="iconbtn" data-mark="copy" title="Copy settings" aria-label="Copy settings"></button></h3>
+      <div class="row"><label>strength</label><input id="u_strength" type="range" min="0" max="0.6" step="0.005" value="0.18"><output id="u_strengthV"></output></div>
+      <div class="row"><label>radius</label><input id="u_radius" type="range" min="2" max="40" step="0.5" value="9"><output id="u_radiusV"></output></div>
+      <div class="row"><label>decay</label><input id="u_decay" type="range" min="0.80" max="0.995" step="0.001" value="0.94"><output id="u_decayV"></output></div>
+      <div class="row"><label>chroma</label><input id="u_chroma" type="range" min="0" max="0.04" step="0.001" value="0.012"><output id="u_chromaV"></output></div>
+      <div class="row"><label>mono</label><span></span><input id="u_mono" type="checkbox" title="The photo in black and white, the smear's colour fringes kept"></div>
+    </div>
+    <div class="grp">
+      <h3>Image</h3>
+      <!-- photos to pick from, as tiles (the studio's .pat-grid); the full-size image loads on pick -->
+      <div class="pat-grid photos" id="photoGrid" aria-label="Photos"></div>
+      <div class="pat-current" id="photoName"></div>
+      <div class="btnrow">
+        <button id="randomPhoto" data-mark="randomize">Random photo</button>
+        <label class="uploadbtn" data-mark="upload">Upload<input id="u_file" type="file" accept="image/*" hidden></label>
+      </div>
+    </div>
+  </div>
+</aside>
 
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -76,6 +80,7 @@ const FRAG = /* glsl */`
   uniform float uStrength;
   uniform float uRadius;
   uniform float uChroma;
+  uniform float uMono;   // 1: the image in black and white, the smear's colour fringes still in colour
   uniform float uTime;
 
   vec2 coverUv(vec2 uv, vec2 res, vec2 tex) {
@@ -106,9 +111,16 @@ const FRAG = /* glsl */`
     vec2 dir = normalize(uMouseVel + vec2(1e-6));
     vec2 caShift = dir * ca;
 
-    float r = texture2D(uTex, coverUv(uv + disp + pull + caShift, uResolution, uTexSize)).r;
-    float g = texture2D(uTex, sampleUv).g;
-    float b = texture2D(uTex, coverUv(uv + disp + pull - caShift, uResolution, uTexSize)).b;
+    // Each channel is sampled at its own shift. With uMono, each reads the image's brightness instead of its own
+    // colour: where nothing is shifted the three agree and the picture is grey; where the smear pulls them
+    // apart they differ, and the fringes come out in colour.
+    vec3 lumaW = vec3(0.2126, 0.7152, 0.0722);
+    vec3 cR = texture2D(uTex, coverUv(uv + disp + pull + caShift, uResolution, uTexSize)).rgb;
+    vec3 cG = texture2D(uTex, sampleUv).rgb;
+    vec3 cB = texture2D(uTex, coverUv(uv + disp + pull - caShift, uResolution, uTexSize)).rgb;
+    float r = mix(cR.r, dot(cR, lumaW), uMono);
+    float g = mix(cG.g, dot(cG, lumaW), uMono);
+    float b = mix(cB.b, dot(cB, lumaW), uMono);
     vec3 bg = vec3(r, g, b);
 
     vec2 ovUv = uv + disp + pull;
@@ -142,7 +154,9 @@ function createFluidHover(opts = {}) {
     strength = 0.18,
     radius   = 9.0,
     chroma   = 0.012,
+    mono     = false,   // the image in black and white, the smear's colour fringes kept
     decay    = 0.94,
+    buttonsAt = 0.5,   // where the button row's centre sits, as a share of the height (0.5 = the middle)
     buttonStyle = {
       width: 260, height: 80, gap: 28, fontSize: 22,
       fontWeight: 600, fontFamily: 'ui-sans-serif, system-ui, sans-serif',
@@ -182,6 +196,7 @@ function createFluidHover(opts = {}) {
     uStrength:   { value: strength },
     uRadius:     { value: radius },
     uChroma:     { value: chroma },
+    uMono:       { value: mono ? 1 : 0 },
     uTime:       { value: 0 },
     uOverlay:    { value: overlayTex },
   };
@@ -229,7 +244,7 @@ function createFluidHover(opts = {}) {
     const bw  = buttonStyle.width  * dpr;
     const bh  = buttonStyle.height * dpr;
     const gap = buttonStyle.gap    * dpr;
-    const cy = H / 2 - bh / 2;
+    const cy = H * buttonsAt - bh / 2;
     const cx = W / 2;
 
     const total = items.length * bw + Math.max(0, items.length - 1) * gap;
@@ -341,7 +356,7 @@ function createFluidHover(opts = {}) {
   }
   rafId = requestAnimationFrame(tick);
 
-  const settableUniforms = { strength: 'uStrength', radius: 'uRadius', chroma: 'uChroma' };
+  const settableUniforms = { strength: 'uStrength', radius: 'uRadius', chroma: 'uChroma', mono: 'uMono' };
 
   return {
     renderer,
@@ -376,9 +391,29 @@ function createFluidHover(opts = {}) {
 
 // --- demo bootstrap --------------------------------------------------------
 
+// Images to pick from: this demo's own folder in the shared sample media, with small thumbnails for the tiles in
+// thumbs/ (sources and licences in its CREDITS.md). Engravings, gridded windows and bright night lights are what
+// the smear shows off best.
+const MEDIA = '../sample-media/img/fluid-hover/';
+const PHOTOS = ['night-street', 'home-night-5', 'worms-frankfurt', 'helman-federation', 'umbach-strehla', 'wooden-chapel',
+  'dore-titans', 'dessau-stair-window', 'dessau-facade', 'farnsworth-snow', 'shinjuku-taxi', 'shibuya-crossing'];
+const photoUrl = (photo) => `${MEDIA}${photo}.jpg`;
+const thumbUrl = (photo) => `${MEDIA}thumbs/${photo}.jpg`;
+const title = (photo) => photo.replace(/-/g, ' ');
+
+// What the panel shows, and what Copy settings writes out.
+const DEFAULT_PHOTO = 'home-night-5';
+const settings = { image: photoUrl(DEFAULT_PHOTO), strength: 0.48, radius: 6.5, decay: 0.862, chroma: 0.033, mono: true };
+
 const fx = createFluidHover({
   container: document.getElementById('app'),
-  image: 'https://picsum.photos/seed/fluid/1600/1000',
+  image: settings.image,
+  strength: settings.strength,
+  radius: settings.radius,
+  decay: settings.decay,
+  chroma: settings.chroma,
+  mono: settings.mono,   // the photo in black and white, the smear's fringes in colour
+  buttonsAt: 0.85,   // well below the middle, near the foot of the screen
   buttons: [
     { label: 'Explore work', primary: true,  onClick: () => console.log('Explore work') },
     { label: 'Get in touch', primary: false, onClick: () => console.log('Get in touch') },
@@ -387,19 +422,60 @@ const fx = createFluidHover({
 
 // --- demo controls
 const $ = (id) => document.getElementById(id);
-$('u_strength').addEventListener('input', (e) => fx.set('strength', e.target.value));
-$('u_radius'  ).addEventListener('input', (e) => fx.set('radius',   e.target.value));
-$('u_chroma'  ).addEventListener('input', (e) => fx.set('chroma',   e.target.value));
-$('u_decay'   ).addEventListener('input', (e) => fx.set('decay',    e.target.value));
+const show = (name) => { $(`u_${name}V`).textContent = +(+settings[name]).toFixed(3); };
+for (const name of ['strength', 'radius', 'decay', 'chroma']) {
+  $(`u_${name}`).value = settings[name];
+  show(name);
+  $(`u_${name}`).addEventListener('input', (e) => { settings[name] = +e.target.value; fx.set(name, e.target.value); show(name); });
+}
+$('u_mono').checked = settings.mono;
+$('u_mono').addEventListener('change', (e) => { settings.mono = e.target.checked; fx.set('mono', settings.mono); });
 
+// The image: a tile per photo, the picked one framed and named; a random photo; or an upload.
+$('photoGrid').innerHTML = PHOTOS.map((n) =>
+  `<button type="button" data-photo="${n}" title="${title(n)}" aria-pressed="false" style="background-image:url('${thumbUrl(n)}')"></button>`).join('');
+let objectUrl = null;
+function useImage(src, label, photo = null) {
+  if (objectUrl && src !== objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }   // the previous upload, never the new one
+  settings.image = src;
+  fx.setImage(src);
+  $('photoName').textContent = label;
+  $('photoGrid').querySelectorAll('[data-photo]').forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.photo === photo)));
+}
+$('photoGrid').addEventListener('click', (e) => {
+  const tile = e.target.closest('[data-photo]');
+  if (tile) useImage(photoUrl(tile.dataset.photo), title(tile.dataset.photo), tile.dataset.photo);
+});
+$('randomPhoto').addEventListener('click', () => {
+  useImage(`https://picsum.photos/seed/${Math.random().toString(36).slice(2, 10)}/1600/1000`, 'random photo (picsum.photos)');
+});
 $('u_file').addEventListener('change', (e) => {
   const f = e.target.files && e.target.files[0];
   if (!f) return;
   const url = URL.createObjectURL(f);
-  fx.setImage(url);
-  // revoke after a tick — TextureLoader has already kicked off the fetch by then
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  useImage(url, f.name);
+  objectUrl = url;   // revoked when the next image replaces it
+  e.target.value = '';
+});
+useImage(settings.image, title(DEFAULT_PHOTO), DEFAULT_PHOTO);
+
+// Copy settings: the effect has no CSS of its own (it is a WebGL shader), so this copies the call that recreates
+// it with the current values. An uploaded image only exists in this tab, so it is left as a placeholder.
+$('copySettings').addEventListener('click', async () => {
+  const btn = $('copySettings');
+  const image = settings.image.startsWith('blob:') ? 'your-image.jpg' : settings.image;
+  const code = `createFluidHover({\n  container: document.getElementById('app'),\n  image: '${image}',\n` +
+    `  strength: ${settings.strength},\n  radius: ${settings.radius},\n  decay: ${settings.decay},\n  chroma: ${settings.chroma},\n  mono: ${settings.mono},\n});\n`;
+  try {
+    await navigator.clipboard.writeText(code);
+    btn.classList.add('is-copied');
+    setTimeout(() => btn.classList.remove('is-copied'), 1200);
+  } catch {
+    console.log(code);
+    btn.title = 'Copy blocked - see the console';
+  }
 });
 </script>
+<script src="panel-window.js"></script>
 </body>
 </html>

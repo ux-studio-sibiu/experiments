@@ -31,7 +31,7 @@ The content stays in the page; the module only drives it. Slides stack first-on-
 Or load it with a plain `<script src="swipe-effect.js">` - it also exposes `window.createSwipeEffect`.
 
 Open [`index.html`](index.html) for the demo, "A day above the treeline", with live sliders. It loads its
-photos from `../sample-media/img/`, so serve the collection root (the `swipe-effect` entry in
+photos from `../sample-media/img/swipe-effect/`, so serve the collection root (the `swipe-effect` entry in
 `.claude/launch.json` does) rather than this folder on its own.
 
 ## Options
