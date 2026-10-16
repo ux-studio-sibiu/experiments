@@ -1,0 +1,271 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@600&display=swap");
+
+:root {
+  --bg: #ffffff;
+  --ink: #1d1c1a;
+}
+
+* { box-sizing: border-box; }
+
+/* The scrollbar's space is always there. Otherwise ScrollTrigger measures the screen before the pin has made the
+   page tall enough to scroll, the scrollbar then appears, and the pin is left one scrollbar too wide - a
+   sideways scroll. */
+html { overflow-y: scroll; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  /* Nunito 600 for every text */
+  font-family: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  word-spacing: 0.08em;
+}
+
+/* The opening: one pinned screen. The title and the setup line share one place, so the line types itself out
+   where the title faded; the cities sit centred below. script.js runs it. */
+.nsc-teaser-opening {
+  .screen {
+    position: relative;
+    height: 100vh;
+    background: var(--bg);
+    isolation: isolate;   /* its own stacking context, so the paper (z-index -1) sits above this but under everything else */
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 7vh;
+    padding: 0 16px;
+    text-align: center;
+    --blend: multiply;    /* see below; B cycles it while trying modes out (script.js) */
+  }
+
+  /* The crumpled-paper background, on an element of its own so its opacity can be set (or animated) apart from
+     everything on it. Under everything else on the screen, the cities in the page flow included. */
+  .paper {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: url("../../sample-media/img/paper-crumpled.jpg") center / cover no-repeat;
+    opacity: 0.4;   /* a subtle texture: the white behind it lifts it */
+    pointer-events: none;
+  }
+
+  /* Everything on the paper blends into it, like ink printed on the sheet: with multiply the dark parts take on
+     its shading and the white parts of the icons let it show through. The screen's stacking context keeps the
+     blend to the paper. */
+  .screen > :not(.paper) { mix-blend-mode: var(--blend); }
+
+  .words {
+    position: relative;
+    display: grid;
+
+    > * { grid-area: 1 / 1; }
+  }
+
+  /* The second line hangs just below the first without taking space, so the opening's layout - and the
+     cities' places in it - is the same before and after it appears. */
+  .line.subline {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.1em;
+  }
+
+  /* Scene 2's sentence ends where the first line ends and grows upwards from there, so its extra lines rise
+     away from the cities rather than towards them. Also without taking space. */
+  .line.travellers {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+
+  /* The lines that stand above the bee and the train, one after another in the same place: scene 3's
+     explanation, scene 4's lead-in, scene 5's question. Centred across; script.js sets their height so they end
+     just above the bee's row, and the text sits at the foot. Each sentence is one inner span, so the grid places
+     it whole rather than making a cell of each run of text and each icon. */
+  .line.above {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: grid;
+    place-items: end center;
+    padding: 0 8vw;
+  }
+
+  /* the explanation is a long one: smaller than the headlines */
+  .line.rules {
+    font-size: clamp(20px, 2.6vw, 36px);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+
+    .text { max-width: 28em; }
+  }
+
+  .line.question {
+    visibility: hidden;   /* faded in by script.js */
+    translate: 0 80px;    /* a little lower than the lines before it: alone on the screen, it sits nearer the middle */
+  }
+
+  /* an icon standing in for a word, sized to the text */
+  .glyph {
+    height: 1em;
+    vertical-align: -0.12em;
+
+    &.train { transform: scaleX(-1); }    /* the Twemoji locomotive faces left; face it the way it will go */
+    &.bee { transform: rotate(90deg); }   /* the bee is drawn from above, head up; turn it to face right */
+  }
+
+  .headline,
+  .line {
+    margin: 0;
+    font-size: clamp(32px, 5.5vw, 76px);
+    font-weight: inherit;   /* the body's 600, not a heading's bold */
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  /* each word kept whole on a line, its letters revealed one by one */
+  .word { display: inline-block; white-space: nowrap; }
+
+  .cities {
+    display: flex;
+    gap: clamp(32px, 10vw, 160px);
+  }
+
+  /* a city: its icon with its name centred below */
+  .city {
+    margin: 0;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    font-size: 18px;
+
+    img { width: clamp(88px, 12vw, 160px); }
+    figcaption { justify-self: stretch; }
+  }
+
+  /* Scene 3's train and bee. Square, like their icons; script.js places them by their centres from the
+     screen's top-left and scales them to the icons' size in the sentence, which they keep as they move. */
+  .actor {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: clamp(64px, 7vw, 104px);
+    aspect-ratio: 1;
+    visibility: hidden;
+    will-change: transform;
+
+    img { display: block; width: 100%; height: 100%; }
+    &.train img { transform: scaleX(-1); }    /* facing right, towards B */
+    &.bee img { transform: rotate(90deg); }   /* head to the right */
+  }
+
+  /* A speed: an arrow pointing the way they go, the figure written in it. The outer box is drawn left to right
+     by script.js (its clip-path). The arrow is a bar and a border triangle - straight, crisp edges, where a
+     clip-path polygon left an anti-aliased hairline along its slanted, fractional edges. */
+  .speed {
+    --head: 36px;
+    --height: 62px;
+
+    position: absolute;
+    left: 0;
+    top: 0;
+    visibility: hidden;
+
+    .shape {
+      position: relative;
+      isolation: isolate;   /* so the bar can sit behind the figure */
+      display: flex;
+      align-items: center;
+      height: var(--height);
+      padding: 0 calc(var(--head) + 22px) 0 20px;
+      color: var(--bg);
+      font-size: 23px;
+      white-space: nowrap;
+
+      /* the bar, overlapping the head by a pixel so no seam shows */
+      &::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        left: 0;
+        right: calc(var(--head) - 1px);
+        top: 18%;
+        bottom: 18%;
+        background: var(--ink);
+      }
+
+      /* the head */
+      &::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 0;
+        border-left: var(--head) solid var(--ink);
+        border-block: calc(var(--height) / 2) solid transparent;
+      }
+    }
+  }
+
+  /* The distance between the cities, a measuring line with an end tick at each side. script.js places it
+     between the cities' corner positions and draws it from A to B. */
+  .distance {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+  }
+
+  /* starts undrawn (scaleX 0) and the figure hidden, until script.js takes them over */
+  .rule {
+    display: block;
+    height: 2px;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: left center;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      top: -7px;
+      width: 2px;
+      height: 16px;
+      background: var(--ink);
+    }
+
+    &::before { left: 0; }
+    &::after { right: 0; }
+  }
+
+  .amount {
+    position: absolute;
+    left: 50%;
+    top: 16px;
+    translate: -50% 0;
+    font-size: 18px;   /* the cities' names' size */
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    visibility: hidden;
+  }
+}
+
+/* The reference bar (script.js): a working aid for pointing at moments in the story. Remove with its script. */
+.scroll-ref {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 100;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(17, 17, 17, 0.82);
+  color: #fff;
+  font: 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  cursor: copy;
+
+  &.is-copied { background: #2e7d32; }
+}
