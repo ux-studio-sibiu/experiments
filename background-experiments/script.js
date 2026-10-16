@@ -6,8 +6,9 @@ const state = {
   targetSelector: 'section.stage',
   targetBgColor: '#0b0b0d',
   targetBgAlpha: 1,
-  bgImage: { url: null, fit: 'cover' },
-  pattern: { name: 'polka-dots', scale: 2, opacity: 0.5, color: '#000000', blend: 'multiply', rotate: 0 },
+  // a photo to start from, so the patterns have something to sit on (from the shared sample media)
+  bgImage: { url: '../sample-media/img/mountain-day-3-midday.jpg', fit: 'cover' },
+  pattern: { name: 'graph-paper', scale: 1.3, opacity: 0.7, color: '#000000', blend: 'normal', rotate: 0 },   // 1.3 x its 100-unit tile = 130px
   pattern2: { enabled: false, name: 'stripes', scale: 1.5, opacity: 0.3, color: '#ffffff', blend: 'screen', rotate: 45 },
 };
 
@@ -88,14 +89,55 @@ document.addEventListener('click', (e) => {
 const $ = (id) => document.getElementById(id);
 const fmt = (v) => (+v).toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
 
-/* ============================ populate selects ============================ */
-function buildPatternSelects() {
-  const html = PATTERNS.map(p => `<option value="${p.n}">${p.n}</option>`).join('');
-  $('patternSelect').innerHTML = html;
-  $('pattern2Select').innerHTML = html;
+/* ============================ pattern pickers ============================
+   A grid of preview tiles for each pattern, as in the randomize-studio (its .pat-grid, in the copied
+   controls.css), with the picked one's name spelled out below. Each tile is the pattern itself, one repeat
+   scaled to fit TILE px, sized once its own dimensions have been read from the SVG. */
+const TILE = 18;
+const PICKERS = { pattern: { grid: 'patternGrid', name: 'patternName' }, pattern2: { grid: 'pattern2Grid', name: 'pattern2Name' } };
+
+function buildPatternGrids() {
+  // The names are the filenames - lowercase, digits and hyphens - so nothing here needs escaping.
+  const html = PATTERNS.map(p =>
+    `<button type="button" data-pat="${p.n}" title="${p.n}" aria-pressed="false" style="background-image:url('patterns/${p.n}.svg');background-size:${TILE}px"></button>`).join('');
+  for (const which of Object.keys(PICKERS)) {
+    const grid = $(PICKERS[which].grid);
+    grid.innerHTML = html;
+    grid.addEventListener('click', (e) => {
+      const tile = e.target.closest('[data-pat]');
+      if (!tile) return;
+      state[which].name = tile.dataset.pat;
+      syncPicker(which);
+      render().catch(console.error);
+    });
+  }
+  // one repeat of each pattern to a tile, keeping its proportions
+  for (const p of PATTERNS) {
+    getSVGDimensions(p.n).then(({ width, height }) => {
+      const k = TILE / Math.max(width, height);
+      const size = `${Math.max(2, Math.round(width * k))}px ${Math.max(2, Math.round(height * k))}px`;
+      document.querySelectorAll(`.pat-grid [data-pat="${p.n}"]`).forEach((tile) => { tile.style.backgroundSize = size; });
+    });
+  }
 }
 
-buildPatternSelects();
+// Mark the picked tile, name it, and bring it into view in its grid if it is scrolled out of sight. The grid
+// scrolls itself rather than scrollIntoView, which would drag the whole panel along with it.
+function syncPicker(which) {
+  const { grid, name } = PICKERS[which], g = $(grid), picked = state[which].name;
+  $(name).textContent = picked;
+  let on = null;
+  g.querySelectorAll('[data-pat]').forEach((tile) => {
+    const is = tile.dataset.pat === picked;
+    tile.setAttribute('aria-pressed', String(is));
+    if (is) on = tile;
+  });
+  if (on && (on.offsetTop < g.scrollTop || on.offsetTop + on.offsetHeight > g.scrollTop + g.clientHeight)) {
+    g.scrollTop = on.offsetTop - (g.clientHeight - on.offsetHeight) / 2;
+  }
+}
+
+buildPatternGrids();
 
 /* ============================ pseudo-element CSS generation ============================ */
 async function generatePseudoElementCSS() {
@@ -241,19 +283,10 @@ function bindControls() {
     }
   });
 
-  // Background image - fit
-  $('bgImageFit').value = state.bgImage.fit;
-  $('bgImageFit').addEventListener('change', (e) => {
-    state.bgImage.fit = e.target.value;
-    render().catch(console.error);
-  });
+  // Background image - always fitted with cover (state.bgImage.fit); no control for it in the panel
 
   // Pattern 1
-  $('patternSelect').value = state.pattern.name;
-  $('patternSelect').addEventListener('change', (e) => {
-    state.pattern.name = e.target.value;
-    render().catch(console.error);
-  });
+  syncPicker('pattern');   // the grid's clicks are bound in buildPatternGrids
 
   $('patternScale').value = state.pattern.scale;
   $('patternScale').addEventListener('input', (e) => {
@@ -293,14 +326,11 @@ function bindControls() {
   $('pattern2Enabled').addEventListener('change', (e) => {
     state.pattern2.enabled = e.target.checked;
     $('pattern2-config').style.display = e.target.checked ? 'block' : 'none';
+    if (e.target.checked) syncPicker('pattern2');   // its grid only has a layout to scroll once it shows
     render().catch(console.error);
   });
 
-  $('pattern2Select').value = state.pattern2.name;
-  $('pattern2Select').addEventListener('change', (e) => {
-    state.pattern2.name = e.target.value;
-    render().catch(console.error);
-  });
+  syncPicker('pattern2');
 
   $('pattern2Scale').value = state.pattern2.scale;
   $('pattern2Scale').addEventListener('input', (e) => {
@@ -356,8 +386,6 @@ function randomPattern() {
   if (locks.pattern) return;
   state.pattern.name = randomChoice(PATTERNS).n;
   state.pattern.scale = randomValue(0.5, 4);
-  state.pattern.opacity = randomValue(0.2, 0.8);
-  state.pattern.color = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
   state.pattern.blend = randomChoice(['multiply', 'screen', 'overlay', 'darken', 'lighten', 'normal']);
   state.pattern.rotate = randomInt(0, 3) * 90;
 }
@@ -367,18 +395,13 @@ function randomPattern2() {
   state.pattern2.enabled = Math.random() > 0.4;
   state.pattern2.name = randomChoice(PATTERNS).n;
   state.pattern2.scale = randomValue(0.5, 4);
-  state.pattern2.opacity = randomValue(0.1, 0.6);
-  state.pattern2.color = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
   state.pattern2.blend = randomChoice(['multiply', 'screen', 'overlay', 'darken', 'lighten', 'normal']);
   state.pattern2.rotate = randomInt(0, 3) * 90;
 }
 
+// Randomize (the titlebar button and R) rolls the patterns only - not their colours or opacity, which stay as you set them;
+// the photo changes only with "Random photo".
 function randomizeAll() {
-  // Optionally randomize background image (50% chance)
-  if (Math.random() > 0.5) {
-    const random = Math.random().toString(36).substring(2, 11);
-    state.bgImage.url = `https://picsum.photos/1600/900?random=${random}`;
-  }
   randomPattern();
   randomPattern2();
   updateUI();
@@ -391,8 +414,7 @@ function updateUI() {
   $('targetBgColor').value = state.targetBgColor;
   $('targetBgAlpha').value = state.targetBgAlpha;
   $('targetBgAlphaV').textContent = fmt(state.targetBgAlpha);
-  $('bgImageFit').value = state.bgImage.fit;
-  $('patternSelect').value = state.pattern.name;
+  syncPicker('pattern');
   $('patternScale').value = state.pattern.scale;
   $('patternScaleV').textContent = fmt(state.pattern.scale);
   $('patternOpacity').value = state.pattern.opacity;
@@ -404,7 +426,7 @@ function updateUI() {
 
   $('pattern2Enabled').checked = state.pattern2.enabled;
   $('pattern2-config').style.display = state.pattern2.enabled ? 'block' : 'none';
-  $('pattern2Select').value = state.pattern2.name;
+  syncPicker('pattern2');
   $('pattern2Scale').value = state.pattern2.scale;
   $('pattern2ScaleV').textContent = fmt(state.pattern2.scale);
   $('pattern2Opacity').value = state.pattern2.opacity;
@@ -436,53 +458,35 @@ document.querySelectorAll('[data-lock]').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     locks[target] = !locks[target];
-    btn.setAttribute('aria-pressed', locks[target]);
-    btn.textContent = locks[target] ? '🔒' : '🔓';
+    btn.setAttribute('aria-pressed', locks[target]);   // the padlock mark follows aria-pressed (controls.css)
   });
 });
 
-// Keyboard shortcut
+// Keyboard shortcut - not while typing in a field (the selector, say)
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'r' || e.key === 'R') {
-    if (document.activeElement.contentEditable !== 'true') {
+  if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey) {
+    if (!e.target.closest('input, textarea, select, [contenteditable="true"]')) {
       randomizeAll();
     }
   }
 });
 
-// Panel toggle
-$('panelToggle').addEventListener('click', () => {
-  const panel = $('panel');
-  panel.classList.toggle('hidden');
-  $('panelShow').classList.toggle('visible');
-});
-
-$('panelShow').addEventListener('click', () => {
-  const panel = $('panel');
-  panel.classList.remove('hidden');
-  $('panelShow').classList.remove('visible');
-});
+// The panel's window behaviour - dragging and minimizing - is in panel-window.js.
 
 // Copy CSS button
-$('copyCSS').addEventListener('click', () => {
-  const css = `/* SVG Pattern Background */
-#patternLayer {
-  background-image: url('data:image/svg+xml;utf8,...');
-  background-size: ${state.pattern.scale * 20}px ${state.pattern.scale * 20}px;
-  background-repeat: repeat;
-  opacity: ${state.pattern.opacity};
-  mix-blend-mode: ${state.pattern.blend};
-  transform: rotate(${state.pattern.rotate}deg);
-}
-
-/* Background Color */
-#bgLayer {
-  background-color: ${state.bg.color};
-}`;
-
-  navigator.clipboard.writeText(css).then(() => {
-    alert('CSS copied to clipboard!');
-  });
+// Copies exactly the CSS the page is showing: the target's background and both pattern layers. The button
+// flashes inverted to say it worked (or, when the clipboard is refused, the CSS goes to the console).
+$('copyCSS').addEventListener('click', async () => {
+  const btn = $('copyCSS'), css = `/* SVG pattern background */\n${await generatePseudoElementCSS()}`;
+  try {
+    await navigator.clipboard.writeText(css);
+    btn.classList.add('is-copied');
+    btn.title = 'Copied';
+    setTimeout(() => { btn.classList.remove('is-copied'); btn.title = 'Copy pattern CSS'; }, 1200);
+  } catch {
+    console.log(css);
+    btn.title = 'Copy blocked - see the console';
+  }
 });
 
 // Initial render
