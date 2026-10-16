@@ -78,6 +78,19 @@
         "-c-1"
       ],
       "port": 8132
+    },
+    {
+      "name": "swipe-effect",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        ".",
+        "-p",
+        "8133",
+        "-c-1"
+      ],
+      "port": 8133
     }
   ]
 }
