@@ -41,6 +41,7 @@
         <!-- white = plain grayscale static; any other colour tints the grain -->
         <div class="row"><label>tint</label><input id="c_color" type="color" value="#ffffff"><span></span>
           <span class="inline-check"><label for="c_mono">mono</label><input id="c_mono" type="checkbox" title="The image in black and white, the grain keeps its tint"></span></div>
+        <div class="row"><label>blur</label><input id="c_blur" type="range" min="0" max="40" step="1"><output id="c_blurV"></output></div>
       </div>
       <div class="grp">
         <h3>Image</h3>
@@ -49,7 +50,6 @@
           <button id="c_gradient" data-mark="randomize">Gradient</button>
           <label class="uploadbtn" data-mark="upload">Upload<input id="c_file" type="file" accept="image/*" hidden></label>
         </div>
-        <div class="row"><label>blur</label><input id="c_blur" type="range" min="0" max="40" step="1"><output id="c_blurV"></output></div>
       </div>
     </div>
   </aside>
