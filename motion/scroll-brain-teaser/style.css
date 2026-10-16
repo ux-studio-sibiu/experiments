@@ -30,13 +30,23 @@ body {
     height: 100vh;
     background: var(--bg);
     isolation: isolate;   /* its own stacking context, so the paper (z-index -1) sits above this but under everything else */
+    --blend: multiply;    /* see below; B cycles it while trying modes out (script.js) */
+    --stage-scale: 0.8;   /* the content, as a share of the screen: 0.8 leaves about 10% clear on every side */
+  }
+
+  /* Everything on the paper, laid out at the full screen's size and then scaled as one from the centre - every
+     element, gap and font size in proportion. script.js reads --stage-scale where it measures the screen. */
+  .stage {
+    position: absolute;
+    inset: 0;
     display: grid;
     place-content: center;
     justify-items: center;
     gap: 7vh;
     padding: 0 16px;
     text-align: center;
-    --blend: multiply;    /* see below; B cycles it while trying modes out (script.js) */
+    transform: scale(var(--stage-scale));
+    transform-origin: 50% 50%;
   }
 
   /* The crumpled-paper background, on an element of its own so its opacity can be set (or animated) apart from
@@ -53,7 +63,7 @@ body {
   /* Everything on the paper blends into it, like ink printed on the sheet: with multiply the dark parts take on
      its shading and the white parts of the icons let it show through. The screen's stacking context keeps the
      blend to the paper. */
-  .screen > :not(.paper) { mix-blend-mode: var(--blend); }
+  .stage { mix-blend-mode: var(--blend); }
 
   .words {
     position: relative;

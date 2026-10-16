@@ -7,7 +7,7 @@
   <style>
     :root {
       --paper: #ffffff;
-      --hint: #8a847a;
+      --hint: #111;
     }
 
     * { box-sizing: border-box; margin: 0; }
@@ -38,9 +38,8 @@
         left: 50%;
         top: 50%;
         translate: -50% -50%;
-        font: 400 15px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
+        font: 600 22px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        letter-spacing: 0.02em;
         color: var(--hint);
         pointer-events: none;
         transition: opacity 0.6s ease;
@@ -299,7 +298,7 @@
   <main class="nsc-paint-scroll">
     <div class="stage">
       <canvas id="art" aria-label="A hand-drawn picture of the word PAINT, drawn as you scroll" role="img"></canvas>
-      <p class="hint">Scroll to draw</p>
+      <p class="hint">scroll to paint</p>
     </div>
 
     <!-- Live settings, minimized to the tab bottom right until opened (or P). Each input's name is a key in params. -->
@@ -358,6 +357,24 @@
   const art = document.getElementById('art');
   const actx = art.getContext('2d');
   const hint = document.querySelector('.hint');
+
+  // The hint in the rainbow, a colour per letter: ROGVAIV (red, orange, yellow, green, blue, indigo, violet),
+  // each letter placed along it in turn and blended between the two colours either side. Spaces take no colour.
+  {
+    const ROGVAIV = [[0, 85, 50], [28, 95, 50], [48, 95, 47], [130, 60, 40], [215, 80, 48], [245, 60, 45], [280, 60, 50]];   // h, s%, l%
+    const mix = (a, b, f) => a.map((v, i) => v + (b[i] - v) * f);
+    const text = hint.textContent;
+    const letters = [...text].filter((c) => c.trim()).length;
+    let n = 0;
+    hint.setAttribute('aria-label', text);
+    hint.innerHTML = [...text].map((c) => {
+      if (!c.trim()) return c;
+      const at = (letters > 1 ? n++ / (letters - 1) : 0) * (ROGVAIV.length - 1);
+      const i = Math.min(Math.floor(at), ROGVAIV.length - 2);
+      const [h, s, l] = mix(ROGVAIV[i], ROGVAIV[i + 1], at - i);
+      return `<span aria-hidden="true" style="color: hsl(${h.toFixed(0)} ${s.toFixed(0)}% ${l.toFixed(0)}%)">${c}</span>`;
+    }).join('');
+  }
 
   // The canvas matches the screen; a new size rebuilds the picture to fit it (same seed, so the same picture).
   const resize = () => {

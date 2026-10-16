@@ -15,38 +15,41 @@
   <section class="nsc-teaser-opening" aria-label="The setup">
     <div class="screen">
       <div class="paper" aria-hidden="true"></div>
-      <div class="words">
-        <h1 class="headline">Here's a brain teaser:</h1>
-        <p class="line setup">There are 2 sister cities,</p>
-        <p class="line subline">110 km apart</p>
-        <!-- scene 2: the icons stand in for their words; data-label is what assistive tech reads -->
-        <p class="line travellers" data-label="A train and a bee travel between the cities, starting at City A"><img class="glyph train" src="../../sample-media/img/twemoji-locomotive-shadow.svg" alt=""> and <img class="glyph bee" src="../../sample-media/img/twemoji-bee-shadow.svg" alt=""> travel between the cities starting at City A</p>
-      </div>
-      <div class="cities">
-        <figure class="city">
-          <img src="../../sample-media/img/city-buildings-line.png" alt="">
-          <figcaption>City A</figcaption>
-        </figure>
-        <figure class="city">
-          <img src="../../sample-media/img/city-buildings-line.png" alt="">
-          <figcaption>City B</figcaption>
-        </figure>
-      </div>
-      <!-- scene 3: the train and the bee lift out of the sentence and get their speeds -->
-      <div class="actor train" aria-hidden="true"><img src="../../sample-media/img/twemoji-locomotive-shadow.svg" alt=""></div>
-      <div class="actor bee" aria-hidden="true"><img src="../../sample-media/img/twemoji-bee-shadow.svg" alt=""></div>
-      <div class="speed train" aria-label="The train travels at 110 km/h"><span class="shape" aria-hidden="true">110 km/h</span></div>
-      <div class="speed bee" aria-label="The bee flies at 270 km/h"><span class="shape" aria-hidden="true">270 km/h</span></div>
-      <!-- scene 3, with the arrows: how the bee flies, above the two of them -->
-      <p class="line above rules"><span class="text">When the bee reaches City B, it turns back, reaches the train's position, and turns back again&hellip; and so on, until the train arrives in City B</span></p>
-      <!-- scene 4: in its place once it has gone, a lead-in to the trip below -->
-      <p class="line above caption"><span class="text">Like below:</span></p>
-      <!-- scene 5: the question, alone on the screen once everything else has gone -->
-      <p class="line above question" aria-label="What distance does the bee travel?"><span class="text">What distance<br>does <img class="glyph bee" src="../../sample-media/img/twemoji-bee-shadow.svg" alt=""> travel?</span></p>
-      <!-- drawn between the cities once they have moved to the corners -->
-      <div class="distance" aria-label="110 km apart">
-        <span class="rule" aria-hidden="true"></span>
-        <span class="amount" aria-hidden="true"><span class="km">0</span> km</span>
+      <!-- everything on the paper, scaled as one (--stage-scale in style.css) -->
+      <div class="stage">
+        <div class="words">
+          <h1 class="headline">Here's a brain teaser:</h1>
+          <p class="line setup">There are 2 sister cities,</p>
+          <p class="line subline">110 km apart</p>
+          <!-- scene 2: the icons stand in for their words; data-label is what assistive tech reads -->
+          <p class="line travellers" data-label="A train and a bee travel between the cities, starting at City A"><img class="glyph train" src="../../sample-media/img/twemoji-locomotive-shadow.svg" alt=""> and <img class="glyph bee" src="../../sample-media/img/twemoji-bee-shadow.svg" alt=""> travel between the cities starting at City A</p>
+        </div>
+        <div class="cities">
+          <figure class="city">
+            <img src="../../sample-media/img/city-buildings-line.png" alt="">
+            <figcaption>City A</figcaption>
+          </figure>
+          <figure class="city">
+            <img src="../../sample-media/img/city-buildings-line.png" alt="">
+            <figcaption>City B</figcaption>
+          </figure>
+        </div>
+        <!-- scene 3: the train and the bee lift out of the sentence and get their speeds -->
+        <div class="actor train" aria-hidden="true"><img src="../../sample-media/img/twemoji-locomotive-shadow.svg" alt=""></div>
+        <div class="actor bee" aria-hidden="true"><img src="../../sample-media/img/twemoji-bee-shadow.svg" alt=""></div>
+        <div class="speed train" aria-label="The train travels at 110 km/h"><span class="shape" aria-hidden="true">110 km/h</span></div>
+        <div class="speed bee" aria-label="The bee flies at 270 km/h"><span class="shape" aria-hidden="true">270 km/h</span></div>
+        <!-- scene 3, with the arrows: how the bee flies, above the two of them -->
+        <p class="line above rules"><span class="text">When the bee reaches City B, it turns back, reaches the train's position, and turns back again&hellip; and so on, until the train arrives in City B</span></p>
+        <!-- scene 4: in its place once it has gone, a lead-in to the trip below -->
+        <p class="line above caption"><span class="text">Like below:</span></p>
+        <!-- scene 5: the question, alone on the screen once everything else has gone -->
+        <p class="line above question" aria-label="What distance does the bee travel?"><span class="text">What distance<br>does <img class="glyph bee" src="../../sample-media/img/twemoji-bee-shadow.svg" alt=""> travel?</span></p>
+        <!-- drawn between the cities once they have moved to the corners -->
+        <div class="distance" aria-label="110 km apart">
+          <span class="rule" aria-hidden="true"></span>
+          <span class="amount" aria-hidden="true"><span class="km">0</span> km</span>
+        </div>
       </div>
     </div>
   </section>

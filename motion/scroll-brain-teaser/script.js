@@ -19,7 +19,9 @@ const BEE_SPEED = 270;
 const ARRIVAL = DISTANCE / TRAIN_SPEED;   // h, the trip's length
 
 const opening = document.querySelector('.nsc-teaser-opening');
-const screen = opening.querySelector('.screen');
+const stage = opening.querySelector('.stage');   // everything on the paper, scaled as one (--stage-scale)
+// Its scale, to turn on-screen measurements (getBoundingClientRect: scaled) back into its own, unscaled units.
+const stageScale = () => parseFloat(getComputedStyle(stage).getPropertyValue('--stage-scale')) || 1;
 const $ = (selector) => opening.querySelector(selector);
 
 // Split a line into letters, kept in their words so it still wraps between words. An element inside the line
@@ -76,8 +78,8 @@ const CORNER_X = () => innerWidth * 0.05;
 const CORNER_Y = () => innerHeight * 0.08;
 const CITY_GAP = 24;   // px between a city and the end of the distance line
 const toCorner = (city, side) => ({
-  x: () => (side === 'left' ? CORNER_X() : screen.clientWidth - CORNER_X() - city.offsetWidth) - city.offsetLeft,
-  y: () => screen.clientHeight - CORNER_Y() - city.offsetHeight - city.offsetTop,
+  x: () => (side === 'left' ? CORNER_X() : stage.clientWidth - CORNER_X() - city.offsetWidth) - city.offsetLeft,
+  y: () => stage.clientHeight - CORNER_Y() - city.offsetHeight - city.offsetTop,
 });
 
 // The train and the bee land on two rows: the train's centre at TRAIN_ROW (a share of the screen's height), the
@@ -90,16 +92,18 @@ const ABOVE_GAP = 40;   // px between the lines above (explanation, lead-in, que
 
 // The x / y / scale that put an actor's centre on its icon in the sentence, at that icon's size - which it
 // keeps: it moves, it doesn't grow. Measured from the icon itself, not its letter box (a whole line tall); the
-// icons are square, so the bee's quarter turn leaves its box the same.
+// icons are square, so the bee's quarter turn leaves its box the same. In the stage's own units: on screen it is
+// scaled by --stage-scale, so the screen measurements are divided by it.
 function onGlyph(who) {
-  const g = glyph[who].getBoundingClientRect(), s = screen.getBoundingClientRect(), size = actor[who].offsetWidth;
-  return { x: g.left + g.width / 2 - s.left - size / 2, y: g.top + g.height / 2 - s.top - size / 2, scale: g.height / size, icon: g.height };
+  const k = stageScale(), g = glyph[who].getBoundingClientRect(), s = stage.getBoundingClientRect(), size = actor[who].offsetWidth;
+  const icon = g.height / k;
+  return { x: (g.left + g.width / 2 - s.left) / k - size / 2, y: (g.top + g.height / 2 - s.top) / k - size / 2, scale: icon / size, icon };
 }
 // From the layout's measurements (metrics, below), so it is only ever called once layout() has run.
 function landing(who) {
   const icon = metrics.icon[who], size = metrics.box[who];
-  const left = (screen.clientWidth - (icon + SPEED_GAP + Math.max(speed.train.offsetWidth, speed.bee.offsetWidth))) / 2;
-  const trainCy = screen.clientHeight * TRAIN_ROW;
+  const left = (stage.clientWidth - (icon + SPEED_GAP + Math.max(speed.train.offsetWidth, speed.bee.offsetWidth))) / 2;
+  const trainCy = stage.clientHeight * TRAIN_ROW;
   const cx = left + icon / 2, cy = who === 'train' ? trainCy : trainCy - (metrics.icon.train + icon) / 2 - ROW_GAP;
   return { x: cx - size / 2, y: cy - size / 2, arrowX: left + icon + SPEED_GAP, cy };
 }
@@ -112,12 +116,12 @@ const metrics = { icon: { train: 0, bee: 0 }, box: { train: 0, bee: 0 }, line: {
 // the lines above the bee.
 function layout() {
   for (const who of ['train', 'bee']) {
-    metrics.icon[who] = glyph[who].getBoundingClientRect().height;
+    metrics.icon[who] = glyph[who].getBoundingClientRect().height / stageScale();   // in the stage's units
     metrics.box[who] = actor[who].offsetWidth;
   }
-  const ground = screen.clientHeight - CORNER_Y() - cityA.offsetHeight + cityA.querySelector('img').offsetHeight;
+  const ground = stage.clientHeight - CORNER_Y() - cityA.offsetHeight + cityA.querySelector('img').offsetHeight;
   const left = CORNER_X() + cityA.offsetWidth + CITY_GAP;
-  const right = screen.clientWidth - CORNER_X() - cityB.offsetWidth - CITY_GAP;
+  const right = stage.clientWidth - CORNER_X() - cityB.offsetWidth - CITY_GAP;
   metrics.line = { left, width: Math.max(0, right - left), ground };
   gsap.set(distance, { x: left, y: ground, width: metrics.line.width });
   for (const who of ['train', 'bee']) {
@@ -419,7 +423,7 @@ addEventListener('keydown', (e) => {
   if (key === 'r') ref.hidden = !ref.hidden;
   if (key === 'b') {
     blend = (blend + 1) % BLENDS.length;
-    screen.style.setProperty('--blend', BLENDS[blend]);
+    stage.style.setProperty('--blend', BLENDS[blend]);
   }
 });
 
@@ -440,7 +444,7 @@ new ResizeObserver(([entry]) => {
   const size = `${Math.round(entry.contentRect.width)}x${Math.round(entry.contentRect.height)}`;
   if (size !== lastSize && lastSize) ScrollTrigger.refresh();
   lastSize = size;
-}).observe(screen);
+}).observe(stage);
 
 history.scrollRestoration = 'manual';
 addEventListener('load', () => { ScrollTrigger.refresh(); jumpTo(location.hash); });
