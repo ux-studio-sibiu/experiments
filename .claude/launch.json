@@ -91,6 +91,56 @@
         "-c-1"
       ],
       "port": 8133
+    },
+    {
+      "name": "interactive-particles",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "interactive-particles",
+        "-p",
+        "8134",
+        "-c-1"
+      ],
+      "port": 8134
+    },
+    {
+      "name": "cubism",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "cubism",
+        "-p",
+        "8135",
+        "-c-1"
+      ],
+      "port": 8135
+    },
+    {
+      "name": "wp-tutorial",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "../wp-tutorial",
+        "run",
+        "playground"
+      ],
+      "port": 9400
+    },
+    {
+      "name": "web-components-pwa",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "../web-components-pwa",
+        "-p",
+        "8136",
+        "-c-1"
+      ],
+      "port": 8136
     }
   ]
 }

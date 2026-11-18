@@ -19,3 +19,18 @@ Where an image lives depends on who uses it. Full rules and the current layout a
   is kept complete even where no page uses an image; don't prune it. Then grep for the old path and fix every
   reference. That applies only to files created for that page: untracked files you didn't create
   are not yours to delete (see the workspace CLAUDE.md).
+
+## Panels, icons and inputs — MUST follow
+
+Every page's control panel follows the house conventions in the **`ui-conventions`** skill
+(`.claude/skills/ui-conventions/SKILL.md`). In short:
+
+- **Panel:** the randomize-studio panel, copied in, with a white ring outside its black edge on dark stages.
+- **Titlebar:** reset (undo arrow), save (floppy), copy prompt, minimize. Action buttons flash inverted when done.
+- **Icons:** reuse an existing icon before drawing one (studio `base.css`, other pages, `icons/`). Draw it as a
+  20 x 20 mask in `currentColor`.
+- **Sliders:** fine-tune ▲ / ▼ at the end of every row.
+- **Mode switch:** a switch that changes a section's mode is that section's title, naming the current state, with
+  a knob that never moves.
+- **Names:** short and accurate.
+- **Persistence:** the user's asset in IndexedDB, control values per tab, saved settings for good.

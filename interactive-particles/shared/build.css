@@ -1,0 +1,169 @@
+/* Interactive particles - the page.
+
+   The panel is the randomize-studio's, as on the collection's other tools: its window and controls come from
+   ../vendor/randomize-studio/css/ (panel.css, controls.css - local copies, adjust them here freely), and the
+   tokens they read are below, taken from the studio's base.css. panel-window.js (next to this file) makes it a
+   floating window you can drag by its titlebar and minimize to the button that brings it back. */
+
+:root {
+  --panel: 320px;
+  --panel-max: 90vh;
+  --panel-gap: 20px;
+  --bg: #ffffff;
+  --ink: #000000;
+  --muted: #6b6b6b;
+  --faint: #d4d4d4;
+  --wash: #f4f4f2;
+  --ui-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ui-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --icon-minus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M4 9h12v2H4V9z'/%3E%3C/g%3E%3C/svg%3E");   /* minimize the panel */
+  --icon-plus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M17 9v2h-6v6H9v-6H3V9h6V3h2v6h6z'/%3E%3C/g%3E%3C/svg%3E");   /* bring it back */
+  --icon-upload: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M8 14V8H5l5-6 5 6h-3v6H8zm-2 2v-6H4v8h12.01v-8H14v6H6z'/%3E%3C/g%3E%3C/svg%3E");   /* upload an image */
+  --icon-refresh: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M10 3a7 7 0 0 1 6.32 4H13v2h6V3h-2v2.3A9 9 0 1 0 19 10h-2a7 7 0 1 1-7-7z'/%3E%3C/svg%3E");   /* back to the default image */
+  --icon-undo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg%3E%3Cpath d='M12 5H7V2L1 6l6 4V7h5c2.2 0 4 1.8 4 4s-1.8 4-4 4H7v2h5c3.3 0 6-2.7 6-6s-2.7-6-6-6z'/%3E%3C/g%3E%3C/svg%3E");   /* reset to defaults (the studio's "back to the original colours") */
+  --lbl: 76px;
+  --ctl: 22px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: #000000; color: #f4f4f2; overflow: hidden;
+  font-family: var(--ui-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the effect fills the window, behind the panel */
+.stage {
+  position: fixed; inset: 0;
+  touch-action: none;
+
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* the particle count, in the panel's own mono caps; bottom-left, clear of the panel's top-right corner */
+  .stage-badge {
+    position: absolute; bottom: var(--panel-gap); left: var(--panel-gap);
+    padding: 4px 8px;
+    background: var(--bg); color: var(--ink); border: 2px solid var(--ink);
+    font: 700 10px/1.4 var(--ui-mono); letter-spacing: .1em; text-transform: uppercase;
+    cursor: help; /* its title explains the count's colour */
+  }
+
+  /* the particle count against a rough performance budget (main.js): yellow, orange, red as a filled chip,
+     so it reads on the white badge */
+  .stage-badge .count { padding: 0 3px; }
+  .stage-badge .count.is-busy { background: #ffd400; }
+  .stage-badge .count.is-high { background: #ff8a00; }
+  .stage-badge .count.is-heavy { background: #e0261d; color: #ffffff; }
+
+  /* shown while a file is dragged over the window */
+  .drop-hint {
+    position: absolute; inset: var(--panel-gap);
+    display: grid; place-items: center;
+    border: 2px dashed #ffffff;
+    font: 700 12px var(--ui-mono); letter-spacing: .18em; text-transform: uppercase;
+    opacity: 0; pointer-events: none;
+    transition: opacity .12s ease;
+  }
+
+  &.is-dragging .drop-hint { opacity: 1; }
+
+  /* the touch texture the shader reads, shown on demand: bottom-left above the badge, clear of the panel,
+     its 64 x 64 pixels blown up without smoothing */
+  .touch-preview {
+    position: absolute; left: var(--panel-gap); bottom: calc(var(--panel-gap) + 34px);
+    display: none; width: 128px; height: 128px;
+    border: 2px solid var(--ink); outline: 2px solid var(--bg);
+    image-rendering: pixelated; pointer-events: none;
+  }
+  &.is-showing-touch .touch-preview { display: block; }
+}
+
+/* === panel: what this page adds to the studio's === */
+/* A white ring outside the studio's 2px black edge, so the window still reads against the black stage. */
+.panel { z-index: 10002; outline: 2px solid var(--bg); }
+/* The studio's hatched shadow strips (panel.css) start right at the black edge; moved out by the ring's 2px so
+   the hatch begins outside the white ring instead of under it. */
+.panel::before { top: 12px; bottom: -12px; right: -12px; }
+.panel::after { left: 12px; right: -12px; bottom: -12px; }
+
+/* Copy prompt, beside minimize: two overlapping sheets, drawn like the studio's other marks (a mask in
+   currentColor), the same mark as static-background's Copy settings. Inverted for a moment once copied. */
+[data-mark="copy"] {
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M7 2h11v12H7zm2 2v8h7V4zM2 6h3v2H4v8h7v-1h2v3H2z'/%3E%3C/svg%3E");
+}
+.phead #copyPrompt.is-copied { background: var(--bg); color: var(--ink); }
+
+/* Save settings, before copy: the classic floppy disk, the same mark as game-dev.ro's background tools. */
+[data-mark="save"] {
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M2 2h12.6L18 5.4V18H2zM5 2.8h8.2v4.6H5zM10.6 3.6h1.6v3h-1.6zM5 10.6h10v6.4H5z'/%3E%3C/svg%3E");
+}
+.phead #saveSettings.is-saved { background: var(--bg); color: var(--ink); }
+
+/* Reset, before save: back to the page's defaults, forgetting the saved settings (data-mark="undo", controls.css). */
+.phead #resetSettings.is-reset { background: var(--bg); color: var(--ink); }
+
+/* Fine tuning (shared/fine-tune.js): a small ▲ / ▼ pair stacked at the end of each slider row, after the value.
+   One hairline box split by a hairline, as the studio draws its fields; solid triangles in ink, inverted under
+   the pointer like the studio's buttons. Exactly a row's height (--ctl), so rows keep their rhythm. */
+.row > .nudge-pair {
+  flex: none; display: grid; grid-template-rows: 1fr 1fr;
+  width: 12px; height: var(--ctl); margin-left: -4px;
+  border: 1px solid var(--ink);
+}
+.nudge-pair button {
+  height: auto; min-width: 0; padding: 0;
+  border: 0; background: var(--bg); color: var(--ink);
+  touch-action: manipulation;
+}
+.nudge-pair button + button { border-top: 1px solid var(--ink); }
+.nudge-pair button::before {
+  content: ""; width: 6px; height: 4px; background: currentColor;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.nudge-pair .nudge-down::before { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.nudge-pair button:hover { background: var(--ink); color: var(--bg); }
+
+/* Section headers here don't fold open and shut as the studio's do, so they don't look clickable. */
+.panel .grp h3 { cursor: default; }
+.panel .grp h3:hover { color: var(--ink); }
+
+/* A switch that is a section's header: the mode it is in as the title (light / dark particles), followed by
+   the knob. The studio has none, so it is drawn in its terms: a hairline track and the
+   slider's solid block for a knob, inverted to solid ink when on. The checkbox stays in the label, invisible
+   but focusable, so the keyboard and screen readers still get it. */
+.grp h3 .toggle {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--ink); cursor: pointer;
+
+  input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+
+  .knob {
+    position: relative; width: 26px; height: 14px;
+    border: 1px solid var(--ink); background: var(--bg);
+    transition: background-color .12s ease;
+  }
+  .knob::before {
+    content: ""; position: absolute; top: 1px; left: 1px;
+    width: 8px; height: 10px; background: var(--ink);
+    transition: transform .14s cubic-bezier(.33, 0, .2, 1), background-color .12s ease;
+  }
+
+  /* The title names the current mode. Both names sit in one grid cell and the other one is only made
+     invisible, so the label is always as wide as the longer name and the knob never shifts when it swaps. */
+  .toggle-label { display: grid; }
+  .toggle-label > span { grid-area: 1 / 1; }
+  .when-on { visibility: hidden; }
+  &:has(input:checked) .when-off { visibility: hidden; }
+  &:has(input:checked) .when-on { visibility: visible; }
+
+  &:hover { color: var(--muted); }
+  &:has(input:checked) .knob { background: var(--ink); }
+  &:has(input:checked) .knob::before { background: var(--bg); transform: translateX(14px); }
+  &:has(input:focus-visible) .knob { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+
+/* Upload is a <label> round a file input; beside the reset it takes the same share of the row. */
+.btnrow .uploadbtn { flex: 1; width: auto; margin-top: 0; }
+

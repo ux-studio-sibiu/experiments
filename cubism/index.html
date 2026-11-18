@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cubism</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- the randomize-studio's panel, copied in (see style.css) -->
+<link rel="stylesheet" href="vendor/randomize-studio/css/panel.css">
+<link rel="stylesheet" href="vendor/randomize-studio/css/controls.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="stage">
+    <canvas aria-label="The photo, cut into screens by overlapping shapes"></canvas>
+    <p class="stage-hint" hidden></p>
+    <div class="drop-hint">Drop an image</div>
+  </main>
+
+  <button id="panelShow" data-mark="plus">Maximize edit panel</button>
+  <aside class="panel" id="panel">
+    <div class="phead">
+      <button type="button" class="infobtn" data-mark="info" aria-expanded="false" aria-controls="help" title="What the mouse and keys do in this view" aria-label="Help"></button>
+      <span class="spacer"></span>
+      <button type="button" class="iconbtn shapes-undo" data-mark="undo" title="Undo the last change to the shapes (Ctrl+Z)" aria-label="Undo" disabled></button>
+      <button type="button" class="iconbtn shapes-redo" data-mark="redo" title="Redo (Ctrl+Shift+Z or Ctrl+Y)" aria-label="Redo" disabled></button>
+      <button type="button" class="iconbtn layout-toggle" data-mark="expand" aria-pressed="false" title="Edit the shapes: zoom out to the whole frame, with the tools, nodes and handles (the screens are locked there; click again to zoom back in and edit them)" aria-label="Edit the shapes (layout view)"></button>
+      <button id="copyPrompt" class="iconbtn" data-mark="copy" title="Copy a prompt that recreates this composition (image not included)" aria-label="Copy a prompt that recreates this composition"></button>
+      <button id="panelToggle" class="iconbtn" data-mark="minus" title="Minimize"></button>
+    </div>
+    <!-- the info button's band, between the titlebar and the scrolling body: what the mouse and keys do in the current
+         view and tool (main.js HELP), rewritten whenever either changes -->
+    <div class="help" id="help" hidden></div>
+    <div class="pbody">
+      <div class="grp" data-view="layout">
+        <h3>Shapes
+          <button type="button" class="iconbtn dice shapes-random" data-mark="randomize" title="Random shapes: one of the saved layouts, or with none saved, new positions, sizes and turns, still overlapping" aria-label="Random shapes"></button></h3>
+        <!-- what a press on the stage does in the layout view; picking one goes there; each tool has a key (shown in its title) -->
+        <div class="chips tool-chips" role="radiogroup" aria-label="Tool">
+          <label data-mark="tool-select" title="Select (V): drag an outline to move a shape, its handles to scale and turn it; Delete removes it"><input type="radio" name="tool" value="select" checked><span class="tool-name">select</span></label>
+          <label data-mark="tool-line" title="Line (L): drag from one end to the other; Shift keeps it on 15° steps"><input type="radio" name="tool" value="line"><span class="tool-name">line</span></label>
+          <label data-mark="tool-rect" title="Rectangle (R): drag from corner to corner; Shift makes it square"><input type="radio" name="tool" value="rect"><span class="tool-name">rectangle</span></label>
+          <label data-mark="tool-circle" title="Circle (C): drag from the centre out"><input type="radio" name="tool" value="circle"><span class="tool-name">circle</span></label>
+          <label data-mark="tool-polygon" title="Polygon (P): click each corner; click the first, double-click or press Enter to close"><input type="radio" name="tool" value="polygon"><span class="tool-name">polygon</span></label>
+          <label data-mark="tool-text" title="Text (X): click to place a text item, one screen whatever its letters"><input type="radio" name="tool" value="text"><span class="tool-name">text</span></label>
+          <label data-mark="tool-trim" title="Trim (T): click a piece of outline between two crossings to cut it away"><input type="radio" name="tool" value="trim"><span class="tool-name">trim</span></label>
+        </div>
+        <!-- the picked text item's words, shown only while one is picked in the layout view -->
+        <div class="row" hidden><label>text</label><input type="text" name="text-content" spellcheck="false" maxlength="40" aria-label="The picked text's words"></div>
+        <div class="row"><label>outline</label><input type="range" name="outline" min="0" max="40" step="0.5" value="2"><output>2.0</output></div>
+        <div class="row"><label>line colour</label><input type="color" name="outline-colour" value="#111111" title="The colour of the shapes' outlines"></div>
+      </div>
+      <!-- data-fold: the header opens and shuts the section, as the studio's do (chevron, .collapsed, .grp-body) -->
+      <div class="grp" data-view="layout" data-fold="areas">
+        <h3><span class="chev"></span>Areas
+          <button type="button" class="eyebtn area-labels" aria-pressed="true" title="Show or hide the area names on the canvas" aria-label="Area names on the canvas"></button></h3>
+        <div class="grp-body">
+          <!-- one row per area in the frame, rebuilt as the shapes change: its name ("area 1"…
+               until one is typed), which the layout view writes large on the area -->
+          <div class="area-list" aria-label="Areas"></div>
+        </div>
+      </div>
+      <div class="grp" data-view="layout" data-fold="layouts">
+        <h3><span class="chev"></span>Layouts
+          <button type="button" class="iconbtn layout-clear" data-mark="layout-clear" title="Clear: take every shape and text off, to start a layout from nothing (Ctrl+Z undoes)" aria-label="Clear the layout"></button>
+          <button type="button" class="iconbtn layout-save" data-mark="save" title="Save these shapes as a layout in this browser" aria-label="Save layout"></button></h3>
+        <div class="grp-body">
+          <!-- saved layouts, newest first: each a small black-on-white drawing of its outlines in the frame's shape; a
+               click loads it (one undo step), its trashcan deletes it on a second click -->
+          <div class="thumb-list layout-list" aria-label="Saved layouts"></div>
+        </div>
+      </div>
+      <div class="grp">
+        <h3>Screen
+          <button type="button" class="iconbtn screen-reset" data-mark="undo" title="Plain screen: put the picked screen back to the untouched photo" aria-label="Plain screen"></button>
+          <button type="button" class="iconbtn dice screen-random" data-mark="randomize" title="Random screen: new move, turn, scale and colours for the picked screen" aria-label="Random screen"></button></h3>
+        <div class="row screen-pick"><select name="screen" aria-label="The screen the controls below change"></select></div>
+        <!-- the picked screen's properties, in the studio's folding sub-layers (chevron + .collapsed) -->
+        <div class="sub" data-sub="position">
+          <h4><span class="chev"></span>Position
+            <button type="button" class="iconbtn group-reset" data-mark="undo" title="Reset position: back to the plain photo's values" aria-label="Reset position"></button></h4>
+          <div class="sub-body">
+            <div class="row"><label>move x</label><input type="range" name="x" min="-50" max="50" step="0.5" value="0"><output>0.0</output></div>
+            <div class="row"><label>move y</label><input type="range" name="y" min="-50" max="50" step="0.5" value="0"><output>0.0</output></div>
+            <div class="row"><label>rotate</label><input type="range" name="rot" min="-180" max="180" step="1" value="0"><output>0</output></div>
+            <div class="row"><label>scale</label><input type="range" name="scale" min="0.2" max="5" step="0.01" value="1"><output>1.00</output></div>
+            <div class="row"><label>opacity</label><input type="range" name="opacity" min="0" max="1" step="0.01" value="1"><output>1.00</output></div>
+          </div>
+        </div>
+        <div class="sub" data-sub="colour">
+          <h4><span class="chev"></span>Colour
+            <button type="button" class="iconbtn group-reset" data-mark="undo" title="Reset colour: back to the plain photo's values" aria-label="Reset colour"></button></h4>
+          <div class="sub-body">
+            <div class="row"><label>blur</label><input type="range" name="blur" min="0" max="40" step="0.5" value="0"><output>0.0</output></div>
+            <div class="row"><label>hue</label><input type="range" name="hue" min="-180" max="180" step="1" value="0"><output>0</output></div>
+            <div class="row"><label>saturate</label><input type="range" name="sat" min="0" max="4" step="0.05" value="1"><output>1.00</output></div>
+            <div class="row"><label>brightness</label><input type="range" name="bright" min="0" max="3" step="0.05" value="1"><output>1.00</output></div>
+            <div class="row"><label>contrast</label><input type="range" name="contrast" min="0" max="3" step="0.05" value="1"><output>1.00</output></div>
+            <div class="row"><label>grey</label><input type="range" name="grey" min="0" max="1" step="0.01" value="0"><output>0.00</output></div>
+            <div class="row"><label>invert</label><input type="range" name="invert" min="0" max="1" step="0.01" value="0"><output>0.00</output></div>
+            <div class="row"><label>sepia</label><input type="range" name="sepia" min="0" max="1" step="0.01" value="0"><output>0.00</output></div>
+          </div>
+        </div>
+        <div class="sub" data-sub="static">
+          <h4><span class="chev"></span>Static
+            <button type="button" class="iconbtn group-reset" data-mark="undo" title="Reset static: back to the plain photo's values" aria-label="Reset static"></button></h4>
+          <div class="sub-body">
+            <!-- TV-snow / film grain over the screen, as static-background and the studio's Static FX layer -->
+            <div class="row"><label>amount</label><input type="range" name="grain" min="0" max="1" step="0.01" value="0"><output>0.00</output></div>
+            <div class="row"><label>cell size</label><input type="range" name="grainSize" min="1" max="12" step="0.5" value="1.5"><output>1.5</output></div>
+            <div class="row"><label>fps</label><input type="range" name="grainFps" min="0" max="60" step="1" value="24" title="0 = still grain"><output>24</output></div>
+            <div class="row"><label>mix</label><div class="chips">
+              <label><input type="radio" name="grainBlend" value="overlay" checked>overlay</label>
+              <label><input type="radio" name="grainBlend" value="soft-light">soft-light</label>
+              <label><input type="radio" name="grainBlend" value="screen">screen</label>
+              <label><input type="radio" name="grainBlend" value="source-over">normal</label>
+            </div></div>
+          </div>
+        </div>
+        <div class="sub" data-sub="texture">
+          <h4><span class="chev"></span>Texture
+            <button type="button" class="iconbtn group-reset" data-mark="undo" title="Reset texture: back to the plain photo's values" aria-label="Reset texture"></button></h4>
+          <div class="sub-body">
+            <!-- an SVG pattern tiled over the screen, as the studio's Pattern layer: pick a tile, then tint and scale it -->
+            <div class="pat-grid pattern-grid" aria-label="Pattern"></div>
+            <div class="pat-current pattern-name">none</div>
+            <div class="row"><label>scale</label><input type="range" name="patScale" min="0.1" max="8" step="0.1" value="1"><output>1.0</output></div>
+            <div class="row"><label>opacity</label><input type="range" name="patOpacity" min="0" max="1" step="0.05" value="0.6"><output>0.60</output></div>
+            <div class="row"><label>rotation</label><input type="range" name="patRotate" min="0" max="360" step="15" value="0"><output>0</output></div>
+            <div class="row"><label>colour</label><input type="color" name="patColour" value="#000000"></div>
+            <div class="row"><label>blend</label><div class="chips">
+              <label><input type="radio" name="patBlend" value="source-over" checked>normal</label>
+              <label><input type="radio" name="patBlend" value="multiply">multiply</label>
+              <label><input type="radio" name="patBlend" value="screen">screen</label>
+              <label><input type="radio" name="patBlend" value="overlay">overlay</label>
+              <label><input type="radio" name="patBlend" value="lighten">lighten</label>
+              <label><input type="radio" name="patBlend" value="darken">darken</label>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div class="grp">
+        <h3>Randomize all</h3>
+        <!-- rolls across every area's screen at once; the ranges, how many screens an effect lands on and how much of an
+             area the photo must still cover are the RANDOMIZE config in main.js, to be tuned there -->
+        <!-- a row each: its reset (back to plain on every area) and its dice, in the same column as the effect's dice -->
+        <div class="row roll-row"><label>position</label><span class="spacer"></span>
+          <button type="button" class="iconbtn reset-positions" data-mark="undo" title="Every area's move and scale back to plain" aria-label="Reset positions"></button>
+          <button type="button" class="iconbtn dice random-positions" data-mark="randomize" title="New move and scale for every area's screen, the photo still covering most of each area" aria-label="Random positions"></button>
+        </div>
+        <div class="row roll-row"><label>rotation</label><span class="spacer"></span>
+          <button type="button" class="iconbtn reset-rotation" data-mark="undo" title="Every area's turn back to plain" aria-label="Reset rotation"></button>
+          <button type="button" class="iconbtn dice random-rotation" data-mark="randomize" title="New turn for every area's screen, the photo still covering most of each area" aria-label="Random rotation"></button>
+        </div>
+        <!-- which effects the dice rolls: a dropdown of checkboxes (all, or any of them); how many areas each lands on -->
+        <div class="row"><label>effect</label>
+          <details class="multi-pick effect-pick">
+            <summary title="The effects the dice rolls">none</summary>
+            <div class="menu" role="group" aria-label="Effects to randomize">
+              <label class="all"><input type="checkbox" value="all">all</label>
+              <label><input type="checkbox" name="randomEffect" value="colour">colour</label>
+              <label><input type="checkbox" name="randomEffect" value="blur">blur</label>
+              <label><input type="checkbox" name="randomEffect" value="sepia">sepia</label>
+              <label><input type="checkbox" name="randomEffect" value="contrast">contrast</label>
+            </div>
+          </details>
+          <button type="button" class="iconbtn effect-reset" data-mark="undo" title="Clear the checked effects from every area" aria-label="Clear the checked effects"></button>
+          <button type="button" class="iconbtn dice effect-roll" data-mark="randomize" title="Clear the checked effects from every area, then put each on a few areas at random" aria-label="Roll the checked effects"></button>
+        </div>
+        <div class="row"><label>impact</label>
+          <select name="impact" aria-label="How many areas each effect lands on">
+            <option value="small">small (3 areas)</option>
+            <option value="medium">medium (6 areas)</option>
+            <option value="large">large (10 areas)</option>
+          </select>
+        </div>
+      </div>
+      <div class="grp">
+        <h3>Image
+          <button type="button" class="iconbtn image-default" data-mark="image-clear" title="Clear the image: back to the default photo (Dacia)" aria-label="Clear the image"></button></h3>
+        <!-- the photo in use, small (main.js setImage) -->
+        <img class="image-preview" alt="The photo in use" hidden>
+        <div class="btnrow image-sources">
+          <label class="uploadbtn" data-mark="upload">Upload<input type="file" name="image-file" accept="image/*" hidden></label>
+          <button type="button" class="image-random" data-mark="randomize" title="A random photo from picsum.photos, as in randomize-studio">Random photo</button>
+          <button type="button" class="image-save" data-mark="save" disabled>Save</button>
+        </div>
+        <!-- random photos kept in this browser (their picsum addresses), newest first: a click puts one back, its
+             trashcan deletes it on a second click -->
+        <div class="thumb-list photo-list" aria-label="Saved photos"></div>
+      </div>
+      <div class="grp">
+        <h3>Templates</h3>
+        <!-- named looks kept in this browser, as game-dev.ro's background templates: a row loads, the picked row's
+             trashcan deletes (click twice); the photo is not part of a template -->
+        <div class="template-list" aria-label="Templates"></div>
+        <div class="row"><label>name</label>
+          <span class="name-field">
+            <input type="text" name="template-name" placeholder="new template" spellcheck="false" maxlength="40" aria-label="Template name">
+            <button type="button" class="iconbtn template-save" data-mark="save" title="Save this look as a template in this browser" aria-label="Save template"></button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script src="shared/panel-window.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
