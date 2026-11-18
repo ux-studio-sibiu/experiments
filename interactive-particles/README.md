@@ -38,14 +38,19 @@ particle. For a dark subject on a light background, set `invert: true` and a lig
 
 ## Options
 
-The page (`index.html`) opens with three values different from the module's defaults below: **dark particles**
-(`invert: true`), a white `background` and `touchRadius: 0.43`. Reset in its panel goes back to those.
+The page (`index.html`) opens with its own look: **dark particles**
+(`invert: true`) on a white `background`, `gridSize: 115`, `threshold: 64`, `brightness: -15`, `contrast: 0.9`,
+`size: 1.7`, `variation: 0.55`, `random: 0.8`, `depth: 3.4`, `speed: 1.45`, `idle: 1`, `touchRadius: 0.21`,
+`touchTrail: 1.9`, `touchPush: 13`. Reset in its panel goes back to those. A look saved with the save button wins
+over them, until the page's defaults change: then it is dropped.
 
 | Option | Default | What it does |
 |---|---|---|
 | `container` | (required) | element the canvas fills |
 | `image` | `null` | first image: a URL, a `File` / `Blob`, or an `<img>` |
 | `gridSize` | `240` | longest side of the particle grid in pixels (one particle per pixel, so cost grows with its square) |
+| `brightness` | `0` | added to every pixel (-100 to 100) before the threshold, the size and the colour |
+| `contrast` | `1` | every pixel scaled about mid-grey first: below 1 flatter, above 1 harder |
 | `threshold` | `34` | pixels darker than this (0-255) get no particle |
 | `invert` | `false` | keep the dark pixels instead, skipping those lighter than `255 - threshold`; size follows darkness |
 | `size` | `1.5` | particle diameter in grid pixels, before brightness and noise scale it |
@@ -56,6 +61,7 @@ The page (`index.html`) opens with three values different from the module's defa
 | `random` | `2` | scatter from the pixel, in grid pixels |
 | `depth` | `4` | drift towards and away from the camera |
 | `speed` | `1` | speed of the noise; 0 freezes it |
+| `idle` | `1` | the noise's speed while the pointer is away from the canvas, as a share of `speed`: 0 still until pointed at |
 | `touchRadius` | `0.15` | size of the pointer's trail dot, as a share of the image width |
 | `touchTrail` | `2` | seconds a trail point takes to fade |
 | `touchPush` | `20` | how far a touched particle is pushed, in grid pixels |

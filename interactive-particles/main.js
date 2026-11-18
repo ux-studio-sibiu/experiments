@@ -33,17 +33,20 @@ function showCount({ width, height, count }) {
 }
 
 // one call: the module makes the canvas, the loop, the pointer handling and the transitions
-// The page's own look, where it differs from the module's defaults: dark particles on white, a wider touch. It
-// matches the panel's HTML values, which are also what reset goes back to.
-const PAGE_DEFAULTS = { invert: true, background: '#ffffff', touchRadius: 0.43 };
+// The page's own look, where it differs from the module's defaults. It matches the panel's HTML values, which are
+// also what reset goes back to.
+const PAGE_DEFAULTS = {
+  invert: true, background: '#ffffff', gridSize: 115, threshold: 64, brightness: -15, contrast: 0.9, size: 1.7, variation: 0.55,
+  random: 0.8, depth: 3.4, speed: 1.45, idle: 1, touchRadius: 0.21, touchTrail: 1.9, touchPush: 13
+};
 const fx = createInteractiveParticles({ container: stage, ...PAGE_DEFAULTS, onUpdate: showCount });
 stage.append(fx.touchCanvas); // the trail texture, shown by the preview switch
 // <- STEP 05
 
 // every slider drives one option: [input name, option, decimals shown]
 const SLIDERS = [
-  ['grid-size', 'gridSize', 0], ['threshold', 'threshold', 0], ['size', 'size', 2], ['variation', 'variation', 2],
-  ['edge', 'edge', 2], ['random', 'random', 1], ['depth', 'depth', 1], ['speed', 'speed', 2],
+  ['grid-size', 'gridSize', 0], ['brightness', 'brightness', 0], ['contrast', 'contrast', 2], ['threshold', 'threshold', 0], ['size', 'size', 2], ['variation', 'variation', 2],
+  ['edge', 'edge', 2], ['random', 'random', 1], ['depth', 'depth', 1], ['speed', 'speed', 2], ['idle', 'idle', 2],
   ['touch-radius', 'touchRadius', 2], ['touch-trail', 'touchTrail', 1], ['touch-push', 'touchPush', 0]
 ];
 
@@ -119,7 +122,7 @@ function promptText() {
 Stack: three.js 0.170.0 as an ES module (import map, jsdelivr), no build step, one full-window canvas, devicePixelRatio capped at 2. Package it as createInteractiveParticles({ container, image, ...options }) returning { setImage, set(name, value), destroy }.
 
 Pipeline
-1. Draw the image to an offscreen canvas so its longest side is ${cfg.gridSize} px, keeping the aspect ratio ("contain"), and read it with getImageData. ${aspect}
+1. Draw the image to an offscreen canvas so its longest side is ${cfg.gridSize} px, keeping the aspect ratio ("contain"), and read it with getImageData. Tone every channel first: v = clamp((v - 128) * ${cfg.contrast} + 128 + ${cfg.brightness}, 0, 255), and put the toned pixels back (they are the colours too). ${aspect}
 2. Perceived brightness per pixel: 0.21 R + 0.72 G + 0.07 B (0-255). Keep a pixel when ${keep}.
 3. One InstancedBufferGeometry: a 1 x 1 quad (4 vertices, uv, index [0,2,1, 2,3,1]) drawn once per kept pixel. Instanced attributes: offset = (column, height - 1 - row, 0), pindex = the pixel's index in the grid, angle = random 0..PI.
 4. The grid canvas as a CanvasTexture: SRGBColorSpace, NearestFilter for min and mag, no mipmaps. Sample it at the pixel centre: vPUv = (offset.xy + 0.5) / textureSize.
@@ -149,17 +152,17 @@ Touch texture (the pointer's trail, sampled by the vertex shader as uTouch)
 
 Transitions: a new image tweens uShow to 0 over ${(cfg.transition * 0.6).toFixed(2)} s, rebuilds, then tweens it to 1 over ${cfg.transition} s (easeInOutCubic); the first image assembles the same way.
 
-Animation: setAnimationLoop; uTime += min(dt, 0.1) * speed with dt in real seconds, and the touch texture updates with the same dt. The loop runs only while the canvas is on screen (IntersectionObserver). Under prefers-reduced-motion: no noise motion, no transitions; the loop runs only while a touch trail is fading. destroy() stops the loop, disconnects observers, removes listeners and disposes geometry, materials, both textures and the renderer.
+Animation: setAnimationLoop; uTime += min(dt, 0.1) * speed with dt in real seconds (times idle = ${cfg.idle} while the pointer is not over the canvas: pointerenter / pointerleave), and the touch texture updates with the same dt. The loop runs only while the canvas is on screen (IntersectionObserver). Under prefers-reduced-motion: no noise motion, no transitions; the loop runs only while a touch trail is fading. destroy() stops the loop, disconnects observers, removes listeners and disposes geometry, materials, both textures and the renderer.
 
 Current values
-- grid size (longest side): ${cfg.gridSize} px
+- grid size (longest side): ${cfg.gridSize} px, brightness ${cfg.brightness}, contrast ${cfg.contrast}
 - particles from: ${cfg.invert ? 'dark' : 'light'} pixels, threshold ${cfg.threshold}
 - uSize: ${cfg.size}
 - uVariation: ${cfg.variation}
 - shape: ${shapeName}, uEdge: ${cfg.edge}, tone: ${cfg.grey ? 'grey' : 'colour'}
 - uRandom: ${cfg.random}
 - uDepth: ${cfg.depth}
-- speed: ${cfg.speed}
+- speed: ${cfg.speed}, idle: ${cfg.idle}
 - touch radius: ${cfg.touchRadius} of the texture width, trail: ${cfg.touchTrail} s, uTouchPush: ${cfg.touchPush}
 - transition: ${cfg.transition} s, background: ${cfg.background}`;
 }

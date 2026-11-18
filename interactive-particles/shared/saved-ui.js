@@ -4,6 +4,8 @@
 //   the reset button forgets them and puts every control back to its HTML default
 // On load the tab's values win, then the saved ones, then the HTML defaults. Generic: it reads every named
 // range, colour, checkbox and radio in the panel, so a new control is remembered without touching this file.
+// Each record carries the HTML defaults it was made under: once the page's defaults change, older records are
+// dropped, so the page opens with its new defaults instead of a look kept from before.
 
 const tabKey = `interactive-particles:ui:${location.pathname}`;
 const savedKey = `interactive-particles:ui-saved:${location.pathname}`;
@@ -22,12 +24,23 @@ function read(panel) {
   return state;
 }
 
-function load(storage, key) {
-  try { return JSON.parse(storage.getItem(key)); } catch { return null; }
+// the panel's HTML defaults, as one string: what a record was made under
+function defaultsOf(panel) {
+  return JSON.stringify(controls(panel).map(input => [input.name, input.type === 'range' || input.type === 'color' ? input.defaultValue : input.defaultChecked]));
 }
 
-function store(storage, key, state) {
-  try { storage.setItem(key, JSON.stringify(state)); return true; } catch { return false; }
+// a record's values, if it was made under the current defaults; an older one is removed
+function load(storage, key, panel) {
+  try {
+    const record = JSON.parse(storage.getItem(key));
+    if (record?.defaults === defaultsOf(panel)) return record.values;
+    storage.removeItem(key);
+  } catch {}
+  return null;
+}
+
+function store(storage, key, panel) {
+  try { storage.setItem(key, JSON.stringify({ defaults: defaultsOf(panel), values: read(panel) })); return true; } catch { return false; }
 }
 
 // Set controls to new values, firing the same events a person would, so the page's own handlers apply them.
@@ -53,10 +66,10 @@ function apply(panel, valueOf) {
 
 // Put the remembered values back. Call it after the handlers are bound.
 export function restoreUi(panel) {
-  const state = load(sessionStorage, tabKey) ?? load(localStorage, savedKey);
+  const state = load(sessionStorage, tabKey, panel) ?? load(localStorage, savedKey, panel);
   if (state) apply(panel, input => state[input.name]);
 
-  const keep = () => store(sessionStorage, tabKey, read(panel));
+  const keep = () => store(sessionStorage, tabKey, panel);
   panel.addEventListener('input', keep);
   panel.addEventListener('change', keep);
 }
@@ -66,7 +79,7 @@ export function restoreUi(panel) {
 export function bindSaveButton(button, panel) {
   let timer = 0;
   button.addEventListener('click', () => {
-    if (!store(localStorage, savedKey, read(panel))) return; // storage blocked: nothing saved, nothing to flash
+    if (!store(localStorage, savedKey, panel)) return; // storage blocked: nothing saved, nothing to flash
     button.classList.add('is-saved');
     clearTimeout(timer);
     timer = setTimeout(() => button.classList.remove('is-saved'), 900);

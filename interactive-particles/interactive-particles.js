@@ -14,6 +14,8 @@ export const DEFAULTS = {
   container: null, // element the canvas fills; required
   image: null, // first image: a URL, a File / Blob, or an <img>
   gridSize: 240, // longest side of the particle grid, in pixels
+  brightness: 0, // added to every pixel (-100 to 100) before anything is decided: the threshold, the size, the colour
+  contrast: 1, // every pixel scaled about mid-grey first: 1 as it is, below 1 flatter, above 1 harder
   threshold: 34, // pixels darker than this (0-255) get no particle
   invert: false, // flip the threshold: keep the dark pixels, skip the ones lighter than 255 - threshold
   size: 1.5, // particle diameter in grid pixels, before brightness and noise scale it
@@ -24,6 +26,7 @@ export const DEFAULTS = {
   random: 2, // how far each particle is scattered from its pixel, in grid pixels
   depth: 4, // how far particles drift towards and away from the camera
   speed: 1, // how fast the noise moves; 0 freezes it
+  idle: 1, // the noise's speed while the pointer is away, as a share of speed: 0 still until pointed at
   touchRadius: 0.15, // the pointer's dot, as a share of the touch texture's width
   touchTrail: 2, // seconds a point of the trail takes to fade
   touchPush: 20, // how far a touched particle is pushed, in grid pixels
@@ -242,7 +245,8 @@ function loadImage(source, onObjectUrl) {
 }
 
 // shrink the image so its longest side is maxSide ("contain"), then read the pixels
-function fitToGrid(img, maxSide) {
+// the image at the grid's size, its pixels toned first: contrast about mid-grey, then brightness added, clamped
+function fitToGrid(img, maxSide, brightness = 0, contrast = 1) {
   const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
   const width = Math.max(1, Math.round(img.naturalWidth * scale));
   const height = Math.max(1, Math.round(img.naturalHeight * scale));
@@ -251,8 +255,16 @@ function fitToGrid(img, maxSide) {
   canvas.height = height;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(img, 0, 0, width, height);
+  const pixels = ctx.getImageData(0, 0, width, height);
+  if (brightness !== 0 || contrast !== 1) {
+    const d = pixels.data;
+    for (let i = 0; i < d.length; i += 4) {
+      for (let c = 0; c < 3; c++) d[i + c] = Math.min(255, Math.max(0, (d[i + c] - 128) * contrast + 128 + brightness));
+    }
+    ctx.putImageData(pixels, 0, 0); // the toned pixels are the colours too
+  }
   // keep the canvas too: it becomes the texture the shader reads colours from
-  return { width, height, data: ctx.getImageData(0, 0, width, height).data, canvas };
+  return { width, height, data: pixels.data, canvas };
 }
 
 const easeInOutCubic = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -352,7 +364,7 @@ export function createInteractiveParticles(options = {}) {
 
   function rebuild() {
     if (!image) return;
-    grid = fitToGrid(image, cfg.gridSize);
+    grid = fitToGrid(image, cfg.gridSize, Number(cfg.brightness), Number(cfg.contrast));
     // the grid canvas as a texture: sRGB, so three.js converts the colours to linear when it samples
     if (texture) texture.dispose();
     texture = new THREE.CanvasTexture(grid.canvas);
@@ -396,7 +408,7 @@ export function createInteractiveParticles(options = {}) {
   function tick(time) {
     const dt = Math.min(lastTime === null ? 0 : (time - lastTime) / 1000, 0.1); // capped, so a tab coming back doesn't jump
     lastTime = time;
-    if (!reducedMotion) uTime.value += dt * cfg.speed;
+    if (!reducedMotion) uTime.value += dt * cfg.speed * (pointedAt ? 1 : cfg.idle); // slower (or still) while nobody points
     touch.update(dt); // STEP 04: age and redraw the trail
     renderer.render(scene, camera);
     // reduced motion: the loop runs only while a trail is fading, then stops again
@@ -480,6 +492,13 @@ export function createInteractiveParticles(options = {}) {
   container.addEventListener('pointermove', onPointerMove);
   // <- STEP 04
 
+  // pointed at or not, for the idle speed: over the container at all (the panel beside it counts as away)
+  let pointedAt = false;
+  const onPointerEnter = () => { pointedAt = true; };
+  const onPointerLeave = () => { pointedAt = false; };
+  container.addEventListener('pointerenter', onPointerEnter);
+  container.addEventListener('pointerleave', onPointerLeave);
+
   function resize() {
     const { clientWidth: w, clientHeight: h } = container;
     if (!w || !h) return;
@@ -492,11 +511,11 @@ export function createInteractiveParticles(options = {}) {
   const sizing = new ResizeObserver(resize);
   sizing.observe(container);
 
-  // change any option at runtime: uniforms are set in place, the threshold and grid size rebuild
+  // change any option at runtime: uniforms are set in place; the grid size and tone rebuild the grid, the threshold the particles
   function set(name, value) {
     if (!(name in DEFAULTS) || name === 'container') return;
     cfg[name] = value;
-    if (name === 'gridSize') rebuild();
+    if (name === 'gridSize' || name === 'brightness' || name === 'contrast') rebuild();
     else if (name === 'threshold' || name === 'invert') rebuildParticles();
     else if (name === 'background') renderer.setClearColor(new THREE.Color(value));
     else if (UNIFORMS[name] && particles) particles.material.uniforms[UNIFORMS[name]].value = Number(value);
@@ -515,6 +534,8 @@ export function createInteractiveParticles(options = {}) {
     visibility.disconnect();
     sizing.disconnect();
     container.removeEventListener('pointermove', onPointerMove);
+    container.removeEventListener('pointerenter', onPointerEnter);
+    container.removeEventListener('pointerleave', onPointerLeave);
     if (particles) { particles.geometry.dispose(); particles.material.dispose(); }
     texture?.dispose();
     touch.dispose();
