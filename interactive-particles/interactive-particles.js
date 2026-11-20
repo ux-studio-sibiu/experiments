@@ -23,6 +23,7 @@ export const DEFAULTS = {
   shape: 0, // 0 circle, 1 square, 2 diamond, 3 ring, 4 cross
   edge: 0.3, // how soft the shape's edge is: 0 crisp, 0.5 a blur to the centre
   grey: false, // draw the particles in grey (the original's look) instead of the image's colours
+  tint: '', // a colour ('#c0392b') every particle takes instead of the image's; '' keeps the image's (typed text uses it)
   random: 2, // how far each particle is scattered from its pixel, in grid pixels
   depth: 4, // how far particles drift towards and away from the camera
   speed: 1, // how fast the noise moves; 0 freezes it
@@ -30,6 +31,10 @@ export const DEFAULTS = {
   touchRadius: 0.15, // the pointer's dot, as a share of the touch texture's width
   touchTrail: 2, // seconds a point of the trail takes to fade
   touchPush: 20, // how far a touched particle is pushed, in grid pixels
+  fill: false, // particles beyond the image too, so the container's edges are covered: the image continues mirrored
+  // past its edges, on a grid half as fine (a quarter of the density); the threshold still decides which are kept
+  cover: 0, // how the image sizes to the container, 0 to 1: 0 fits all of it inside with a margin, 1 covers the
+  // container edge to edge (cropped); the camera moves, so the same particles get bigger: none are added
   transition: 1.2, // seconds for a new image to assemble (the old one scatters in 60% of that); 0 = instant
   background: '#000000', // the canvas's clear colour
   respectReducedMotion: true, // under prefers-reduced-motion: no noise motion, no transitions
@@ -90,6 +95,8 @@ const vertexShader = /* glsl */ `
   uniform float uVariation; // how much noise and brightness change each particle's size: 0 none, 1 the original
   uniform float uInvert; // 1 when the threshold is inverted: dark pixels become the big particles
   uniform sampler2D uTouch; // the pointer's fading trail, white where it has just been
+  uniform vec2 uTouchOrigin; // where the trail texture's corner sits, in grid pixels (0, 0 without fill)
+  uniform vec2 uTouchSize; // and how much it spans: the image, or the whole filled area
   uniform float uTouchPush; // how far a fully touched particle moves
   uniform float uShow; // 0 scattered and invisible, 1 assembled: the transition between images
 
@@ -116,7 +123,7 @@ const vertexShader = /* glsl */ `
     displaced.z += rndz * (random(pindex) * 2.0 * (uDepth + hide * 40.0));
     // <- STEP 03
     // STEP 04 -> touch: where the trail is bright, push the particle towards the camera and out along its angle
-    float t = texture2D(uTouch, vPUv).r;
+    float t = texture2D(uTouch, (offset.xy + 0.5 - uTouchOrigin) / uTouchSize).r;
     displaced.z += t * uTouchPush * rndz;
     displaced.x += cos(angle) * t * uTouchPush * rndz;
     displaced.y += sin(angle) * t * uTouchPush * rndz;
@@ -141,6 +148,8 @@ const fragmentShader = /* glsl */ `
   uniform float uShape; // 0 circle, 1 square, 2 diamond, 3 ring, 4 cross
   uniform float uEdge; // edge softness, in quad units (the quad is 1 wide)
   uniform float uGrey; // 1: the pixel's brightness instead of its colour
+  uniform vec3 uTint; // the one colour every particle takes, when uTintOn is 1
+  uniform float uTintOn;
 
   varying vec2 vUv;
   varying vec2 vPUv;
@@ -159,7 +168,7 @@ const fragmentShader = /* glsl */ `
     vec4 color = texture2D(uTexture, vPUv);
     // STEP 05 -> grey: the same weights as the brightness test, in linear light
     float grey = color.r * 0.21 + color.g * 0.71 + color.b * 0.07;
-    vec3 rgb = mix(color.rgb, vec3(grey), uGrey);
+    vec3 rgb = mix(mix(color.rgb, vec3(grey), uGrey), uTint, uTintOn);
     // <- STEP 05
 
     // the shape with a soft edge: 1 well inside, fading to 0 at the edge over uEdge
@@ -180,6 +189,8 @@ class TouchTexture {
     this.cfg = cfg;
     this.size = size;
     this.trail = [];
+    this.radiusScale = 1; // the image's share of the trail's width (less than 1 while fill spreads it wider)
+    this.heightScale = 1; // and of its height
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.canvas.height = size;
     this.canvas.className = 'touch-preview';
@@ -198,7 +209,8 @@ class TouchTexture {
     const last = this.trail[this.trail.length - 1];
     let force = 0;
     if (last) {
-      const dx = last.x - uv.x, dy = last.y - uv.y;
+      // measured in image widths, so a move pushes the same whether the trail spans the image or the filled view
+      const dx = (last.x - uv.x) / this.radiusScale, dy = (last.y - uv.y) / this.heightScale;
       force = Math.min((dx * dx + dy * dy) * 10000, 1);
     }
     this.trail.push({ x: uv.x, y: uv.y, age: 0, force });
@@ -216,7 +228,7 @@ class TouchTexture {
     const max = this.cfg.touchTrail;
     const grow = max * 0.3;
     const life = point.age < grow ? easeOutSine(point.age / grow) : easeOutSine(1 - (point.age - grow) / (max - grow));
-    const radius = this.size * this.cfg.touchRadius * life * point.force;
+    const radius = this.size * this.cfg.touchRadius * this.radiusScale * life * point.force;
     if (radius <= 0) return;
     const x = point.x * this.size, y = (1 - point.y) * this.size; // canvas y goes down
     const gradient = this.ctx.createRadialGradient(x, y, radius * 0.25, x, y, radius);
@@ -318,13 +330,38 @@ export function createInteractiveParticles(options = {}) {
       if (keep) kept.push(i);
     }
 
-    const offsets = new Float32Array(kept.length * 3);
-    const indices = new Float32Array(kept.length);
-    const angles = new Float32Array(kept.length);
+    // fill: every second column and row of the area around the image that the view shows, coloured by the image
+    // mirrored past its edge (the texture wraps the same way), kept by the same threshold
+    const area = particleArea();
+    const extra = [];
+    if (cfg.fill) {
+      const mirror = (v, n) => { const m = ((v % (2 * n)) + 2 * n) % (2 * n); return m < n ? m : 2 * n - 1 - m; };
+      for (let y = Math.floor(area.y0 / 2) * 2; y < area.y1; y += 2) {
+        for (let x = Math.floor(area.x0 / 2) * 2; x < area.x1; x += 2) {
+          if (x >= 0 && x < width && y >= 0 && y < height) continue; // the image's own pixels are all there already
+          const i = (height - 1 - mirror(y, height)) * width + mirror(x, width);
+          const brightness = data[i * 4] * 0.21 + data[i * 4 + 1] * 0.72 + data[i * 4 + 2] * 0.07;
+          if (cfg.invert ? brightness < 255 - cfg.threshold : brightness > cfg.threshold) extra.push([x, y]);
+        }
+      }
+    }
+    const total = kept.length + extra.length;
+    imageCount = kept.length;
+
+    const offsets = new Float32Array(total * 3);
+    const indices = new Float32Array(total);
+    const angles = new Float32Array(total);
     kept.forEach((i, j) => {
       offsets[j * 3] = i % width;
       offsets[j * 3 + 1] = height - 1 - Math.floor(i / width); // canvas rows go down, three.js y goes up
       indices[j] = i;
+      angles[j] = Math.random() * Math.PI;
+    });
+    extra.forEach(([x, y], k) => {
+      const j = kept.length + k;
+      offsets[j * 3] = x;
+      offsets[j * 3 + 1] = y;
+      indices[j] = count + k; // a seed of its own, past the image's
       angles[j] = Math.random() * Math.PI;
     });
 
@@ -337,7 +374,7 @@ export function createInteractiveParticles(options = {}) {
     geometry.setAttribute('offset', new THREE.InstancedBufferAttribute(offsets, 3));
     geometry.setAttribute('pindex', new THREE.InstancedBufferAttribute(indices, 1));
     geometry.setAttribute('angle', new THREE.InstancedBufferAttribute(angles, 1));
-    geometry.instanceCount = kept.length;
+    geometry.instanceCount = total;
 
     const uniforms = {
       uTexture: { value: texture },
@@ -345,9 +382,14 @@ export function createInteractiveParticles(options = {}) {
       uInvert: { value: cfg.invert ? 1 : 0 },
       uTime, // shared: a rebuild doesn't restart the clock
       uTouch: { value: touch.texture }, // shared: a new image keeps the trail
+      uTouchOrigin: { value: new THREE.Vector2(area.x0, area.y0) },
+      uTouchSize: { value: new THREE.Vector2(area.x1 - area.x0, area.y1 - area.y0) },
       uShow // shared: a rebuild mid-transition carries on
     };
     for (const [option, uniform] of Object.entries(UNIFORMS)) uniforms[uniform] = { value: Number(cfg[option]) };
+    // the tint, in linear light like the texture's colours (colorspace_fragment converts back)
+    uniforms.uTint = { value: new THREE.Color(cfg.tint || '#000000') };
+    uniforms.uTintOn = { value: cfg.tint ? 1 : 0 };
 
     const material = new THREE.ShaderMaterial({
       uniforms,
@@ -371,6 +413,7 @@ export function createInteractiveParticles(options = {}) {
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.minFilter = texture.magFilter = THREE.NearestFilter; // one exact pixel per particle, no blending between neighbours
     texture.generateMipmaps = false;
+    texture.wrapS = texture.wrapT = THREE.MirroredRepeatWrapping; // the fill reads the image mirrored past its edges
     rebuildParticles();
   }
 
@@ -382,23 +425,43 @@ export function createInteractiveParticles(options = {}) {
       particles.geometry.dispose(); // GPU memory isn't garbage-collected: free the old buffers
       particles.material.dispose();
     }
+    fitCamera(); // first: the fill covers what the camera sees
     particles = buildParticles();
     scene.add(particles);
-    hitPlane.geometry.dispose(); // the hit plane takes the grid's size (in grid pixels, centred like the particles)
-    hitPlane.geometry = new THREE.PlaneGeometry(grid.width, grid.height);
-    fitCamera();
+    // the hit plane spans the particles' area (the image, or the filled view), its uv the trail texture's
+    const area = particleArea();
+    hitPlane.geometry.dispose();
+    hitPlane.geometry = new THREE.PlaneGeometry(area.x1 - area.x0, area.y1 - area.y0);
+    hitPlane.position.set((area.x0 + area.x1) / 2 - grid.width / 2, (area.y0 + area.y1) / 2 - grid.height / 2, 0);
+    hitPlane.updateMatrixWorld(); // it isn't in the scene, so nothing else updates it for the raycaster
+    touch.radiusScale = grid.width / (area.x1 - area.x0);
+    touch.heightScale = grid.height / (area.y1 - area.y0);
     render();
     cfg.onUpdate?.(info());
   }
 
-  // place the camera so the grid fills the container with a margin; 1 world unit = 1 grid pixel
+  // Where the particles are, in grid pixels (y up): the image, or with fill everything the camera sees at the image's
+  // depth, plus room for the scatter.
+  function particleArea() {
+    if (!cfg.fill) return { x0: 0, y0: 0, x1: grid.width, y1: grid.height };
+    const halfH = camera.position.z * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), halfW = halfH * camera.aspect;
+    const pad = Number(cfg.random) + 2;
+    return {
+      x0: Math.floor(grid.width / 2 - halfW - pad), x1: Math.ceil(grid.width / 2 + halfW + pad),
+      y0: Math.floor(grid.height / 2 - halfH - pad), y1: Math.ceil(grid.height / 2 + halfH + pad)
+    };
+  }
+
+  // place the camera so the grid fills the container with a margin; 1 world unit = 1 grid pixel.
+  // Between the two by cover: fit is the farther of the height and width fits with a 10% margin, cover the nearer one
+  // with none (the overflow cropped). The on-screen scale (1 / distance) is blended, so the slider zooms evenly.
   function fitCamera() {
     if (!grid) return;
-    const fit = 1.1;
-    const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
-    const distH = (grid.height * fit) / 2 / Math.tan(halfFov);
-    const distW = (grid.width * fit) / 2 / Math.tan(halfFov) / camera.aspect;
-    camera.position.z = Math.max(distH, distW);
+    const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const distance = (fit, choose) => choose(grid.height * fit / 2 / tan, grid.width * fit / 2 / tan / camera.aspect);
+    const fitZ = distance(1.1, Math.max), coverZ = distance(1, Math.min);
+    const t = Math.min(Math.max(Number(cfg.cover) || 0, 0), 1);
+    camera.position.z = 1 / ((1 - t) / fitZ + t / coverZ);
     camera.updateProjectionMatrix();
   }
 
@@ -499,11 +562,13 @@ export function createInteractiveParticles(options = {}) {
   container.addEventListener('pointerenter', onPointerEnter);
   container.addEventListener('pointerleave', onPointerLeave);
 
+  let resizeFill = 0;
   function resize() {
     const { clientWidth: w, clientHeight: h } = container;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    if (cfg.fill) { clearTimeout(resizeFill); resizeFill = setTimeout(rebuildParticles, 120); } // once the size settles
     fitCamera();
     camera.updateProjectionMatrix();
     render();
@@ -518,12 +583,20 @@ export function createInteractiveParticles(options = {}) {
     if (name === 'gridSize' || name === 'brightness' || name === 'contrast') rebuild();
     else if (name === 'threshold' || name === 'invert') rebuildParticles();
     else if (name === 'background') renderer.setClearColor(new THREE.Color(value));
+    else if (name === 'cover') cfg.fill ? rebuildParticles() : fitCamera();
+    else if (name === 'tint' && particles) {
+      particles.material.uniforms.uTint.value.set(value || '#000000');
+      particles.material.uniforms.uTintOn.value = value ? 1 : 0;
+    }
+    else if (name === 'fill') rebuildParticles();
     else if (UNIFORMS[name] && particles) particles.material.uniforms[UNIFORMS[name]].value = Number(value);
     render();
   }
 
+  // count: every particle; image: those on the image itself (the rest are the fill around it)
+  let imageCount = 0;
   function info() {
-    return grid ? { width: grid.width, height: grid.height, count: particles.geometry.instanceCount } : null;
+    return grid ? { width: grid.width, height: grid.height, count: particles.geometry.instanceCount, image: imageCount } : null;
   }
 
   // STEP 05 -> leave nothing behind: loops, observers, listeners, and every GPU resource

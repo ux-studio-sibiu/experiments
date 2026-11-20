@@ -11,6 +11,10 @@ description: >-
 
 # UI conventions: panels, icons, inputs
 
+**The panel design system (`casedeschise/design-system/`) is now the source of truth**: its specimen (`index.html`),
+inventory (`components.json`) and the `panel-ui` skill. Where this file and the design system differ, the design
+system wins; the `design-system-audit` skill lists the differences for a repo.
+
 Collected from the user's own steering. Apply them without being asked, on every page with a panel. For general
 interaction quality (timing, motion, accessibility) see **design-principles**; this file is the concrete house
 style. The reference implementations are `interactive-particles/` (`shared/build.css`, `shared/*.js`,
@@ -72,9 +76,18 @@ style. The reference implementations are `interactive-particles/` (`shared/build
 - **Sliders get fine tuning:** a small stacked ▲ / ▼ at the end of the row, after the value, from
   `shared/fine-tune.js`. One step per click, Shift for ten, hold to repeat (400 ms, then every 50 ms), the wheel
   over the arrows nudges too. They fire bubbling `input` events, exactly like a drag.
+  - **The arrows show only once the value is clicked**, on that row alone. A click outside the row, or Esc, hides
+    them again. While hidden they keep their room (`visibility: hidden`), so values never shift.
+  - The value is the button that brings them up: `tabindex="0"`, `role="button"` and a `Fine-tune <name>` title,
+    so Enter or Space opens it too. It gets a light grey wash (`--wash`) under the pointer and while its arrows show.
+  - A row with no `<output>` keeps its arrows always on.
 - **Pick ranges that cover the whole expressive range**, including the ends where the effect breaks down. The
   user explores the extremes.
 - **One of several:** the studio's `.chips` pills (radio inputs), not a `<select>`.
+  - **Hollow until picked:** an ink outline and ink text (`.chips label { color: var(--ink); border-color: var(--ink); }`),
+    a light `--wash` fill under the pointer, solid ink once picked. Never the studio's grey unpicked pill.
+  - **A choice of shapes is drawn, not named:** each chip is the shape itself as a `data-mark` icon, with the name kept
+    in a visually hidden span and the `title` (reference: the particle shape chips in `interactive-particles/`).
 - **Randomize a section: the studio's dice in its header.** `<button class="iconbtn dice" data-mark="randomize">`
   inside the `h3`, after the title (or after a title switch), which `panel.css` pushes to the right. It rerolls
   only that section, within tasteful ranges, not the sliders' full extremes. Rare or strong effects (invert,

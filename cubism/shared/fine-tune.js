@@ -40,11 +40,12 @@ function makeArrow(input, direction, name) {
 }
 
 // The pair stays out of sight until the row's value is clicked (the row gets .is-tuning); a click anywhere outside
-// that row puts it away again. Its room is kept while hidden, so nothing shifts when it shows.
+// that row, or Esc, puts it away again. Its room is kept while hidden, so nothing shifts when it shows.
 export function fineTune(panel) {
   let open = null; // the row whose arrows show
   const close = () => { open?.classList.remove('is-tuning'); open = null; };
   document.addEventListener('pointerdown', e => { if (open && !open.contains(e.target)) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   for (const input of panel.querySelectorAll('.row > input[type="range"]')) {
     const row = input.closest('.row');

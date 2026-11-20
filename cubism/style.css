@@ -133,6 +133,7 @@ body {
 .row:not(.is-tuning) > .nudge-pair { visibility: hidden; }
 .row > output[role="button"] { cursor: pointer; padding: 0 3px; margin-right: -3px; }
 .row > output[role="button"]:hover, .row.is-tuning > output { background: var(--wash); }
+.row > output[role="button"]:focus-visible { outline: 1px solid var(--ink); outline-offset: 1px; }
 .nudge-pair button {
   height: auto; min-width: 0; padding: 0;
   border: 0; background: var(--bg); color: var(--ink);
@@ -331,3 +332,13 @@ body {
 [data-mark="randomize"] { --mark: var(--icon-randomize); }
 .btnrow.image-sources { flex-wrap: nowrap; gap: 4px; }
 .btnrow.image-sources > * { flex: 1 1 auto; min-width: 0; padding: 0 6px; gap: 5px; white-space: nowrap; }
+/* Choice chips, hollow: ink outline and ink text when not picked (the studio draws them grey), solid ink when picked
+   (the house style, as interactive-particles). */
+.chips label { color: var(--ink); border-color: var(--ink); }
+.chips label:hover { background: var(--wash); }
+.chips label:has(input:checked):hover { background: var(--ink); }
+
+/* Text buttons (Upload, Random photo, Plain screen...) take a 2px ink border, heavier than the hairline fields and
+   chips, so an action reads apart from a setting (as the titlebar's icon buttons already are). Icon buttons in a
+   section keep the hairline. */
+.btnrow button, .uploadbtn { border-width: 2px; }

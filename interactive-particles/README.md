@@ -6,13 +6,40 @@ a new image scatters the old one and assembles itself. A reproduction of the Cod
 (Bruno Imbrizi, 2019): the same technique for three.js r170, no build step, no GSAP.
 
 - `interactive-particles.js` is the module to copy.
-- `index.html` + `main.js` are the page: the effect full-screen with the studio panel (every control, upload, save,
-  reset, copy prompt).
+- `index.html` + `main.js` are the page: the effect full-screen with the studio panel (every control, upload, copy
+  prompt).
 - `shared/` holds the page's helpers (panel CSS, upload memory, saved settings, fine-tune arrows, copy button), and
   `vendor/` the randomize-studio panel, copied in.
 
-Run it from a server, because ES modules don't load over `file://`. Use the `interactive-particles` entry in
-`.claude/launch.json` (port 8134), or any static server pointed at this folder.
+Run it from a server, because ES modules don't load over `file://`. The page's images live in the collection's
+`sample-media/img/interactive-particles/`, so serve the **collection root**: the `effects-collection` entry in
+`.claude/launch.json` (port 8130), then open `/interactive-particles/`.
+
+## The panel's image section
+
+The first section, Source, offers images as tiles, each a **preset**: a click brings that image on screen with its own look
+(every slider, switch and chip). Your upload (the dotted **Upload image** tile at the end of the row, or a photo dropped on the page) gets a
+tile of its own after them, and keeps whatever look is on when you pick it. The picked tile is remembered with the
+rest of the panel; the upload itself is kept in IndexedDB.
+
+The section is **Source**. Its tiles and the upload are there whatever the source; under them, two tabs pick it,
+**image** or **text**, and show that one's options: the image's brightness and contrast, or the text's words,
+spacing, line height and colour (the letters are drawn in ink, or white, so the threshold always keeps them; the
+colour then tints every particle, the effect's `tint` option). A **text preset** is a tile too, its thumbnail the words drawn; picking it switches to text and fills the
+words (`PRESETS` entries with `text:` instead of `file:`). The words are set in Archivo black, centred, and drawn into a picture (ink on paper for dark particles, white on black for light ones, so the
+threshold keeps the letters); typing redraws after a short pause, straight to the new letters. Text is drawn
+untoned; background, fit / cover and fill edges sit below the tabs and apply to either.
+
+Every section folds: click its header (or Enter on its chevron). Motion and Touch start shut; what you fold is
+kept for the tab (`shared/fold.js`, from the design system).
+
+To add an image:
+1. Put it (max 1600px, JPEG q82) in `sample-media/img/interactive-particles/`, and a 160px thumbnail with the same
+   name in its `thumbs/`.
+2. Credit it in that folder's `CREDITS.md` (source, author, licence).
+3. Add an entry to `PRESETS` in `main.js`: `{ id, name, file, credit, values }`. `values` are the panel's control
+   names with the values to set (`'grid-size': '140', invert: false, background: '#000000', shape: '1'`...); anything
+   left out takes the panel's default. The copy button's prompt lists every current value to copy from.
 
 ## Use
 
@@ -28,7 +55,7 @@ Run it from a server, because ES modules don't load over `file://`. Use the `int
 
   const fx = createInteractiveParticles({
     container: document.querySelector('.hero'),
-    image: 'img/walter-gropius-1919.jpg'
+    image: 'portrait.jpg'
   });
 </script>
 ```
@@ -38,11 +65,12 @@ particle. For a dark subject on a light background, set `invert: true` and a lig
 
 ## Options
 
-The page (`index.html`) opens with its own look: **dark particles**
-(`invert: true`) on a white `background`, `gridSize: 115`, `threshold: 64`, `brightness: -15`, `contrast: 0.9`,
-`size: 1.7`, `variation: 0.55`, `random: 0.8`, `depth: 3.4`, `speed: 1.45`, `idle: 1`, `touchRadius: 0.21`,
-`touchTrail: 1.9`, `touchPush: 13`. Reset in its panel goes back to those. A look saved with the save button wins
-over them, until the page's defaults change: then it is dropped.
+The page (`index.html`) opens with its own look, the **SURE / SHOT** text preset (`DEFAULT_PRESET` in `main.js`: its
+values become the panel's defaults and the effect's starting options, so changing the default look is one edit): text, letter spacing -0.07, line
+height 0.8, **dark particles** (`invert: true`) tinted black on yellow `#ffd22e`, `gridSize: 95`, `threshold: 185`,
+`cover: 0.33`, `size: 1.05`, `variation: 0`, `random: 0`, `depth: 0`, `speed: 0`, `idle: 0` (still), `touchRadius: 0.17`,
+`touchTrail: 0.2`, `touchPush: 10`. What you change is kept for the tab (a refresh keeps
+it); a new tab opens with these. A tab's record made under other defaults is dropped, so new defaults always show.
 
 | Option | Default | What it does |
 |---|---|---|
@@ -57,6 +85,7 @@ over them, until the page's defaults change: then it is dropped.
 | `variation` | `1` | how much brightness and noise vary the size: 0 all equal, 1 the original, 2 more contrast |
 | `shape` | `0` | 0 circle, 1 square, 2 diamond, 3 ring, 4 cross (`SHAPES` lists the names) |
 | `edge` | `0.3` | softness of the shape's edge: 0 crisp, 0.5 a glow |
+| `tint` | `''` | one colour every particle takes instead of the image's (`'#c0392b'`); `''` keeps the image's colours |
 | `grey` | `false` | particles in grey (the original's look) instead of the image's colours |
 | `random` | `2` | scatter from the pixel, in grid pixels |
 | `depth` | `4` | drift towards and away from the camera |
@@ -65,6 +94,8 @@ over them, until the page's defaults change: then it is dropped.
 | `touchRadius` | `0.15` | size of the pointer's trail dot, as a share of the image width |
 | `touchTrail` | `2` | seconds a trail point takes to fade |
 | `touchPush` | `20` | how far a touched particle is pushed, in grid pixels |
+| `fill` | `false` | particles beyond the image too, so the container's edges are covered: the image continues mirrored past its edges, on a grid half as fine (a quarter of the density), kept by the same threshold; the pointer reaches them too |
+| `cover` | `0` | how the image sizes to the container: 0 fits all of it inside with a margin, 1 covers the container edge to edge (cropped), between them in even steps; the camera moves, so the same particles get bigger (none are added) |
 | `transition` | `1.2` | seconds for a new image to assemble (the old one scatters in 60% of that); 0 = instant |
 | `background` | `'#000000'` | clear colour |
 | `respectReducedMotion` | `true` | under `prefers-reduced-motion`: no noise motion, no transitions; a touch still plays out |
@@ -114,7 +145,6 @@ the touch texture, and transitions.
 
 ## Image credit
 
-`img/walter-gropius-1919.jpg`: Walter Gropius, founder of the Staatliches Bauhaus Weimar, around 1919. Photographer
-unknown. **Public domain**, via
-[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:WalterGropius-1919.jpg) (540 × 763). The page's
-default image; the **Gropius** button in the panel brings it back.
+The images, their sources and licences are listed in `sample-media/img/interactive-particles/CREDITS.md`. The default
+is Walter Gropius, founder of the Staatliches Bauhaus Weimar, around 1919: photographer unknown, **public domain**, via
+[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:WalterGropius-1919.jpg).

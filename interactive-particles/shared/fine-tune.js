@@ -38,7 +38,17 @@ function makeArrow(input, direction, name) {
   return button;
 }
 
+// The pair stays hidden (its room kept, so nothing shifts) until the value is clicked: then that row shows it,
+// and only that one. A click anywhere outside the row, or Esc, hides it again.
 export function fineTune(panel) {
+  let open = null; // the row whose arrows show
+  const show = row => {
+    if (open === row) return;
+    open?.classList.remove('is-tuning');
+    open = row;
+    row?.classList.add('is-tuning');
+  };
+
   for (const input of panel.querySelectorAll('.row > input[type="range"]')) {
     const row = input.closest('.row');
     const name = row.querySelector('label')?.textContent.trim() || input.name;
@@ -46,6 +56,19 @@ export function fineTune(panel) {
     pair.className = 'nudge-pair';
     pair.append(makeArrow(input, 1, name), makeArrow(input, -1, name));
     pair.addEventListener('wheel', e => { e.preventDefault(); nudge(input, e.deltaY < 0 ? 1 : -1, e.shiftKey); }, { passive: false });
-    (row.querySelector('output') ?? input).after(pair);
+    const output = row.querySelector('output');
+    (output ?? input).after(pair);
+    if (!output) { row.classList.add('is-tuning'); continue; } // no value to click: the arrows always show
+
+    // the value is the switch: a click (or Enter / Space on it) brings this row's arrows up, or puts them away
+    output.tabIndex = 0;
+    output.setAttribute('role', 'button');
+    output.title = `Fine-tune ${name}`;
+    const toggle = () => show(open === row ? null : row);
+    output.addEventListener('click', toggle);
+    output.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
   }
+
+  document.addEventListener('pointerdown', e => { if (open && !open.contains(e.target)) show(null); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') show(null); });
 }

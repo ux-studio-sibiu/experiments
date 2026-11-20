@@ -141,6 +141,19 @@
         "-c-1"
       ],
       "port": 8136
+    },
+    {
+      "name": "design-system",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "http-server",
+        "../design-system",
+        "-p",
+        "8140",
+        "-c-1"
+      ],
+      "port": 8140
     }
   ]
 }

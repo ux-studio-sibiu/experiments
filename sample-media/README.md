@@ -50,4 +50,5 @@ remove any folder left empty. Grep for the old path and fix every reference.
 | `img/background-experiments/` | `background-experiments/` (its default photo, a copy of the midday slide) |
 | `img/fluid-hover/` | `effect/` (Fluid hover's image picker) |
 | `img/static-background/` | `static-background/` (its sample-photo picker; the night photo is a copy of swipe-effect's) |
+| `img/interactive-particles/` | `interactive-particles/` (its image section: a preset per image) |
 | `img/pawson/` | `motion/gallery-navigation/`. Kept **complete** (all 30), including the ones no page shows yet: never prune it as unused. |

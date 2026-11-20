@@ -1,23 +1,21 @@
-// Keeps a panel's control values. Two layers, one record each per page (each page has its own controls):
-// - the tab: every change goes to sessionStorage, so a refresh keeps it; closing the tab clears it
-// - saved: the save button writes the current values to localStorage, the look a new visit starts from;
-//   the reset button forgets them and puts every control back to its HTML default
-// On load the tab's values win, then the saved ones, then the HTML defaults. Generic: it reads every named
-// range, colour, checkbox and radio in the panel, so a new control is remembered without touching this file.
+// Keeps a panel's control values for the tab: every change goes to sessionStorage, one record per page, so a refresh
+// keeps it; closing the tab clears it, and a new visit opens with the HTML defaults. Generic: it reads every named
+// range, colour, checkbox, radio, text field and textarea in the panel, so a new control is remembered without touching this file.
 // Each record carries the HTML defaults it was made under: once the page's defaults change, older records are
 // dropped, so the page opens with its new defaults instead of a look kept from before.
 
 const tabKey = `interactive-particles:ui:${location.pathname}`;
-const savedKey = `interactive-particles:ui-saved:${location.pathname}`;
+// the saved look a save button once kept (gone): its record is cleared on load, nothing reads it
+const oldSavedKey = `interactive-particles:ui-saved:${location.pathname}`;
 
 function controls(panel) {
-  return [...panel.querySelectorAll('input[name]')].filter(input => ['range', 'color', 'checkbox', 'radio'].includes(input.type));
+  return [...panel.querySelectorAll('input[name], textarea[name]')].filter(input => ['range', 'color', 'checkbox', 'radio', 'text', 'textarea'].includes(input.type));
 }
 
 function read(panel) {
   const state = {};
   for (const input of controls(panel)) {
-    if (input.type === 'range' || input.type === 'color') state[input.name] = input.value;
+    if (['range', 'color', 'text', 'textarea'].includes(input.type)) state[input.name] = input.value;
     else if (input.type === 'checkbox') state[input.name] = input.checked;
     else if (input.checked) state[input.name] = input.value;
   }
@@ -26,7 +24,7 @@ function read(panel) {
 
 // the panel's HTML defaults, as one string: what a record was made under
 function defaultsOf(panel) {
-  return JSON.stringify(controls(panel).map(input => [input.name, input.type === 'range' || input.type === 'color' ? input.defaultValue : input.defaultChecked]));
+  return JSON.stringify(controls(panel).map(input => [input.name, ['range', 'color', 'text', 'textarea'].includes(input.type) ? input.defaultValue : input.defaultChecked]));
 }
 
 // a record's values, if it was made under the current defaults; an older one is removed
@@ -49,7 +47,7 @@ function apply(panel, valueOf) {
   for (const input of controls(panel)) {
     const value = valueOf(input);
     if (value === undefined) continue;
-    if (input.type === 'range' || input.type === 'color') {
+    if (['range', 'color', 'text', 'textarea'].includes(input.type)) {
       if (input.value === value) continue;
       input.value = value;
       input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -66,7 +64,8 @@ function apply(panel, valueOf) {
 
 // Put the remembered values back. Call it after the handlers are bound.
 export function restoreUi(panel) {
-  const state = load(sessionStorage, tabKey, panel) ?? load(localStorage, savedKey, panel);
+  try { localStorage.removeItem(oldSavedKey); } catch {}
+  const state = load(sessionStorage, tabKey, panel);
   if (state) apply(panel, input => state[input.name]);
 
   const keep = () => store(sessionStorage, tabKey, panel);
@@ -74,33 +73,3 @@ export function restoreUi(panel) {
   panel.addEventListener('change', keep);
 }
 
-// The save button: the current values become the look this page opens with, from now on. Flashes inverted
-// once stored, as the copy button does.
-export function bindSaveButton(button, panel) {
-  let timer = 0;
-  button.addEventListener('click', () => {
-    if (!store(localStorage, savedKey, panel)) return; // storage blocked: nothing saved, nothing to flash
-    button.classList.add('is-saved');
-    clearTimeout(timer);
-    timer = setTimeout(() => button.classList.remove('is-saved'), 900);
-  });
-}
-
-// The reset button: every control back to the default written in the HTML, and the saved settings forgotten, so
-// a new visit opens with the defaults too. The image is not touched: that has its own back-to-default button.
-export function bindResetButton(button, panel) {
-  let timer = 0;
-  button.addEventListener('click', () => {
-    try { localStorage.removeItem(savedKey); } catch {}
-    apply(panel, input => {
-      if (input.type === 'range' || input.type === 'color') return input.defaultValue;
-      if (input.type === 'checkbox') return input.defaultChecked;
-      return input.defaultChecked ? input.value : undefined;
-    });
-    // the bubbling events above have just rewritten the tab's record with the defaults; drop it, there's nothing to keep
-    try { sessionStorage.removeItem(tabKey); } catch {}
-    button.classList.add('is-reset');
-    clearTimeout(timer);
-    timer = setTimeout(() => button.classList.remove('is-reset'), 900);
-  });
-}

@@ -6,7 +6,7 @@
 <title>Interactive Particles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- the randomize-studio's panel, copied in (see shared/build.css) -->
 <link rel="stylesheet" href="vendor/randomize-studio/css/panel.css">
 <link rel="stylesheet" href="vendor/randomize-studio/css/controls.css">
@@ -30,54 +30,77 @@
   <aside class="panel" id="panel">
     <div class="phead">
       <span class="spacer"></span>
-      <button id="resetSettings" class="iconbtn" data-mark="undo" title="Reset to defaults and forget the saved settings (the image stays)" aria-label="Reset to defaults"></button>
-      <button id="saveSettings" class="iconbtn" data-mark="save" title="Save these settings: this page opens with them from now on" aria-label="Save these settings"></button>
       <button id="copyPrompt" class="iconbtn" data-mark="copy" title="Copy a prompt that recreates this effect (image not included)" aria-label="Copy a prompt that recreates this effect"></button>
       <button id="panelToggle" class="iconbtn" data-mark="minus" title="Minimize"></button>
     </div>
     <div class="pbody">
-      <div class="grp">
-        <h3>Image</h3>
-        <div class="row"><label>grid size</label><input type="range" name="grid-size" min="20" max="400" step="5" value="115"><output>115</output></div>
-        <div class="row"><label>brightness</label><input type="range" name="brightness" min="-100" max="100" step="1" value="-15" title="Added to every pixel before the threshold, the size and the colour"><output>-15</output></div>
-        <div class="row"><label>contrast</label><input type="range" name="contrast" min="0.2" max="3" step="0.05" value="0.9" title="Every pixel scaled about mid-grey: below 1 flatter, above 1 harder"><output>0.90</output></div>
-        <div class="row"><label>background</label><input type="color" name="background" value="#ffffff" title="The colour behind the particles"></div>
-        <div class="btnrow spaced">
-          <label class="uploadbtn" data-mark="upload">Upload<input type="file" name="image-file" accept="image/*" hidden></label>
-          <button type="button" class="reset-button" data-mark="refresh" title="Back to the default portrait: Walter Gropius, 1919">Gropius</button>
+      <div class="grp" data-fold="source">
+        <h3><span class="chev"></span>Source</h3>
+        <div class="grp-body">
+          <!-- the presets, a tile each (main.js PRESETS; hover one for its credit): images and texts, each with its own
+               look; your upload gets a tile of its own, after them, and the last tile uploads one. Then the tabs: image or text, and
+               that one's options. -->
+          <div class="image-picker" role="radiogroup" aria-label="Presets"></div>
+          <div class="chips pill-tabs" role="radiogroup" aria-label="Source">
+            <label title="Make the particles from the picked image"><input type="radio" name="source" value="image">image</label>
+            <label title="Make the particles from typed text"><input type="radio" name="source" value="text" checked>text</label>
+          </div>
+          <div class="source-image" hidden>
+            <div class="row"><label>brightness</label><input type="range" name="brightness" min="-100" max="100" step="1" value="0" title="Added to every pixel before the threshold, the size and the colour"><output>0</output></div>
+            <div class="row"><label>contrast</label><input type="range" name="contrast" min="0.2" max="3" step="0.05" value="1" title="Every pixel scaled about mid-grey: below 1 flatter, above 1 harder"><output>1.00</output></div>
+          </div>
+          <!-- the text source, in the image's place while the switch says text -->
+          <div class="source-text">
+            <!-- typed text as the source: drawn into a picture the effect samples like a photo (main.js textImage) -->
+            <div class="row"><label>words</label><textarea name="text-words" rows="2" spellcheck="false" aria-label="The words to make particles from">SURE
+SHOT</textarea></div>
+            <div class="row"><label>spacing</label><input type="range" name="text-spacing" min="-0.1" max="0.5" step="0.01" value="-0.07" title="Letter spacing, as a share of the letter height"><output>-0.07</output></div>
+            <div class="row"><label>line height</label><input type="range" name="text-leading" min="0.6" max="2" step="0.05" value="0.8" title="The distance between lines, as a share of the letter height"><output>0.80</output></div>
+            <div class="row"><label>colour</label><input type="color" name="text-colour" value="#000000" title="The letters' colour: every particle takes it"></div>
+          </div>
+          <!-- the background and placing, for either source -->
+          <div class="row"><label>background</label><input type="color" name="background" value="#ffd22e" title="The colour behind the particles"><span class="inline-check"><input type="checkbox" name="fill" id="c_fill"><label for="c_fill" title="Particles beyond the photo too, so the page's edges are covered: the photo continues mirrored, at a quarter of the density">fill edges</label></span></div>
+          <div class="row"><label>fit / cover</label><input type="range" name="cover" min="0" max="1" step="0.01" value="0.33" title="0 fits the whole photo on the page, 1 covers the page with it (its edges cropped). The same particles, scaled: none are added"><output>0.33</output></div>
         </div>
       </div>
-      <div class="grp">
-        <h3><label class="toggle" title="Make the particles from the light pixels or from the dark ones"><input type="checkbox" name="invert" role="switch" checked><span class="toggle-label"><span class="when-off">light particles</span><span class="when-on">dark particles</span></span><span class="knob"></span></label></h3>
-        <div class="row"><label>threshold</label><input type="range" name="threshold" min="0" max="255" step="1" value="64"><output>64</output></div>
-        <div class="row"><label>size</label><input type="range" name="size" min="0.2" max="4" step="0.05" value="1.7"><output>1.70</output></div>
-        <div class="row"><label>variation</label><input type="range" name="variation" min="0" max="2" step="0.05" value="0.55"><output>0.55</output></div>
-        <div class="row"><label>shape</label><div class="chips">
-          <label><input type="radio" name="shape" value="0" checked>circle</label>
-          <label><input type="radio" name="shape" value="1">square</label>
-          <label><input type="radio" name="shape" value="2">diamond</label>
-          <label><input type="radio" name="shape" value="3">ring</label>
-          <label><input type="radio" name="shape" value="4">cross</label>
-        </div></div>
-        <div class="row"><label>edge</label><input type="range" name="edge" min="0" max="0.5" step="0.01" value="0.3"><output>0.30</output></div>
-        <div class="row"><label>tone</label><div class="chips">
-          <label><input type="radio" name="tone" value="colour" checked>colour</label>
-          <label><input type="radio" name="tone" value="grey">grey</label>
-        </div></div>
+      <div class="grp" data-fold="particles">
+        <h3><span class="chev"></span><label class="toggle" title="Make the particles from the light pixels or from the dark ones"><input type="checkbox" name="invert" role="switch" checked><span class="toggle-label"><span class="when-off">light particles</span><span class="when-on">dark particles</span></span><span class="knob"></span></label></h3>
+        <div class="grp-body">
+          <div class="row"><label>grid size</label><input type="range" name="grid-size" min="20" max="400" step="5" value="95"><output>95</output></div>
+          <div class="row"><label>threshold</label><input type="range" name="threshold" min="0" max="255" step="1" value="185"><output>185</output></div>
+          <div class="row"><label>size</label><input type="range" name="size" min="0.2" max="4" step="0.05" value="1.05"><output>1.05</output></div>
+          <div class="row"><label>variation</label><input type="range" name="variation" min="0" max="2" step="0.05" value="0"><output>0.00</output></div>
+          <div class="row"><label>shape</label><div class="chips shape-chips">
+            <label data-mark="shape-circle" title="circle"><input type="radio" name="shape" value="0" checked><span class="visually-hidden">circle</span></label>
+            <label data-mark="shape-square" title="square"><input type="radio" name="shape" value="1"><span class="visually-hidden">square</span></label>
+            <label data-mark="shape-diamond" title="diamond"><input type="radio" name="shape" value="2"><span class="visually-hidden">diamond</span></label>
+            <label data-mark="shape-ring" title="ring"><input type="radio" name="shape" value="3"><span class="visually-hidden">ring</span></label>
+            <label data-mark="shape-cross" title="cross"><input type="radio" name="shape" value="4"><span class="visually-hidden">cross</span></label>
+          </div></div>
+          <div class="row"><label>edge</label><input type="range" name="edge" min="0" max="0.5" step="0.01" value="0.3"><output>0.30</output></div>
+          <div class="row"><label>tone</label><div class="chips">
+            <label><input type="radio" name="tone" value="colour" checked>colour</label>
+            <label><input type="radio" name="tone" value="grey">grey</label>
+          </div></div>
+        </div>
       </div>
-      <div class="grp">
-        <h3>Motion</h3>
-        <div class="row"><label>random</label><input type="range" name="random" min="0" max="20" step="0.1" value="0.8"><output>0.8</output></div>
-        <div class="row"><label>depth</label><input type="range" name="depth" min="0" max="40" step="0.1" value="3.4"><output>3.4</output></div>
-        <div class="row"><label>speed</label><input type="range" name="speed" min="0" max="3" step="0.05" value="1.45"><output>1.45</output></div>
-        <div class="row"><label>idle</label><input type="range" name="idle" min="0" max="1" step="0.05" value="1" title="The speed while the pointer is away, as a share of speed: 0 keeps the particles still until you point at them"><output>1.00</output></div>
+      <div class="grp" data-fold="motion" data-fold-shut>
+        <h3><span class="chev"></span>Motion</h3>
+        <div class="grp-body">
+          <div class="row"><label>random</label><input type="range" name="random" min="0" max="20" step="0.1" value="0"><output>0.0</output></div>
+          <div class="row"><label>depth</label><input type="range" name="depth" min="0" max="40" step="0.1" value="0"><output>0.0</output></div>
+          <div class="row"><label>speed</label><input type="range" name="speed" min="0" max="3" step="0.05" value="0"><output>0.00</output></div>
+          <div class="row"><label>idle</label><input type="range" name="idle" min="0" max="1" step="0.05" value="0" title="The speed while the pointer is away, as a share of speed: 0 keeps the particles still until you point at them"><output>0.00</output></div>
+        </div>
       </div>
-      <div class="grp">
-        <h3>Touch</h3>
-        <div class="row"><label>radius</label><input type="range" name="touch-radius" min="0.02" max="0.5" step="0.01" value="0.21"><output>0.21</output></div>
-        <div class="row"><label>trail</label><input type="range" name="touch-trail" min="0.2" max="6" step="0.1" value="1.9"><output>1.9</output></div>
-        <div class="row"><label>push</label><input type="range" name="touch-push" min="0" max="80" step="1" value="13"><output>13</output></div>
-        <div class="row"><label for="c_touchPreview">preview</label><input id="c_touchPreview" type="checkbox" name="touch-preview" title="Show the touch texture the shader reads"></div>
+      <div class="grp" data-fold="touch" data-fold-shut>
+        <h3><span class="chev"></span>Touch</h3>
+        <div class="grp-body">
+          <div class="row"><label>radius</label><input type="range" name="touch-radius" min="0.02" max="0.5" step="0.01" value="0.17"><output>0.17</output></div>
+          <div class="row"><label>trail</label><input type="range" name="touch-trail" min="0.2" max="6" step="0.1" value="0.2"><output>0.2</output></div>
+          <div class="row"><label>push</label><input type="range" name="touch-push" min="0" max="80" step="1" value="10"><output>10</output></div>
+          <div class="row"><label for="c_touchPreview">preview</label><input id="c_touchPreview" type="checkbox" name="touch-preview" title="Show the touch texture the shader reads"></div>
+        </div>
       </div>
     </div>
   </aside>
