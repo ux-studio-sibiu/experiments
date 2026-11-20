@@ -54,6 +54,17 @@ const PRESETS = [
     }
   },
   {
+    id: 'starry-pixel', name: 'The Starry Night, in pixels', file: 'starry-night-van-gogh.jpg', credit: 'Vincent van Gogh, MoMA, public domain',
+    // the painting's darkest strokes as white square pixels on deep blue, a fine grid close up, still until touched.
+    // The tile shows the look, drawn (lookThumb), so it doesn't repeat the painting's own tile.
+    lookThumb: true,
+    values: {
+      'grid-size': '205', brightness: '0', contrast: '1', cover: '0.84', fill: false, background: '#0014a8', invert: true, threshold: '204',
+      size: '1.05', variation: '0', shape: '1', edge: '0.3', tone: 'solid', 'tone-colour': '#ffffff', random: '0', depth: '0', speed: '0',
+      idle: '0', 'touch-radius': '0.17', 'touch-trail': '0.2', 'touch-push': '10'
+    }
+  },
+  {
     id: 'sure-shot', name: 'SURE SHOT', text: 'SURE\nSHOT', credit: 'text, Archivo black',
     // the page's default look: still black dots on yellow, the lines tightly set; the trail is gone in a blink
     values: {
@@ -72,18 +83,25 @@ const PRESETS = [
     }
   }
 ];
-const IMAGE_PRESETS = PRESETS.filter(p => p.file);
-const DEFAULT_IMAGE = MEDIA + IMAGE_PRESETS[0].file; // the last resort, when a picked source can't be read
+// A preset's image: a file of its own in sample-media (`file`), or a random photo kept by its picsum.photos seed
+// (`seed`: the same seed always gives the same photo), as the copy button's prompt names it.
+const PICSUM = (seed, w, h) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
+const RANDOM_SIZE = [1200, 800]; // a random photo's size, fetched or kept by a preset
+const imageOf = p => p.seed ? PICSUM(p.seed, ...RANDOM_SIZE) : MEDIA + p.file;
+const thumbOf = p => p.seed ? PICSUM(p.seed, 240, 160) : `${MEDIA}thumbs/${p.file}`;
+const IMAGE_PRESETS = PRESETS.filter(p => p.file || p.seed);
+const DEFAULT_IMAGE = imageOf(IMAGE_PRESETS[0]); // the last resort, when a picked source can't be read
 // One face for the words: Archivo at its black weight, centred; the letter spacing, line height and colour are the
 // panel's. TEXT_PX is the letter height they are drawn at: the grid size decides how finely it is sampled.
 const TEXT_FONT = '900 160px "Archivo", "Helvetica Neue", Arial, sans-serif';
 const TEXT_PX = 160;
-const THUMB = 160; // px, a text preset's tile: a tile of up to 80 px at 2x
+const THUMB = 160; // px, a drawn tile (a text preset's words, or a look): a tile of up to 80 px at 2x
 
 const stage = document.querySelector('.stage');
 const badge = document.querySelector('.stage-badge');
 const panel = document.querySelector('.panel');
 const field = name => document.querySelector(`[name="${name}"]`);
+const checked = name => panel.querySelector(`[name="${name}"]:checked`)?.value; // a radio group's picked value
 
 // every slider: [input name, the option it drives (none for the text's, which redraw the words), decimals shown]
 const SLIDERS = [
@@ -93,6 +111,14 @@ const SLIDERS = [
   ['text-spacing', null, 2], ['text-leading', null, 2]
 ];
 const DIGITS = Object.fromEntries(SLIDERS.map(([name, , digits]) => [name, digits]));
+
+// every other control that drives one option: [input name, the option, the option's value from the control's] (a
+// checkbox gives checked, a radio group and a colour their value). Their handlers and the effect's starting options
+// both come from here; a control that does more (tone's tint, dark particles' background) adds a handler of its own.
+const CONTROLS = [
+  ['invert', 'invert', Boolean], ['fill', 'fill', Boolean], ['background', 'background', String],
+  ['shape', 'shape', Number], ['tone', 'grey', value => value === 'grey']
+];
 
 // A preset's whole look as panel values: its own, plus which source it is and, for text, its words.
 const lookOf = p => ({ ...p.values, source: p.text ? 'text' : 'image', ...(p.text ? { 'text-words': p.text } : {}) });
@@ -121,12 +147,17 @@ function setDefaults(values) {
 function optionsOf(values) {
   const options = {};
   for (const [name, option] of SLIDERS) if (option && name in values) options[option] = Number(values[name]);
-  if ('invert' in values) options.invert = !!values.invert;
-  if ('fill' in values) options.fill = !!values.fill;
-  if ('background' in values) options.background = values.background;
-  if ('shape' in values) options.shape = Number(values.shape);
-  if ('tone' in values) options.grey = values.tone === 'grey';
+  for (const [name, option, of] of CONTROLS) if (name in values) options[option] = of(values[name]);
   return options;
+}
+
+// a preset's value for a control, else the panel's default for it (a checkbox's checked, a radio group's picked one)
+function valueOf(p, name) {
+  if (name in p.values) return p.values[name];
+  const inputs = [...panel.querySelectorAll(`[name="${name}"]`)];
+  if (inputs[0].type === 'checkbox') return inputs[0].defaultChecked;
+  if (inputs[0].type === 'radio') return inputs.find(input => input.defaultChecked)?.value;
+  return inputs[0].defaultValue;
 }
 
 setDefaults(lookOf(DEFAULT_PRESET));
@@ -166,24 +197,24 @@ for (const [name, option, digits] of SLIDERS) {
   });
 }
 
-document.querySelectorAll('[name="shape"]').forEach(radio => radio.addEventListener('change', () => fx.set('shape', Number(radio.value))));
+// STEP 05 -> the shape, the tone (colour or the original's grey), fill, the background and the particles' mode
+for (const [name, option, of] of CONTROLS) {
+  for (const input of panel.querySelectorAll(`[name="${name}"]`)) {
+    input.addEventListener(input.type === 'color' ? 'input' : 'change', () => fx.set(option, of(input.type === 'checkbox' ? input.checked : input.value)));
+  }
+}
 
-// STEP 05 -> tone (colour or the original's grey) and the background colour
-document.querySelectorAll('[name="tone"]').forEach(radio => radio.addEventListener('change', () => fx.set('grey', radio.value === 'grey')));
-
-// fill the page's edges with sparser particles, the photo continued mirrored
-const fillInput = field('fill');
-fillInput.addEventListener('change', () => fx.set('fill', fillInput.checked));
+// tone can also be solid: one colour (the picker beside the chips) for every particle, through the effect's tint
+for (const radio of panel.querySelectorAll('[name="tone"]')) radio.addEventListener('change', applyTint);
+field('tone-colour').addEventListener('input', applyTint);
 
 const backgroundInput = field('background');
-backgroundInput.addEventListener('input', () => fx.set('background', backgroundInput.value));
 
 // Dark particles would vanish on black: switching the mode by hand also flips the background to paper (and light
 // particles back to black). Only a real click does it (isTrusted): restoring the tab's settings or a preset fires the
 // switch too, and must leave the background they restore alone, whichever order the rows come in.
 const invertInput = field('invert');
 invertInput.addEventListener('change', e => {
-  fx.set('invert', invertInput.checked);
   retext(); // the letters' ink follows: dark particles draw ink on paper
   if (!e.isTrusted) return;
   backgroundInput.value = invertInput.checked ? '#ffffff' : '#000000';
@@ -214,23 +245,30 @@ function tile(value, title, thumb) {
 }
 
 for (const p of PRESETS) {
-  const t = tile(p.id, `${p.name} (${p.credit})`, p.file ? `${MEDIA}thumbs/${p.file}` : '');
+  const t = tile(p.id, `${p.name} (${p.credit})`, p.text ? '' : thumbOf(p));
   if (p.text) drawTextThumb(t.querySelector('.thumb'), p);
+  else if (p.lookThumb) drawLookThumb(t.querySelector('.thumb'), p);
   t.querySelector('input').defaultChecked = p === DEFAULT_PRESET; // the look a new tab opens on
   picker.append(t);
 }
-const uploadTile = tile('upload', 'Your uploaded photo, with the look you give it');
+const uploadTile = tile('upload', 'Your photo (uploaded or random), with the look you give it');
 uploadTile.hidden = true; // until there is an upload
 picker.append(uploadTile);
 
-// the last tile uploads: a dotted square, the upload mark over its name, round the hidden file input (or drop a photo
-// on the page)
+// The last two tiles bring a photo in, dotted squares with their mark over their name: a random photo, then the
+// upload, round the hidden file input (or drop a photo on the page).
+const randomButton = document.createElement('button');
+randomButton.type = 'button';
+randomButton.className = 'image-tile action-tile random-tile';
+randomButton.title = 'A random photo from picsum.photos, as in randomize-studio';
+randomButton.dataset.mark = 'randomize';
+randomButton.innerHTML = '<span class="tile-name">Random<br>image</span>';
 const uploadButton = document.createElement('label');
-uploadButton.className = 'image-tile upload-tile';
+uploadButton.className = 'image-tile action-tile upload-tile';
 uploadButton.title = 'Upload a photo (or drop one on the page)';
 uploadButton.dataset.mark = 'upload';
-uploadButton.innerHTML = '<input type="file" name="image-file" accept="image/*" hidden><span class="upload-name">Upload<br>image</span>';
-picker.append(uploadButton);
+uploadButton.innerHTML = '<input type="file" name="image-file" accept="image/*" hidden><span class="tile-name">Upload<br>image</span>';
+picker.append(randomButton, uploadButton);
 
 let upload = null; // the uploaded File, kept in IndexedDB for the next visit
 let uploadUrl = null;
@@ -239,10 +277,20 @@ function showUpload(file) {
   if (uploadUrl) URL.revokeObjectURL(uploadUrl);
   uploadUrl = URL.createObjectURL(file);
   uploadTile.querySelector('.thumb').style.backgroundImage = `url("${uploadUrl}")`;
-  uploadTile.hidden = false;
+  showPicked();
 }
 
-const pickedValue = () => panel.querySelector('[name="preset"]:checked')?.value;
+const pickedValue = () => checked('preset');
+
+// The photo tile holds whatever came in last, an upload or a random photo: its thumbnail is that photo (each roll
+// replaces it) and it is the picked tile; the Random and Upload tiles are only buttons. A random photo is known by its
+// file name, which carries its picsum seed (random-<seed>.jpg), kept with the photo in IndexedDB.
+const randomSeed = () => /^random-([a-z0-9]+)\.jpg$/.exec(upload?.name ?? '')?.[1] ?? null;
+function showPicked() {
+  uploadTile.hidden = !upload;
+  const seed = randomSeed();
+  uploadTile.title = seed ? `A random photo (picsum.photos seed ${seed}), with the look you give it` : 'Your uploaded photo, with the look you give it';
+}
 const pickedPreset = () => PRESETS.find(p => p.id === pickedValue());
 
 // The words laid out in the text's face, the same for the tile and for the particles' picture: the font and letter
@@ -261,6 +309,43 @@ function fillLines(g, { lines, step }, x, y) {
   lines.forEach((l, i) => g.fillText(l, x, y + (i - (lines.length - 1) / 2) * step));
 }
 
+// An image preset's tile can show its look instead of its photo (lookThumb: true), for a look on an image another tile
+// already shows: the photo's square middle sampled on a coarse grid as the particles sample it (toned, thresholded,
+// in the look's tone: the photo's colours, grey, or one solid colour; square or round), on the preset's background.
+// The tile keeps the plain thumbnail until then.
+const LOOK_GRID = 40; // cells across the tile
+function drawLookThumb(thumb, p) {
+  const img = new Image();
+  img.onload = () => {
+    const [brightness, contrast, threshold] = ['brightness', 'contrast', 'threshold'].map(name => Number(valueOf(p, name)));
+    const dark = valueOf(p, 'invert'), look = valueOf(p, 'tone'), solid = valueOf(p, 'tone-colour');
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const s = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+    s.canvas.width = s.canvas.height = LOOK_GRID;
+    s.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, LOOK_GRID, LOOK_GRID);
+    const px = s.getImageData(0, 0, LOOK_GRID, LOOK_GRID).data;
+    const c = document.createElement('canvas');
+    c.width = c.height = THUMB;
+    const g = c.getContext('2d');
+    g.fillStyle = valueOf(p, 'background');
+    g.fillRect(0, 0, THUMB, THUMB);
+    const cell = THUMB / LOOK_GRID, dot = cell * 0.85; // a hairline between them, as the soft edge leaves
+    const tone = v => Math.min(255, Math.max(0, (v - 128) * contrast + 128 + brightness));
+    for (let i = 0; i < LOOK_GRID * LOOK_GRID; i++) {
+      const [r, gr, b] = [tone(px[i * 4]), tone(px[i * 4 + 1]), tone(px[i * 4 + 2])];
+      const lum = 0.21 * r + 0.72 * gr + 0.07 * b;
+      if (dark ? lum >= 255 - threshold : lum <= threshold) continue; // the threshold's skip, as the particles'
+      const x = (i % LOOK_GRID + 0.5) * cell, y = (Math.floor(i / LOOK_GRID) + 0.5) * cell;
+      const grey = Math.round(0.21 * r + 0.71 * gr + 0.07 * b);
+      g.fillStyle = look === 'solid' ? solid : look === 'grey' ? `rgb(${grey}, ${grey}, ${grey})` : `rgb(${r}, ${gr}, ${b})`;
+      if (String(valueOf(p, 'shape')) === '1') g.fillRect(x - dot / 2, y - dot / 2, dot, dot);
+      else { g.beginPath(); g.arc(x, y, dot / 2, 0, Math.PI * 2); g.fill(); }
+    }
+    thumb.style.backgroundImage = `url("${c.toDataURL()}")`;
+  };
+  img.src = imageOf(p);
+}
+
 // a text preset's tile: its words in the text's own face, on the preset's background, in its colour (else black
 // letters for dark particles and white for light ones), fitted into the square
 function drawTextThumb(thumb, p) {
@@ -268,10 +353,10 @@ function drawTextThumb(thumb, p) {
   c.width = c.height = THUMB;
   const g = c.getContext('2d');
   const draw = () => {
-    const dark = p.values.invert ?? field('invert').defaultChecked;
-    g.fillStyle = p.values.background ?? field('background').defaultValue;
+    const dark = valueOf(p, 'invert');
+    g.fillStyle = valueOf(p, 'background');
     g.fillRect(0, 0, THUMB, THUMB);
-    const layout = layoutText(g, p.text, p.values['text-spacing'] ?? 0, p.values['text-leading'] ?? 1);
+    const layout = layoutText(g, p.text, valueOf(p, 'text-spacing'), valueOf(p, 'text-leading'));
     const inner = THUMB * 0.86; // a margin round the words
     const scale = Math.min(inner / Math.max(...layout.widths, 1), inner / (layout.lines.length * layout.step));
     g.setTransform(scale, 0, 0, scale, THUMB / 2, THUMB / 2);
@@ -286,7 +371,7 @@ function drawTextThumb(thumb, p) {
 function loadPicked() {
   if (textOn()) return loadText(true);
   const preset = pickedPreset();
-  const source = !preset && upload ? upload : MEDIA + (preset?.file ? preset : IMAGE_PRESETS[0]).file;
+  const source = !preset && upload ? upload : imageOf(preset && !preset.text ? preset : IMAGE_PRESETS[0]);
   return fx.setImage(source).catch(() => { badge.textContent = 'Could not read that image'; });
 }
 
@@ -319,14 +404,18 @@ function applyLook(values) {
 // a tile picked: its image on screen and, for a preset, its look. (Not while the panel is being restored: the
 // restored values are the look already, and the image is loaded once, after.)
 let ready = false;
-let applying = false; // a preset going onto the panel: its tab change mustn't load a source of its own
+let applying = false; // a look going onto the panel: its events mustn't load a source of their own
+
+// A look onto the panel without a load per change (its source tab, its words): the caller loads once, after.
+function applyLookQuietly(values) {
+  applying = true;
+  try { applyLook(values); } finally { applying = false; }
+}
 picker.addEventListener('change', e => {
   if (!ready || e.target.name !== 'preset') return;
   const preset = pickedPreset();
-  applying = true;
-  if (preset) applyLook(lookOf(preset));
+  if (preset) applyLookQuietly(lookOf(preset));
   else setSource('image'); // the upload: an image, the current look kept
-  applying = false;
   loadPicked();
 });
 
@@ -334,7 +423,7 @@ picker.addEventListener('change', e => {
 // The tabs under the tiles pick the source; below them, the picked one's options (the image's tone, the text's words). The words are drawn in the
 // particles' own terms: ink on paper for dark particles, white on black for light ones, so the threshold keeps the
 // letters. Typing redraws after a short pause, straight to the new letters (no scatter and assemble per keystroke).
-const textOn = () => panel.querySelector('[name="source"]:checked')?.value === 'text';
+const textOn = () => checked('source') === 'text';
 // the source tab set from code (no event of its own): a preset or an upload saying which source it is
 function setSource(value) {
   const tab = panel.querySelector(`[name="source"][value="${value}"]`);
@@ -387,7 +476,14 @@ function showSource() {
   // text's colour tints every particle, the image keeps its own colours
   fx.set('brightness', textOn() ? 0 : Number(field('brightness').value));
   fx.set('contrast', textOn() ? 1 : Number(field('contrast').value));
-  fx.set('tint', textOn() ? field('text-colour').value : '');
+  applyTint();
+}
+
+// The particles' one colour, if they have one: the solid tone's colour wins, else typed text's colour, else none (the
+// image's own colours, or grey).
+const solidOn = () => checked('tone') === 'solid';
+function applyTint() {
+  fx.set('tint', solidOn() ? field('tone-colour').value : textOn() ? field('text-colour').value : '');
 }
 
 for (const tab of panel.querySelectorAll('[name="source"]')) {
@@ -400,7 +496,7 @@ for (const tab of panel.querySelectorAll('[name="source"]')) {
   });
 }
 for (const input of panel.querySelectorAll('[name^="text-"]')) {
-  if (input.name === 'text-colour') input.addEventListener('input', () => { if (textOn()) fx.set('tint', input.value); }); // no redraw: a tint
+  if (input.name === 'text-colour') input.addEventListener('input', applyTint); // no redraw: a tint
   else input.addEventListener(input.type === 'radio' ? 'change' : 'input', retext);
 }
 
@@ -413,6 +509,33 @@ function useFile(file) {
   radio.checked = true;
   radio.dispatchEvent(new Event('change', { bubbles: true }));
 }
+
+// A random photo's own look: dark particles on black, the photo continued past its edges (fill), loose and slowly
+// breathing. Applied before the photo comes in, so it lands in it; the panel can change it after, as with any upload.
+const RANDOM_LOOK = {
+  'grid-size': '115', brightness: '-6', contrast: '1', cover: '0', fill: true, background: '#000000', invert: true, threshold: '53',
+  size: '1.65', variation: '0.7', shape: '0', edge: '0.32', tone: 'colour', random: '0.8', depth: '3.4', speed: '1.45',
+  idle: '1', 'touch-radius': '0.21', 'touch-trail': '1.9', 'touch-push': '13'
+};
+
+// a random photo, as randomize-studio's: picsum.photos with a fresh /seed/ (picsum treats ?random= as a cache-buster).
+// It is fetched whole and comes in as an upload would (its own tile, kept for the next visit), in RANDOM_LOOK.
+randomButton.addEventListener('click', async () => {
+  if (randomButton.classList.contains('is-loading')) return; // one at a time
+  randomButton.classList.add('is-loading');
+  badge.textContent = 'Loading a random photo...';
+  try {
+    const seed = Math.random().toString(36).slice(2, 10);
+    const response = await fetch(PICSUM(seed, ...RANDOM_SIZE));
+    if (!response.ok) throw new Error(response.status);
+    const blob = await response.blob();
+    applyLookQuietly({ ...RANDOM_LOOK, source: 'image' }); // the look first: the photo's load follows
+    useFile(new File([blob], `random-${seed}.jpg`, { type: blob.type || 'image/jpeg' }));
+  } catch {
+    badge.textContent = 'Could not load a random photo';
+  }
+  randomButton.classList.remove('is-loading');
+});
 
 field('image-file').addEventListener('change', e => {
   const file = e.target.files[0];
@@ -435,13 +558,16 @@ const SDFS = ['0.5 - length(p)', '0.5 - max(a.x, a.y)', '0.5 - (a.x + a.y)', '0.
 
 function promptText() {
   const cfg = fx.get();
+  // the picked source: a random photo (or a seed preset) can be named, everything else is attached
+  const preset = pickedPreset();
+  const seed = textOn() ? null : preset ? preset.seed : randomSeed();
   const now = fx.info();
   const shapeName = SHAPES[cfg.shape];
   const keep = cfg.invert
     ? `brightness < ${255 - cfg.threshold}, that is 255 - threshold ${cfg.threshold} (dark particles: the threshold counts from the dark end; keep the dark pixels, skip the light ones)`
     : `brightness > ${cfg.threshold} (light particles: keep the light pixels, skip the dark ones)`;
   const aspect = now ? `The current image makes a ${now.width} x ${now.height} grid; ${now.count} pixels become particles.` : '';
-  return `Recreate this WebGL effect: an image turned into interactive particles, after the Codrops tutorial "Interactive Particles with Three.js" (Bruno Imbrizi, 2019). I'll attach the source image separately.
+  return `Recreate this WebGL effect: an image turned into interactive particles, after the Codrops tutorial "Interactive Particles with Three.js" (Bruno Imbrizi, 2019). ${textOn() ? 'The source is typed text (step 0).' : seed ? `The source image is a random photo from picsum.photos, seed ${seed}: ${PICSUM(seed, ...RANDOM_SIZE)} (the same seed always gives the same photo).` : "I'll attach the source image separately."}
 
 Stack: three.js 0.170.0 as an ES module (import map, jsdelivr), no build step, one full-window canvas, devicePixelRatio capped at 2. Package it as createInteractiveParticles({ container, image, ...options }) returning { setImage, set(name, value), destroy }.
 
@@ -464,7 +590,7 @@ Vertex shader (2D simplex noise snoise from Ashima Arts; random(n) = fract(sin(n
 - billboard: mvPosition = modelViewMatrix * vec4(displaced, 1.0); mvPosition.xyz += position * psize
 
 Fragment shader
-- colour = texture2D(uTexture, vPUv).rgb${cfg.grey ? ', drawn in grey: vec3(0.21 r + 0.71 g + 0.07 b)' : ', keeping the image\'s colours'}; end with #include <colorspace_fragment>
+- colour = texture2D(uTexture, vPUv).rgb${solidOn() ? `, then every particle in one colour, ${field('tone-colour').value}: rgb = mix(rgb, uTint, uTintOn) with uTintOn 1 (the tint in linear light)` : cfg.grey ? ', drawn in grey: vec3(0.21 r + 0.71 g + 0.07 b)' : textOn() ? '' : ', keeping the image\'s colours'}; end with #include <colorspace_fragment>
 - shape ${shapeName}, a distance function of p = vUv - 0.5, a = abs(p): d = ${SDFS[cfg.shape]}
 - alpha = smoothstep(0.0, max(uEdge, 0.001), d)
 
@@ -479,11 +605,11 @@ Transitions: a new image tweens uShow to 0 over ${(cfg.transition * 0.6).toFixed
 Animation: setAnimationLoop; uTime += min(dt, 0.1) * speed with dt in real seconds (times idle = ${cfg.idle} while the pointer is not over the canvas: pointerenter / pointerleave), and the touch texture updates with the same dt. The loop runs only while the canvas is on screen (IntersectionObserver). Under prefers-reduced-motion: no noise motion, no transitions; the loop runs only while a touch trail is fading. destroy() stops the loop, disconnects observers, removes listeners and disposes geometry, materials, both textures and the renderer.
 
 Current values
-- grid size (longest side): ${cfg.gridSize} px, brightness ${cfg.brightness}, contrast ${cfg.contrast}
+${seed ? `- image: picsum.photos seed ${seed}, ${RANDOM_SIZE.join(' x ')}\n` : ''}- grid size (longest side): ${cfg.gridSize} px, brightness ${cfg.brightness}, contrast ${cfg.contrast}
 - particles from: ${cfg.invert ? 'dark' : 'light'} pixels, threshold ${cfg.threshold}
 - uSize: ${cfg.size}
 - uVariation: ${cfg.variation}
-- shape: ${shapeName}, uEdge: ${cfg.edge}, tone: ${cfg.grey ? 'grey' : 'colour'}
+- shape: ${shapeName}, uEdge: ${cfg.edge}, tone: ${solidOn() ? `solid ${field('tone-colour').value}` : cfg.grey ? 'grey' : 'colour'}
 - uRandom: ${cfg.random}
 - uDepth: ${cfg.depth}
 - speed: ${cfg.speed}, idle: ${cfg.idle}
@@ -509,5 +635,6 @@ else if (pickedValue() === 'upload') {
   applyLook(lookOf(DEFAULT_PRESET));
 }
 showSource();
+showPicked();
 ready = true;
 loadPicked().catch(() => fx.setImage(DEFAULT_IMAGE));

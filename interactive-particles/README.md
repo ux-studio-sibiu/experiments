@@ -19,7 +19,9 @@ Run it from a server, because ES modules don't load over `file://`. The page's i
 
 The first section, Source, offers images as tiles, each a **preset**: a click brings that image on screen with its own look
 (every slider, switch and chip). Your upload (the dotted **Upload image** tile at the end of the row, or a photo dropped on the page) gets a
-tile of its own after them, and keeps whatever look is on when you pick it. The picked tile is remembered with the
+tile of its own after them, and so does a random photo (the dotted **Random image** tile before it: a fresh
+picsum.photos seed, as randomize-studio's, which comes in with its own look, `RANDOM_LOOK` in `main.js`: dark
+particles on black, the edges filled), and keeps whatever look is on when you pick it. The picked tile is remembered with the
 rest of the panel; the upload itself is kept in IndexedDB.
 
 The section is **Source**. Its tiles and the upload are there whatever the source; under them, two tabs pick it,
@@ -37,7 +39,11 @@ To add an image:
 1. Put it (max 1600px, JPEG q82) in `sample-media/img/interactive-particles/`, and a 160px thumbnail with the same
    name in its `thumbs/`.
 2. Credit it in that folder's `CREDITS.md` (source, author, licence).
-3. Add an entry to `PRESETS` in `main.js`: `{ id, name, file, credit, values }`. `values` are the panel's control
+3. Add an entry to `PRESETS` in `main.js`: `{ id, name, file, credit, values }`. A random photo needs no file:
+   `seed` in place of `file` (the picsum.photos seed the copied prompt names: `{ id, name, seed: 'k3x9q2ab', credit:
+   'picsum.photos', values }`), and the photo and its thumbnail come from picsum. A second look on an image another tile
+   already shows takes `lookThumb: true`: its tile is drawn from the look (the photo sampled on a coarse grid,
+   thresholded, on the preset's background) instead of repeating the photo, as `starry-pixel` does. `values` are the panel's control
    names with the values to set (`'grid-size': '140', invert: false, background: '#000000', shape: '1'`...); anything
    left out takes the panel's default. The copy button's prompt lists every current value to copy from.
 
@@ -62,6 +68,9 @@ To add an image:
 
 The canvas fills the container and follows its size. Images with a dark background work best: dark pixels get no
 particle. For a dark subject on a light background, set `invert: true` and a light `background`.
+
+The **tone** chips: the image's **colour**, **grey**, or **solid**, every particle in the one colour of the picker
+beside them (white by default; the effect's `tint` option, which typed text uses for its letters' colour too).
 
 ## Options
 

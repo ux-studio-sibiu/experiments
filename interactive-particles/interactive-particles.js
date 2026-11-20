@@ -250,6 +250,8 @@ function loadImage(source, onObjectUrl) {
   const url = source instanceof Blob ? URL.createObjectURL(source) : source instanceof HTMLImageElement ? source.src : source;
   return new Promise((resolve, reject) => {
     const img = new Image();
+    // an address may be another site's (a picsum.photos photo): asked for with CORS, so its pixels can be read
+    if (typeof source === 'string') img.crossOrigin = 'anonymous';
     img.onload = () => { if (source instanceof Blob) onObjectUrl(url); resolve(img); };
     img.onerror = reject;
     img.src = url;

@@ -38,8 +38,11 @@ style. The reference implementations are `interactive-particles/` (`shared/build
 
 - **No title text in the titlebar.** It's an empty black bar, the drag handle, with only the icons, pushed to the
   right by `<span class="spacer">`. The page says what it is elsewhere (its own title, its info page).
-- Order, left to right: **reset, save, copy, minimize**. All `class="iconbtn"` with a `data-mark`, each with a
+- Order, left to right: **(reset, save,) copy, minimize**. All `class="iconbtn"` with a `data-mark`, each with a
   `title` (what it does, and any catch) and an `aria-label`.
+- **Reset and save are optional**: only a page that keeps a look for good (a saved look a new visit opens with) has
+  them. A page that keeps its values just for the tab (a refresh keeps them, a new tab opens with the defaults)
+  leaves both out, as interactive-particles and cubism do; its presets, or a fresh tab, are the way back.
 - **Reset** (`data-mark="undo"`, the studio's "back to the original colours" arrow): every control back to its
   HTML default (`defaultValue` / `defaultChecked`, through the same events a person fires), and the saved
   settings forgotten. It does not touch the user's asset, which has its own back-to-default button. `refresh` is
@@ -115,7 +118,7 @@ style. The reference implementations are `interactive-particles/` (`shared/build
 |---|---|---|
 | the user's uploaded asset | IndexedDB, `shared/saved-image.js`, the original `File` | until "back to default"; shared by every page on the origin |
 | every control's value | sessionStorage, `shared/saved-ui.js`, one record per page | refreshes, until the tab closes |
-| saved settings (save button) | localStorage, same file | for good; a new visit opens with them; reset forgets them |
+| saved settings (save button, where the page has one) | localStorage, same file | for good; a new visit opens with them; reset forgets them |
 
 **Templates** (named looks the user keeps, several of them) go in a section of their own, drawn as game-dev.ro's
 background templates (reference: `cubism/`):
@@ -134,7 +137,8 @@ background templates (reference: `cubism/`):
   Loading a template brings the picture back. The row's tooltip says which kind it holds. Reset doesn't touch
   templates.
 
-On load: the tab's values, else the saved ones, else the HTML defaults. Everything fails silently (private
+On load: the tab's values, else the saved ones (if the page saves), else the defaults (where the page has presets,
+the default preset's: its values become the panel's defaults, so the default look is one edit). Everything fails silently (private
 window, blocked storage) and the page still works with its defaults.
 
 ## Code

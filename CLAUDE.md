@@ -26,11 +26,13 @@ Every page's control panel follows the house conventions in the **`ui-convention
 (`.claude/skills/ui-conventions/SKILL.md`). In short:
 
 - **Panel:** the randomize-studio panel, copied in, with a white ring outside its black edge on dark stages.
-- **Titlebar:** reset (undo arrow), save (floppy), copy prompt, minimize. Action buttons flash inverted when done.
+- **Titlebar:** copy prompt, minimize; reset (undo arrow) and save (floppy) before them only on a page that keeps a
+  look for good. Action buttons flash inverted when done.
 - **Icons:** reuse an existing icon before drawing one (studio `base.css`, other pages, `icons/`). Draw it as a
   20 x 20 mask in `currentColor`.
 - **Sliders:** fine-tune ▲ / ▼ at the end of every row.
 - **Mode switch:** a switch that changes a section's mode is that section's title, naming the current state, with
   a knob that never moves.
 - **Names:** short and accurate.
-- **Persistence:** the user's asset in IndexedDB, control values per tab, saved settings for good.
+- **Persistence:** the user's asset in IndexedDB, control values per tab, saved settings for good (where the page
+  saves).
